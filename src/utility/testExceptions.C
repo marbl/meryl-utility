@@ -19,7 +19,7 @@
  * Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307  USA
  *************************************************************************/
 
-static const char* rcsid = "$Id: testExceptions.C,v 1.3 2011-08-31 06:49:27 mkotelbajcvi Exp $";
+static const char* rcsid = "$Id: testExceptions.C,v 1.4 2011-09-02 14:59:27 mkotelbajcvi Exp $";
 
 #include <cstdio>
 #include <cstdlib>
@@ -36,13 +36,15 @@ using namespace std;
 #include "StringUtils.h"
 #include "TestUtils.h"
 
+using namespace Utility;
+
 void testCauseDepth()
 {
 	vector<size_t> causesSearch;
 	
 	Asserts::assertTrue(StringUtils::findAll(ArgumentException("exception1", 
 		new ArgumentException("exception2", new ArgumentException("exception3", NULL, "arg3"), "arg2"), "arg1").what(), 
-		causesSearch, 1, "Caused by: ").size() == (MAX_CAUSE_DEPTH - 1), "cause depth failed");
+		causesSearch, 1, "Caused by: ").size() == (RuntimeException::DEFAULT_CAUSE_DEPTH - 1), "cause depth failed");
 }
 
 int main(int argc, char** argv)

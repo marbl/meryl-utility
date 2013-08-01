@@ -2,7 +2,7 @@
 /**************************************************************************
  * This file is part of Celera Assembler, a software program that
  * assembles whole-genome shotgun reads into contigs and scaffolds.
- * Copyright (C) 2005-2007, J. Craig Venter Institute.
+ * Copyright (C) 1999-2004, Applera Corporation. All rights reserved.
  *
  * This program is free software; you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -19,19 +19,51 @@
  * Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307  USA
  *************************************************************************/
 
-#ifndef AS_UTL_DECODERANGE_H
-#define AS_UTL_DECODERANGE_H
+static const char *rcsid = "$Id: testVar.c,v 1.4 2008-10-08 22:03:00 brianwalenz Exp $";
+
+#include <assert.h>
 
 #include "AS_global.H"
+#include "AS_UTL_Var.H"
 
-#include <set>
+typedef struct{
+  int x;
+  int y;
+  int z;
+}GorkT;
 
-using namespace std;
+VA_DEF(GorkT)
 
-void  AS_UTL_decodeRange(char *range, set<uint64> &ranges);
-void  AS_UTL_decodeRange(char *range, set<uint32> &ranges);
 
-void  AS_UTL_decodeRange(char *range, uint64 &lo, uint64 &hi);
-void  AS_UTL_decodeRange(char *range, uint32 &lo, uint32 &hi);
+int main(int argc, char **argv){
+  int i;
+  GorkT gork;
+  long int length;
+  VA_TYPE(GorkT) *gorks;
+  if(argc < 2)
+    length = 10000;
+  else
+    length = atoi(argv[1]);
 
-#endif  //  AS_UTL_DECODERANGE_H
+  gorks = CreateVA_GorkT(length);
+
+  gork.x = 0;
+  gork.y = 0;
+  gork.z = 0;
+
+  SetGorkT(gorks,length/2, &gork);
+
+  for(i = 0; i < GetNumGorkTs(gorks); i++){
+    GorkT *gp = GetGorkT(gorks, i);
+    assert(gp->x == 0 && gp->y == 0 && gp->z == 0);
+  }
+
+  SetGorkT(gorks,length, &gork);
+
+  for(i = 0; i < GetNumGorkTs(gorks); i++){
+    GorkT *gp = GetGorkT(gorks, i);
+    assert(gp->x == 0 && gp->y == 0 && gp->z == 0);
+  }
+  return 0;
+}
+

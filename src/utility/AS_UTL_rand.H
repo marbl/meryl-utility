@@ -2,7 +2,7 @@
 /**************************************************************************
  * This file is part of Celera Assembler, a software program that
  * assembles whole-genome shotgun reads into contigs and scaffolds.
- * Copyright (C) 2005-2007, J. Craig Venter Institute.
+ * Copyright (C) 1999-2004, Applera Corporation. All rights reserved.
  *
  * This program is free software; you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -19,19 +19,34 @@
  * Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307  USA
  *************************************************************************/
 
-#ifndef AS_UTL_DECODERANGE_H
-#define AS_UTL_DECODERANGE_H
+#ifndef AS_UTL_RAND_H
+#define AS_UTL_RAND_H
+
+static const char *rcsid_AS_UTL_RAND_H = "$Id: AS_UTL_rand.h,v 1.4 2012-05-08 23:17:55 brianwalenz Exp $";
 
 #include "AS_global.H"
 
-#include <set>
+//  A normally distributed random number generator with zero mean and unit variance (stddev) From
+//  "Numerical Recipes in C", pg 217
 
-using namespace std;
+double GaussRandomNormalized_AS(void);
 
-void  AS_UTL_decodeRange(char *range, set<uint64> &ranges);
-void  AS_UTL_decodeRange(char *range, set<uint32> &ranges);
+static void InitRandom_AS(long seed){
+  srand48(seed);
+}
 
-void  AS_UTL_decodeRange(char *range, uint64 &lo, uint64 &hi);
-void  AS_UTL_decodeRange(char *range, uint32 &lo, uint32 &hi);
+static double GaussRandom_AS(double mean, double stddev){
+  return GaussRandomNormalized_AS() * stddev + mean;
+}
 
-#endif  //  AS_UTL_DECODERANGE_H
+
+// Return a random number distributed:
+//  uniform = TRUE    uniformly on [min,max]
+//          = FALSE   normally on mean = (max + min)/2  std = (max - min)/6
+//
+int GetRand_AS(int min, int max, int uniform);
+// returns a uniformly distributed random number from the interval
+// [min,max]
+double GetDrand_AS(double min, double max);
+
+#endif

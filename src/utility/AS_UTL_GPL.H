@@ -2,7 +2,7 @@
 /**************************************************************************
  * This file is part of Celera Assembler, a software program that
  * assembles whole-genome shotgun reads into contigs and scaffolds.
- * Copyright (C) 2005-2007, J. Craig Venter Institute.
+ * Copyright (C) 1999-2004, Applera Corporation. All rights reserved.
  *
  * This program is free software; you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -19,19 +19,13 @@
  * Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307  USA
  *************************************************************************/
 
-#ifndef AS_UTL_DECODERANGE_H
-#define AS_UTL_DECODERANGE_H
+#ifndef AS_UTL_GLP_H
+#define AS_UTL_GLP_H
+
+static const char *rcsid_AS_UTL_GLP_H = "$Id: AS_UTL_GPL.h,v 1.4 2012-05-08 23:17:55 brianwalenz Exp $";
 
 #include "AS_global.H"
 
-#include <set>
+void printGPL(FILE * fpout);
 
-using namespace std;
-
-void  AS_UTL_decodeRange(char *range, set<uint64> &ranges);
-void  AS_UTL_decodeRange(char *range, set<uint32> &ranges);
-
-void  AS_UTL_decodeRange(char *range, uint64 &lo, uint64 &hi);
-void  AS_UTL_decodeRange(char *range, uint32 &lo, uint32 &hi);
-
-#endif  //  AS_UTL_DECODERANGE_H
+#endif // ifdef AS_UTL_GLP_H

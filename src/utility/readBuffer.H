@@ -1,6 +1,8 @@
 #ifndef READ_BUFFER_H
 #define READ_BUFFER_H
 
+#include "AS_global.H"
+#include "memoryMappedFile.H"
 
 class readBuffer {
 public:
@@ -8,40 +10,40 @@ public:
   readBuffer(FILE *F, uint64 bufferMax = 32 * 1024);
   ~readBuffer();
 
-  bool             eof(void) { return(_eof); };
+  bool                 eof(void) { return(_eof); };
 
-  char             peek(void);
+  char                 peek(void);
 
-  char             read(void);
-  uint64           read(void *buf, uint64 len);
-  uint64           read(void *buf, uint64 maxlen, char stop);
+  char                 read(void);
+  uint64               read(void *buf, uint64 len);
+  uint64               read(void *buf, uint64 maxlen, char stop);
 
-  void             seek(uint64 pos);
-  uint64           tell(void) { return(_filePos); };
+  void                 seek(uint64 pos);
+  uint64               tell(void) { return(_filePos); };
 
-  const char      *filename(void) { return(_filename); };
+  const char          *filename(void) { return(_filename); };
 
 private:
-  void             fillBuffer(void);
-  void             init(int fileptr, const char *filename, uint64 bufferMax);
+  void                 fillBuffer(void);
+  void                 init(int fileptr, const char *filename, uint64 bufferMax);
 
-  char           *_filename;
+  char               *_filename;
 
-  int             _file;
-  uint64          _filePos;
+  int                 _file;
+  uint64              _filePos;
 
-  bool            _mmap;
-  bool            _stdin;
+  memoryMappedFile   *_mmap;
+  bool                _stdin;
 
-  bool            _eof;
+  bool                _eof;
 
   //  If bufferMax is zero, then we are using the mmapped interface, otherwise,
   //  we are using a open()/read() and a small buffer.
 
-  uint64          _bufferPos;
-  uint64          _bufferLen;
-  uint64          _bufferMax;
-  char           *_buffer;
+  uint64              _bufferPos;
+  uint64              _bufferLen;
+  uint64              _bufferMax;
+  char               *_buffer;
 };
 
 

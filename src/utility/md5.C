@@ -1,9 +1,4 @@
-#include <stdio.h>
-#include <stdlib.h>
-#include <errno.h>
-#include <string.h>
-
-#include "util.h"
+#include "md5.H"
 
 //  The RSA MD5 implementation.  Functions md5_* (at the end) are glue
 //  to kmer libutil.
@@ -328,7 +323,7 @@ md5_string(md5_s *m, char *s, uint32 l) {
 
   if (m == NULL) {
     errno = 0;
-    m = (md5_s *)malloc(sizeof(md5_s));
+    m = new md5_s;
     if (errno) {
       fprintf(stderr, "md5_string()-- Can't allocate a md5_s.\n%s\n", strerror(errno));
       exit(1);
@@ -360,13 +355,13 @@ md5_increment_initialize(void) {
   md5_increment_s *m;
 
   errno = 0;
-  m = (md5_increment_s *)malloc(sizeof(md5_increment_s));
+  m = new md5_increment_s;
   if (errno) {
     fprintf(stderr, "md5_increment_*()-- Can't allocate a md5_increment_s.\n%s\n", strerror(errno));
     exit(1);
   }
 
-  m->context = (MD5_CTX *)malloc(sizeof(MD5_CTX));
+  m->context = new MD5_CTX;
   if (errno) {
     fprintf(stderr, "md5_increment_*()-- Can't allocate a md5 context.\n%s\n", strerror(errno));
     exit(1);
@@ -432,10 +427,10 @@ md5_increment_finalize(md5_increment_s *m) {
 
   m->context = 0L;
 
-  free(ctx);
+  delete ctx;
 }
 
 void
 md5_increment_destroy(md5_increment_s *m) {
-  free(m);
+  delete m;
 }

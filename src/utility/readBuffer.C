@@ -1,12 +1,14 @@
-#include "util++.H"
+#include "readBuffer.H"
+#include "memoryMappedFile.H"
 
+#if 0
 #include <stdio.h>
 #include <stdlib.h>
 #include <unistd.h>
 #include <errno.h>
 #include <string.h>
+#endif
 #include <fcntl.h>
-
 
 //  If bufferMax is zero, then the file is accessed using memory
 //  mapped I/O.  Otherwise, a small buffer is used.
@@ -16,7 +18,7 @@ readBuffer::readBuffer(const char *filename, uint64 bufferMax) {
   _filename    = 0L;
   _file        = 0;
   _filePos     = 0;
-  _mmap        = false;
+  _mmap        = NULL;
   _stdin       = false;
   _eof         = false;
   _bufferPos   = 0;
@@ -41,8 +43,8 @@ readBuffer::readBuffer(const char *filename, uint64 bufferMax) {
   }
 
   if (bufferMax == 0) {
-    _mmap   = true;
-    _buffer = (char *)mapFile(_filename, &_bufferLen, 'r');
+    _mmap   = new memoryMappedFile(_filename);
+    _buffer = (char *)_mmap->get(0);
   } else {
     errno = 0;
     _file = (_stdin) ? fileno(stdin) : open(_filename, O_RDONLY | O_LARGEFILE);
@@ -69,7 +71,7 @@ readBuffer::readBuffer(FILE *file, uint64 bufferMax) {
   _filename    = new char [32];
   _file        = fileno(file);
   _filePos     = 0;
-  _mmap        = false;
+  _mmap        = NULL;
   _stdin       = false;
   _eof         = false;
   _bufferPos   = 0;
@@ -98,7 +100,7 @@ readBuffer::~readBuffer() {
   delete [] _filename;
 
   if (_mmap)
-    unmapFile(_buffer, _bufferLen);
+    delete    _mmap;
   else
     delete [] _buffer;
 
@@ -129,7 +131,7 @@ readBuffer::fillBuffer(void) {
   if (errno == EAGAIN)
     goto again;
   if (errno)
-    fprintf(stderr, "readBuffer::fillBuffer()-- only read "uint64FMT" bytes, couldn't read "uint64FMT" bytes from '%s': %s\n",
+    fprintf(stderr, "readBuffer::fillBuffer()-- only read "F_U64" bytes, couldn't read "F_U64" bytes from '%s': %s\n",
             _bufferLen, _bufferMax, _filename, strerror(errno)), exit(1);
 
   if (_bufferLen == 0)
@@ -162,7 +164,7 @@ readBuffer::seek(uint64 pos) {
     errno = 0;
     lseek(_file, pos, SEEK_SET);
     if (errno)
-      fprintf(stderr, "readBuffer()-- '%s' couldn't seek to position "int64FMT": %s\n",
+      fprintf(stderr, "readBuffer()-- '%s' couldn't seek to position "F_SIZE_T": %s\n",
               _filename, pos, strerror(errno)), exit(1);
 
     _bufferLen = 0;
@@ -225,7 +227,7 @@ readBuffer::read(void *buf, uint64 len) {
     errno = 0;
     bAct = (uint64)::read(_file, bufchar + bCopied + bRead, len - bCopied - bRead);
     if (errno)
-      fprintf(stderr, "readBuffer()-- couldn't read "uint64FMT" bytes from '%s': n%s\n",
+      fprintf(stderr, "readBuffer()-- couldn't read "F_U64" bytes from '%s': n%s\n",
               len, _filename, strerror(errno)), exit(1);
 
     //  If we hit EOF, return a short read

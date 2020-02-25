@@ -1,45 +1,27 @@
 
 /******************************************************************************
  *
- *  This file is part of canu, a software program that assembles whole-genome
- *  sequencing reads into contigs.
+ *  This file is part of meryl-utility, a collection of miscellaneous code
+ *  used by Meryl, Canu and others.
  *
  *  This software is based on:
- *    'Celera Assembler' (http://wgs-assembler.sourceforge.net)
- *    the 'kmer package' (http://kmer.sourceforge.net)
- *  both originally distributed by Applera Corporation under the GNU General
- *  Public License, version 2.
+ *    'Canu' v2.0              (https://github.com/marbl/canu)
+ *  which is based on:
+ *    'Celera Assembler' r4587 (http://wgs-assembler.sourceforge.net)
+ *    the 'kmer package' r1994 (http://kmer.sourceforge.net)
  *
- *  Canu branched from Celera Assembler at its revision 4587.
- *  Canu branched from the kmer project at its revision 1994.
+ *  Except as indicated otherwise, this is a 'United States Government Work',
+ *  and is released in the public domain.
  *
- *  Modifications by:
- *
- *    Brian P. Walenz from 2007-AUG-03 to 2013-AUG-01
- *      are Copyright 2007-2009,2011-2013 J. Craig Venter Institute, and
- *      are subject to the GNU General Public License version 2
- *
- *    Sergey Koren on 2009-MAR-06
- *      are Copyright 2009 J. Craig Venter Institute, and
- *      are subject to the GNU General Public License version 2
- *
- *    Brian P. Walenz on 2015-MAR-03
- *      are Copyright 2015 Battelle National Biodefense Institute, and
- *      are subject to the BSD 3-Clause License
- *
- *    Brian P. Walenz beginning on 2015-NOV-08
- *      are a 'United States Government Work', and
- *      are released in the public domain
- *
- *  File 'README.licenses' in the root directory of this distribution contains
- *  full conditions and disclaimers for each license.
+ *  File 'README.licenses' in the root directory of this distribution
+ *  contains full conditions and disclaimers.
  */
 
-#include "AS_global.H"
-#include "canu_version.H"
-
+#include "types.H"
 #include "files.H"
 #include "system.H"
+
+#include "version.H"
 
 #ifdef X86_GCC_LINUX
 #include <fpu_control.h>
@@ -116,7 +98,7 @@ AS_configure(int argc, char **argv) {
 
   for (int32 i=0; i<argc; i++) {
     if (strcmp(argv[i], "--version") == 0) {
-      fputs(CANU_VERSION, stderr);
+      fputs(MERYL_UTILITY_VERSION, stderr);
       exit(0);
     }
   }
@@ -126,6 +108,7 @@ AS_configure(int argc, char **argv) {
   //  Logging.
   //
 
+#if 0
   char *p = getenv("CANU_DIRECTORY");
   if (p == NULL)
     return(argc);
@@ -191,6 +174,8 @@ AS_configure(int argc, char **argv) {
   fprintf(F, "\n");
 
   AS_UTL_closeFile(F, N, true);
+#endif
+
 
   return(argc);
 }

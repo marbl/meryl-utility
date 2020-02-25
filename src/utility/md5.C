@@ -1,9 +1,21 @@
-#include "md5.H"
 
-//  The RSA MD5 implementation.  Functions md5_* (at the end) are glue
-//  to kmer libutil.
-
-//  See RFC1321, "The MD5 Message-Digest Algorithm", R. Rivest.
+/******************************************************************************
+ *
+ *  This file is part of meryl-utility, a collection of miscellaneous code
+ *  used by Meryl, Canu and others.
+ *
+ *  This software is based on:
+ *    'Canu' v2.0              (https://github.com/marbl/canu)
+ *  which is based on:
+ *    'Celera Assembler' r4587 (http://wgs-assembler.sourceforge.net)
+ *    the 'kmer package' r1994 (http://kmer.sourceforge.net)
+ *
+ *  Except as indicated otherwise, this is a 'United States Government Work',
+ *  and is released in the public domain.
+ *
+ *  File 'README.licenses' in the root directory of this distribution
+ *  contains full conditions and disclaimers.
+ */
 
 //  Copyright (C) 1991-2, RSA Data Security, Inc. Created 1991. All
 //  rights reserved.
@@ -26,6 +38,9 @@
 //  These notices must be retained in any copies of any part of this
 //  documentation and/or software.
 
+//  See RFC1321, "The MD5 Message-Digest Algorithm", R. Rivest.
+
+#include "md5.H"
 
 typedef struct {
   uint32  state[4];                                   // state (ABCD)

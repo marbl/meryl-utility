@@ -17,6 +17,12 @@
  *  contains full conditions and disclaimers.
  */
 
+#ifndef SAMPLED_DISTRIBUTION_H
+#define SAMPLED_DISTRIBUTION_H
+
+#include "types.H"
+#include "arrays.H"
+
 class sampledDistribution {
 public:
   sampledDistribution() {
@@ -126,3 +132,5 @@ public:
   uint64   _dataSum;   //  Number of points in the input.  It's the sum of all _data[x].
 };
 
+
+#endif  //  SAMPLED_DISTRIBUTION_H

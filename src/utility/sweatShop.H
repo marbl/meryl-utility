@@ -20,10 +20,10 @@
 #ifndef SWEATSHOP_H
 #define SWEATSHOP_H
 
+#include "types.H"
+
 #include <pthread.h>
 #include <semaphore.h>
-
-#include "runtime.H"
 
 class sweatShopWorker;
 class sweatShopState;

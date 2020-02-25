@@ -20,7 +20,7 @@
 #ifndef SPEEDCOUNTER_H
 #define SPEEDCOUNTER_H
 
-#include "runtime.H"
+#include "types.H"
 #include "system.H"
 
 class speedCounter {

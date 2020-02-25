@@ -20,7 +20,7 @@
 #ifndef STRINGS_H
 #define STRINGS_H
 
-#include "runtime.H"
+#include "types.H"
 
 #include <set>
 #include <vector>

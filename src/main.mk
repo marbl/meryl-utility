@@ -84,9 +84,9 @@ SRC_INCDIRS  := . \
 SUBMAKEFILES := 
 
 ifeq ($(BUILDTESTS), 1)
-SUBMAKEFILES += utility/bitsTest.mk \
-                utility/filesTest.mk \
-                utility/intervalListTest.mk \
-                utility/loggingTest.mk \
-                utility/stddevTest.mk
+SUBMAKEFILES += tests/bitsTest.mk \
+                tests/filesTest.mk \
+                tests/intervalListTest.mk \
+                tests/loggingTest.mk \
+                tests/stddevTest.mk
 endif

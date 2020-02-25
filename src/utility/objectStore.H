@@ -17,7 +17,7 @@
  *  contains full conditions and disclaimers.
  */
 
-#include "runtime.H"
+#include "types.H"
 #include "files.H"
 
 //  Basic routines to fetch and stash files from an object store.

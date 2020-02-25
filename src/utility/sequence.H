@@ -20,7 +20,6 @@
 #ifndef LIBSEQUENCE_H
 #define LIBSEQUENCE_H
 
-#include "runtime.H"
 #include "types.H"
 #include "files.H"
 

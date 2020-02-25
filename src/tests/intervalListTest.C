@@ -17,7 +17,9 @@
  *  contains full conditions and disclaimers.
  */
 
+#include "runtime.H"
 #include "intervalList.H"
+
 #include "mt19937ar.H"
 
 //  g++ -o intervalListTest -I.. -I. intervalListTest.C

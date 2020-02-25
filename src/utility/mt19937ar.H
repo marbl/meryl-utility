@@ -20,7 +20,7 @@
 #ifndef MT19937AR_H
 #define MT19937AR_H
 
-#include "runtime.H"
+#include "types.H"
 
 //  Refactoring of
 //

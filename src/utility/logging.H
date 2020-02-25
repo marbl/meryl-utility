@@ -20,7 +20,7 @@
 #ifndef LOGGING_H
 #define LOGGING_H
 
-#include "runtime.H"
+#include "types.H"
 #include "files.H"
 
 const uint32 logFileLevelNameLen = 64;

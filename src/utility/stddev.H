@@ -20,7 +20,8 @@
 #ifndef STDDEV_H
 #define STDDEV_H
 
-#include "runtime.H"
+#include "types.H"
+#include "arrays.H"
 
 #include <vector>
 #include <algorithm>

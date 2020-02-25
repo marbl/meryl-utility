@@ -20,7 +20,7 @@
 #ifndef LIBKMER_H
 #define LIBKMER_H
 
-#include "runtime.H"
+#include "types.H"
 #include "system.H"
 #include "files.H"
 #include "bits.H"

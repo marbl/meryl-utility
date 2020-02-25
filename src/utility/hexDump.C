@@ -17,7 +17,7 @@
  *  contains full conditions and disclaimers.
  */
 
-#include "runtime.H"
+#include "types.H"
 
 
 //  Dump DATAlen bytes from DATA in a hex format.

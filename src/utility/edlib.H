@@ -42,7 +42,6 @@
 #ifndef EDLIB_H
 #define EDLIB_H
 
-#include "runtime.H"
 #include "types.H"
 
 /**

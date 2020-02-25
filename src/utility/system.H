@@ -20,7 +20,8 @@
 #ifndef SYSTEM_H
 #define SYSTEM_H
 
-#include "runtime.H"
+#include "types.H"
+
 #include <signal.h>
 
 

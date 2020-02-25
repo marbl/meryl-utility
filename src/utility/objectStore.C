@@ -17,10 +17,10 @@
  *  contains full conditions and disclaimers.
  */
 
-#include "runtime.H"
+#include "types.H"
+#include "strings.H"
 
 #include "objectStore.H"
-#include "strings.H"
 
 #include <libgen.h>
 #include <sys/wait.h>

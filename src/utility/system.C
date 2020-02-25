@@ -17,7 +17,8 @@
  *  contains full conditions and disclaimers.
  */
 
-#include "runtime.H"
+#include "types.H"
+#include "system.H"
 
 #include <sys/types.h>
 #include <sys/time.h>

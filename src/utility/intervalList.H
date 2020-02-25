@@ -20,7 +20,8 @@
 #ifndef INTERVALLIST_H
 #define INTERVALLIST_H
 
-#include "runtime.H"
+#include "types.H"
+#include "arrays.H"
 
 #include <algorithm>
 

@@ -42,6 +42,8 @@ SOURCES      := utility/runtime.C \
                 \
                 utility/sequence.C \
                 \
+                utility/types.C \
+                \
                 utility/kmers.C \
                 utility/kmers-reader.C \
                 utility/kmers-writer.C \

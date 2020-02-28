@@ -80,29 +80,32 @@ typedef uint16_t uint16;
 typedef uint32_t uint32;
 typedef uint64_t uint64;
 
-//  Correct?  Or should it be LLU and LU?
-#define  uint64NUMBER(X) X ## LU
-#define  uint32NUMBER(X) X ## U
+typedef __int128            int128;
+typedef unsigned __int128  uint128;
+
+#define  uint128NUMBER(A,B)   ((((uint128)A) << 64) | ((uint128)B))
+#define  uint64NUMBER(X) X ## LLU
+#define  uint32NUMBER(X) X ## LU
 
 #define  uint64ZERO      uint64NUMBER(0x0000000000000000)
 #define  uint64ONE       uint64NUMBER(0x0000000000000001)
 #define  uint64MAX       uint64NUMBER(0xffffffffffffffff)
-#define  uint64MASK(X)   ((~uint64ZERO) >> (64 - (X)))
+#define  uint64MASK(X)   (((~uint64ZERO) >> (64 - (X))) & (-(uint64)((X) != 0)))
 
 #define  uint32ZERO      uint32NUMBER(0x00000000)
 #define  uint32ONE       uint32NUMBER(0x00000001)
 #define  uint32MAX       uint32NUMBER(0xffffffff)
-#define  uint32MASK(X)   ((~uint32ZERO) >> (32 - (X)))
+#define  uint32MASK(X)   (((~uint32ZERO) >> (32 - (X))) & (-(uint32)((X) != 0)))
 
 #define  uint16ZERO      (0x0000)
 #define  uint16ONE       (0x0001)
 #define  uint16MAX       (0xffff)
-#define  uint16MASK(X)   ((~uint16ZERO) >> (16 - (X)))
+#define  uint16MASK(X)   (((~uint16ZERO) >> (16 - (X))) & (-(uint16)((X) != 0)))
 
 #define  uint8ZERO       (0x00)
 #define  uint8ONE        (0x01)
 #define  uint8MAX        (0xff)
-#define  uint8MASK(X)    ((~uint8ZERO) >> (8 - (X)))
+#define  uint8MASK(X)    (((~uint8ZERO) >> (8 - (X))) & (-(uint8)((X) != 0)))
 
 
 inline  int32  strtoint32 (char *str)  {  return( (int32)strtol  (str, NULL, 10));  }
@@ -119,6 +122,9 @@ inline void    strtonumber(double &num, char *str, char **rem)  {  num = (double
 
 inline  int32  doubletoint32(double d)   { return((int32) ((1.0 + 16.0 * DBL_EPSILON) * d));  };
 inline  int64  doubletoint64(double d)   { return((int64) ((1.0 + 16.0 * DBL_EPSILON) * d));  };
+
+template<typename uintType> char const *toHex(uintType v);
+template<typename uintType> char const *toDec(uintType v);
 
 // These macros are use to eliminate inter-platform differnces between
 // calculated results

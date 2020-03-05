@@ -18,12 +18,9 @@
  */
 
 #include "kmers.H"
-#include "bits.H"
-
-#include "files.H"
 
 
-kmerCountStatistics::kmerCountStatistics() {
+merylHistogram::merylHistogram() {
   _numUnique     = 0;
   _numDistinct   = 0;
   _numTotal      = 0;
@@ -40,7 +37,7 @@ kmerCountStatistics::kmerCountStatistics() {
 }
 
 
-kmerCountStatistics::~kmerCountStatistics() {
+merylHistogram::~merylHistogram() {
   delete [] _hist;
   delete [] _histVs;
   delete [] _histOs;
@@ -49,7 +46,7 @@ kmerCountStatistics::~kmerCountStatistics() {
 
 
 void
-kmerCountStatistics::clear(void) {
+merylHistogram::clear(void) {
   _numUnique     = 0;
   _numDistinct   = 0;
   _numTotal      = 0;
@@ -70,7 +67,7 @@ kmerCountStatistics::clear(void) {
 
 
 void
-kmerCountStatistics::dump(stuffedBits *bits) {
+merylHistogram::dump(stuffedBits *bits) {
 
   //  This only writes the latest version.
 
@@ -86,8 +83,6 @@ kmerCountStatistics::dump(stuffedBits *bits) {
   for (uint32 ii=0; ii<_histMax; ii++)
     if (_hist[ii] > 0)
       numValues++;
-
-  //
 
   bits->setBinary(64, numValues);
 
@@ -109,7 +104,7 @@ kmerCountStatistics::dump(stuffedBits *bits) {
 
 
 void
-kmerCountStatistics::dump(FILE        *outFile) {
+merylHistogram::dump(FILE        *outFile) {
   stuffedBits  *bits = new stuffedBits;
 
   dump(bits);
@@ -122,7 +117,7 @@ kmerCountStatistics::dump(FILE        *outFile) {
 
 
 void
-kmerCountStatistics::load_v01(stuffedBits *bits) {
+merylHistogram::load_v01(stuffedBits *bits) {
   uint32  histLast;
   uint32  hbigLen;
 
@@ -133,7 +128,7 @@ kmerCountStatistics::load_v01(stuffedBits *bits) {
   histLast     = bits->getBinary(32);
   hbigLen      = bits->getBinary(32);
 
-  //fprintf(stderr, "kmerCountStatistics::load_v01()-- %lu %lu %lu %u %u\n",
+  //fprintf(stderr, "merylHistogram::load_v01()-- %lu %lu %lu %u %u\n",
   //        _numUnique, _numDistinct, _numTotal, histLast, hbigLen);
 
   //  Load the histogram values.
@@ -183,14 +178,14 @@ kmerCountStatistics::load_v01(stuffedBits *bits) {
 
 
 void
-kmerCountStatistics::load_v03(stuffedBits *bits) {
+merylHistogram::load_v03(stuffedBits *bits) {
 
   _numUnique   = bits->getBinary(64);
   _numDistinct = bits->getBinary(64);
   _numTotal    = bits->getBinary(64);
   _histLen     = bits->getBinary(64);
 
-  //fprintf(stderr, "kmerCountStatistics::load_v03()-- %lu %lu %lu %lu\n",
+  //fprintf(stderr, "merylHistogram::load_v03()-- %lu %lu %lu %lu\n",
   //        _numUnique, _numDistinct, _numTotal, _histLen);
 
   //  Allocate space.
@@ -214,8 +209,8 @@ kmerCountStatistics::load_v03(stuffedBits *bits) {
 
 
 void
-kmerCountStatistics::load(stuffedBits *bits,
-                          uint32       version) {
+merylHistogram::load(stuffedBits *bits,
+                     uint32       version) {
 
   switch (version) {
     case 1:
@@ -226,7 +221,7 @@ kmerCountStatistics::load(stuffedBits *bits,
       load_v03(bits);
       break;
     default:
-      fprintf(stderr, "kmerCountStatistics::load()-- Unknown version %u\n", version), exit(1);
+      fprintf(stderr, "merylHistogram::load()-- Unknown version %u\n", version), exit(1);
       break;
   }
 }
@@ -234,8 +229,8 @@ kmerCountStatistics::load(stuffedBits *bits,
 
 
 void
-kmerCountStatistics::load(FILE        *inFile,
-                          uint32       version) {
+merylHistogram::load(FILE        *inFile,
+                     uint32       version) {
   stuffedBits  *bits = new stuffedBits;
 
   bits->loadFromFile(inFile);

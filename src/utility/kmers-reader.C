@@ -18,15 +18,11 @@
  */
 
 #include "kmers.H"
-#include "bits.H"
-
-#include "files.H"
-
 
 
 //  Clear all members and allocate buffers.
 void
-kmerCountFileReader::initializeFromMasterI_v00(void) {
+merylFileReader::initializeFromMasterI_v00(void) {
 
   _prefixSize    = 0;
   _suffixSize    = 0;
@@ -41,7 +37,7 @@ kmerCountFileReader::initializeFromMasterI_v00(void) {
 
   _datFile       = NULL;
 
-  _block         = new kmerCountFileReaderBlock();
+  _block         = new merylFileBlockReader();
   _blockIndex    = NULL;
 
   _kmer          = kmer();
@@ -56,16 +52,16 @@ kmerCountFileReader::initializeFromMasterI_v00(void) {
 
   _nKmers        = 0;
   _nKmersMax     = 1024;
-  _suffixes      = new uint64 [_nKmersMax];
-  _values        = new uint64 [_nKmersMax];
+  _suffixes      = new kmdata [_nKmersMax];
+  _values        = new kmvalu [_nKmersMax];
 }
 
 
 
 //  Initialize for the original.
 void
-kmerCountFileReader::initializeFromMasterI_v01(stuffedBits  *masterIndex,
-                                               bool          doInitialize) {
+merylFileReader::initializeFromMasterI_v01(stuffedBits  *masterIndex,
+                                           bool          doInitialize) {
 
   if (doInitialize == true) {
     initializeFromMasterI_v00();
@@ -91,8 +87,8 @@ kmerCountFileReader::initializeFromMasterI_v01(stuffedBits  *masterIndex,
 
 //  Initialize for the format that includes multi sets.
 void
-kmerCountFileReader::initializeFromMasterI_v02(stuffedBits  *masterIndex,
-                                               bool          doInitialize) {
+merylFileReader::initializeFromMasterI_v02(stuffedBits  *masterIndex,
+                                           bool          doInitialize) {
 
   if (doInitialize == true) {
     initializeFromMasterI_v00();
@@ -121,17 +117,17 @@ kmerCountFileReader::initializeFromMasterI_v02(stuffedBits  *masterIndex,
 
 
 void
-kmerCountFileReader::initializeFromMasterI_v03(stuffedBits  *masterIndex,
-                                               bool          doInitialize) {
+merylFileReader::initializeFromMasterI_v03(stuffedBits  *masterIndex,
+                                           bool          doInitialize) {
   initializeFromMasterI_v02(masterIndex, doInitialize);
 }
 
 
 
 void
-kmerCountFileReader::initializeFromMasterIndex(bool  doInitialize,
-                                               bool  loadStatistics,
-                                               bool  beVerbose) {
+merylFileReader::initializeFromMasterIndex(bool  doInitialize,
+                                           bool  loadStatistics,
+                                           bool  beVerbose) {
   char   N[FILENAME_MAX+1];
 
   snprintf(N, FILENAME_MAX, "%s/merylIndex", _inName);
@@ -184,7 +180,7 @@ kmerCountFileReader::initializeFromMasterIndex(bool  doInitialize,
   //  the proper position.
 
   if (loadStatistics == true) {
-    _stats = new kmerCountStatistics;
+    _stats = new merylHistogram;
     _stats->load(masterIndex, vv);
   }
 
@@ -211,7 +207,7 @@ kmerCountFileReader::initializeFromMasterIndex(bool  doInitialize,
 
 
 
-kmerCountFileReader::kmerCountFileReader(const char *inputName,
+merylFileReader::merylFileReader(const char *inputName,
                                          bool        beVerbose) {
   strncpy(_inName, inputName, FILENAME_MAX);
   initializeFromMasterIndex(true, false, beVerbose);
@@ -219,7 +215,7 @@ kmerCountFileReader::kmerCountFileReader(const char *inputName,
 
 
 
-kmerCountFileReader::kmerCountFileReader(const char *inputName,
+merylFileReader::merylFileReader(const char *inputName,
                                          uint32      threadFile,
                                          bool        beVerbose) {
   strncpy(_inName, inputName, FILENAME_MAX);
@@ -229,7 +225,7 @@ kmerCountFileReader::kmerCountFileReader(const char *inputName,
 
 
 
-kmerCountFileReader::~kmerCountFileReader() {
+merylFileReader::~merylFileReader() {
 
   delete [] _blockIndex;
 
@@ -246,7 +242,7 @@ kmerCountFileReader::~kmerCountFileReader() {
 
 
 void
-kmerCountFileReader::loadStatistics(void) {
+merylFileReader::loadStatistics(void) {
   if (_stats == NULL)
     initializeFromMasterIndex(false, true, false);
 }
@@ -254,7 +250,7 @@ kmerCountFileReader::loadStatistics(void) {
 
 
 void
-kmerCountFileReader::dropStatistics(void) {
+merylFileReader::dropStatistics(void) {
   delete _stats;
   _stats = NULL;
 }
@@ -262,7 +258,7 @@ kmerCountFileReader::dropStatistics(void) {
 
 
 void
-kmerCountFileReader::enableThreads(uint32 threadFile) {
+merylFileReader::enableThreads(uint32 threadFile) {
   _activeFile = threadFile;
   _threadFile = threadFile;
 }
@@ -270,18 +266,18 @@ kmerCountFileReader::enableThreads(uint32 threadFile) {
 
 
 void
-kmerCountFileReader::loadBlockIndex(void) {
+merylFileReader::loadBlockIndex(void) {
 
   if (_blockIndex != NULL)
     return;
 
-  _blockIndex = new kmerCountFileIndex [_numFiles * _numBlocks];
+  _blockIndex = new merylFileIndex [_numFiles * _numBlocks];
 
   for (uint32 ii=0; ii<_numFiles; ii++) {
     char  *idxname = constructBlockName(_inName, ii, _numFiles, 0, true);
     FILE  *idxfile = AS_UTL_openInputFile(idxname);
 
-    loadFromFile(_blockIndex + _numBlocks * ii, "kmerCountFileReader::blockIndex", _numBlocks, idxfile);
+    loadFromFile(_blockIndex + _numBlocks * ii, "merylFileReader::blockIndex", _numBlocks, idxfile);
 
     AS_UTL_closeFile(idxfile, idxname);
 
@@ -296,14 +292,38 @@ kmerCountFileReader::loadBlockIndex(void) {
 //
 void
 dumpMerylDataFile(char *name) {
+  FILE            *F = NULL;
+  merylFileIndex   I;
+  stuffedBits     *D = NULL;
 
-  if (fileExists(name) == false)
-    fprintf(stderr, "ERROR: '%s' doesn't exist.  Can't dump it.\n",
+  //  Dump the merylIndex for this block.
+
+  if (fileExists(name, '.', "merylIndex") == false)
+    fprintf(stderr, "ERROR: '%s.merylIndex' doesn't exist.  Can't dump it.\n",
             name), exit(1);
 
-  FILE                     *F = AS_UTL_openInputFile(name);
-  stuffedBits              *D = new stuffedBits;
+  F = AS_UTL_openInputFile(name, '.', "merylIndex");
 
+  fprintf(stdout, "\n");
+  fprintf(stdout, "            prefix    blkPos    nKmers\n");
+  fprintf(stdout, "------------------ --------- ---------\n");
+
+  while (loadFromFile(I, "merylFileIndex", F, false) != 0) {
+    fprintf(stdout, "0x%016lx %9lu %9lu\n", I.blockPrefix(), I.blockPosition(), I.numKmers());
+  }
+
+  AS_UTL_closeFile(F);
+
+  //  Read each block, sequentially, and report the header.
+
+  if (fileExists(name, '.', "merylData") == false)
+    fprintf(stderr, "ERROR: '%s.merylData' doesn't exist.  Can't dump it.\n",
+            name), exit(1);
+
+  F = AS_UTL_openInputFile(name, '.', "merylData");
+  D = new stuffedBits;
+
+  fprintf(stdout, "\n");
   fprintf(stdout, "            prefix   nKmers kCode uBits bBits                 k1 cCode                 c1                 c2\n");
   fprintf(stdout, "------------------ -------- ----- ----- ----- ------------------ ----- ------------------ ------------------\n");
 
@@ -327,9 +347,9 @@ dumpMerylDataFile(char *name) {
 
     if ((m1 != 0x7461446c7972656dllu) ||
         (m2 != 0x0a3030656c694661llu)) {
-      fprintf(stderr, "kmerCountFileReader::nextMer()-- Magic number mismatch at position " F_U64 ".\n", position);
-      fprintf(stderr, "kmerCountFileReader::nextMer()-- Expected 0x7461446c7972656d got 0x%016" F_X64P "\n", m1);
-      fprintf(stderr, "kmerCountFileReader::nextMer()-- Expected 0x0a3030656c694661 got 0x%016" F_X64P "\n", m2);
+      fprintf(stderr, "merylFileReader::nextMer()-- Magic number mismatch at position " F_U64 ".\n", position);
+      fprintf(stderr, "merylFileReader::nextMer()-- Expected 0x7461446c7972656d got 0x%016" F_X64P "\n", m1);
+      fprintf(stderr, "merylFileReader::nextMer()-- Expected 0x0a3030656c694661 got 0x%016" F_X64P "\n", m2);
       exit(1);
     }
 
@@ -340,12 +360,90 @@ dumpMerylDataFile(char *name) {
   delete D;
 
   AS_UTL_closeFile(F);
+
+  //  Read each block again, dump the kmers in the block.
+
+  F = AS_UTL_openInputFile(name, '.', "merylData");
+  D = new stuffedBits;
+
+  while (D->loadFromFile(F)) {
+    uint64 position   = D->getPosition();
+
+    uint64 m1         = D->getBinary(64);
+    uint64 m2         = D->getBinary(64);
+
+    uint64 prefix     = D->getBinary(64);
+    uint64 nKmers     = D->getBinary(64);
+
+    uint8  kCode      = D->getBinary(8);
+    uint32 unaryBits  = D->getBinary(32);
+    uint32 binaryBits = D->getBinary(32);
+    uint64 k1         = D->getBinary(64);
+
+    uint8  cCode      = D->getBinary(8);
+    uint64 c1         = D->getBinary(64);
+    uint64 c2         = D->getBinary(64);
+
+    fprintf(stdout, "\n");
+    fprintf(stdout, " kmerIdx prefixDelta      prefix |--- suffix-size and both suffixes ---|    value\n");
+    fprintf(stdout, "-------- ----------- ----------- -- ---------------- -- ---------------- --------\n");
+
+    uint64   *pd = new uint64 [nKmers];
+    uint64   *s1 = new uint64 [nKmers];
+    uint64   *s2 = new uint64 [nKmers];
+    uint64   *va = new uint64 [nKmers];
+
+    uint32    ls = (binaryBits <= 64) ? (0)          : (binaryBits - 64);
+    uint32    rs = (binaryBits <= 64) ? (binaryBits) : (64);
+
+    uint64    tp = 0;
+
+    //  Get all the kmers.
+    for (uint32 kk=0; kk<nKmers; kk++) {
+      if (kCode == 1) {
+        pd[kk] = D->getUnary();
+        s1[kk] = D->getBinary(ls);
+        s2[kk] = D->getBinary(rs);
+      }
+
+      else {
+        fprintf(stderr, "ERROR: unknown kCode %u\n", kCode), exit(1);
+      }
+    }
+
+    //  Get all the values.
+    for (uint32 kk=0; kk<nKmers; kk++) {
+      if      (cCode == 1) {
+        va[kk] = D->getBinary(32);
+      }
+
+      else if (cCode == 2) {
+        va[kk] = D->getBinary(64);
+      }
+
+      else {
+        fprintf(stderr, "ERROR: unknown cCode %u\n", cCode), exit(1);
+      }
+    }
+
+    //  Dump.
+    for (uint32 kk=0; kk<nKmers; kk++) {
+      tp += pd[kk];
+
+      fprintf(stdout, "%8u %11u %011x %2u %016lx %2u %016lx %8lx\n",
+              kk, pd[kk], tp, ls, s1[kk], rs, s2[kk], va[kk]);
+    }
+  }
+
+  delete D;
+
+  AS_UTL_closeFile(F);
 }
 
 
 
 bool
-kmerCountFileReader::nextMer(void) {
+merylFileReader::nextMer(void) {
 
   _activeMer++;
 

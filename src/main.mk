@@ -44,13 +44,14 @@ SOURCES      := utility/runtime.C \
                 \
                 utility/types.C \
                 \
-                utility/kmers.C \
+                utility/kmers-exact.C \
+                utility/kmers-files.C \
+                utility/kmers-histogram.C \
                 utility/kmers-reader.C \
-                utility/kmers-writer.C \
                 utility/kmers-writer-block.C \
                 utility/kmers-writer-stream.C \
-                utility/kmers-statistics.C \
-                utility/kmers-exact.C \
+                utility/kmers-writer.C \
+                utility/kmers.C \
                 \
                 utility/bits.C \
                 \

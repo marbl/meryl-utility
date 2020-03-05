@@ -18,13 +18,9 @@
  */
 
 #include "kmers.H"
-#include "bits.H"
-
-#include "files.H"
 
 
-
-kmerCountBlockWriter::kmerCountBlockWriter(kmerCountFileWriter *writer) {
+merylBlockWriter::merylBlockWriter(merylFileWriter *writer) {
 
   _writer = writer;
 
@@ -44,12 +40,12 @@ kmerCountBlockWriter::kmerCountBlockWriter(kmerCountFileWriter *writer) {
 
   //  File data
 
-  _datFiles      = new FILE *               [_numFiles];
-  _datFileIndex  = new kmerCountFileIndex * [_numFiles];
+  _datFiles      = new FILE *           [_numFiles];
+  _datFileIndex  = new merylFileIndex * [_numFiles];
 
   for (uint32 ii=0; ii<_numFiles; ii++) {
     _datFiles[ii]     = NULL;
-    _datFileIndex[ii] = new kmerCountFileIndex [_numBlocks];
+    _datFileIndex[ii] = new merylFileIndex [_numBlocks];
   }
 
   //  Kmer data
@@ -59,7 +55,7 @@ kmerCountBlockWriter::kmerCountBlockWriter(kmerCountFileWriter *writer) {
 
 
 
-kmerCountBlockWriter::~kmerCountBlockWriter() {
+merylBlockWriter::~merylBlockWriter() {
 
   //  Check that all output files are closed.  If not,
   //  finishIteration() was never called.  Since that's somewhat heavy-weight,
@@ -80,7 +76,7 @@ kmerCountBlockWriter::~kmerCountBlockWriter() {
     char  *idxname = constructBlockName(_outName, ii, _numFiles, 0, true);
     FILE  *idxfile = AS_UTL_openOutputFile(idxname);
 
-    writeToFile(_datFileIndex[ii], "kmerCountBlockWriter::fileIndex", _numBlocks, idxfile);
+    writeToFile(_datFileIndex[ii], "merylBlockWriter::fileIndex", _numBlocks, idxfile);
 
     AS_UTL_closeFile(idxfile, idxname);
 
@@ -92,24 +88,19 @@ kmerCountBlockWriter::~kmerCountBlockWriter() {
     delete [] _datFileIndex[ii];
 
   delete [] _datFileIndex;
-
-  //  Tell the master that we're done.
-
-  //for (uint32 ii=0; ii<_numFiles; ii++)
-  //  _writer->_stats.import(_stats);
 }
 
 
 
 //  We're given a block of kmers with the same prefix, sorted, with values.
-//  Which is exactly what kmerCountFileWriter wants, so we can just forward
+//  Which is exactly what merylFileWriter wants, so we can just forward
 //  the call to it.
 //
 void
-kmerCountBlockWriter::addBlock(uint64  prefix,
-                               uint64  nKmers,
-                               uint64 *suffixes,
-                               uint32 *values) {
+merylBlockWriter::addBlock(kmpref  prefix,
+                           uint64  nKmers,
+                           kmdata *suffixes,
+                           kmvalu *values) {
 
   //  Open a new file, if needed.
 
@@ -128,37 +119,7 @@ kmerCountBlockWriter::addBlock(uint64  prefix,
 
   //  Insert values into the histogram.
 
-#pragma omp critical (kmerCountFileWriterAddValue)
-  for (uint32 kk=0; kk<nKmers; kk++)
-    _writer->_stats.addValue(values[kk]);
-}
-
-
-
-void
-kmerCountBlockWriter::addBlock(uint64  prefix,
-                               uint64  nKmers,
-                               uint64 *suffixes,
-                               uint64 *values) {
-
-  //  Open a new file, if needed.
-
-  uint32 oi = _writer->fileNumber(prefix);
-
-  if (_datFiles[oi] == NULL)
-    _datFiles[oi] = openOutputBlock(_outName, oi, _numFiles, _iteration);
-
-  //  Encode and dump to disk.
-
-  _writer->writeBlockToFile(_datFiles[oi], _datFileIndex[oi],
-                            prefix,
-                            nKmers,
-                            suffixes,
-                            values);
-
-  //  Insert values into the histogram.
-
-#pragma omp critical (kmerCountFileWriterAddValue)
+#pragma omp critical (merylFileWriterAddValue)
   for (uint32 kk=0; kk<nKmers; kk++)
     _writer->_stats.addValue(values[kk]);
 }
@@ -169,7 +130,7 @@ kmerCountBlockWriter::addBlock(uint64  prefix,
 //  Write their merylIndex files.
 //  Clear the index data in memory.
 void
-kmerCountBlockWriter::closeFileDumpIndex(uint32 oi, uint32 iteration) {
+merylBlockWriter::closeFileDumpIndex(uint32 oi, uint32 iteration) {
 
   //  Close all data files.
 
@@ -183,7 +144,7 @@ kmerCountBlockWriter::closeFileDumpIndex(uint32 oi, uint32 iteration) {
   char  *idxname = constructBlockName(_outName, oi, _numFiles, iteration, true);
   FILE  *idxfile = AS_UTL_openOutputFile(idxname);
 
-  writeToFile(_datFileIndex[oi], "kmerCountBlockWriter::fileIndex", _numBlocks, idxfile);
+  writeToFile(_datFileIndex[oi], "merylBlockWriter::fileIndex", _numBlocks, idxfile);
 
   AS_UTL_closeFile(idxfile, idxname);
 
@@ -196,7 +157,7 @@ kmerCountBlockWriter::closeFileDumpIndex(uint32 oi, uint32 iteration) {
 
 
 void
-kmerCountBlockWriter::finishBatch(void) {
+merylBlockWriter::finishBatch(void) {
 
   for (uint32 ii=0; ii<_numFiles; ii++)
     closeFileDumpIndex(ii);
@@ -207,7 +168,7 @@ kmerCountBlockWriter::finishBatch(void) {
 
 
 void
-kmerCountBlockWriter::finish(void) {
+merylBlockWriter::finish(void) {
 
   fprintf(stderr, "finishIteration()--\n");
 
@@ -256,9 +217,9 @@ kmerCountBlockWriter::finish(void) {
 
 
 void
-kmerCountBlockWriter::mergeBatches(uint32 oi) {
-  kmerCountFileReaderBlock    inBlocks[_iteration + 1];
-  FILE                       *inFiles [_iteration + 1];
+merylBlockWriter::mergeBatches(uint32 oi) {
+  merylFileBlockReader    inBlocks[_iteration + 1];
+  FILE                   *inFiles [_iteration + 1];
 
   //  Open the input files, allocate blocks.
 
@@ -276,8 +237,8 @@ kmerCountBlockWriter::mergeBatches(uint32 oi) {
   //  Create space to save out suffixes and values.
 
   uint64    nKmersMax = 0;
-  uint64   *suffixes  = NULL;
-  uint64   *values    = NULL;
+  kmdata   *suffixes  = NULL;
+  kmvalu   *values    = NULL;
 
   uint64    kmersIn   = 0;
   uint64    kmersOut  = 0;
@@ -286,8 +247,8 @@ kmerCountBlockWriter::mergeBatches(uint32 oi) {
 
   uint32    p[_iteration+1];  //  Position in s[] and v[]
   uint64    l[_iteration+1];  //  Number of entries in s[] and v[]
-  uint64   *s[_iteration+1];  //  Pointer to the suffixes for piece x
-  uint64   *v[_iteration+1];  //  Pointer to the values   for piece x
+  kmdata   *s[_iteration+1];  //  Pointer to the suffixes for piece x
+  kmvalu   *v[_iteration+1];  //  Pointer to the values   for piece x
 
   for (uint32 bb=0; bb<_numBlocks; bb++) {
     uint64  totnKmers = 0;
@@ -309,15 +270,15 @@ kmerCountBlockWriter::mergeBatches(uint32 oi) {
 
     //  Check that everyone has loaded the same prefix.
 
-    uint64  prefix = inBlocks[1].prefix();
+    kmpref  prefix = inBlocks[1].prefix();
 
     //fprintf(stderr, "MERGE prefix 0x%04lx %8lu kmers and 0x%04lx %8lu kmers.\n",
     //        prefix, l[1], inBlocks[2].prefix(), l[2]);
 
     for (uint32 ii=1; ii <= _iteration; ii++) {
       if (prefix != inBlocks[ii].prefix())
-        fprintf(stderr, "ERROR: File %u segments 1 and %u differ in prefix: 0x%016lx vs 0x%016lx\n",
-                oi, ii, prefix, inBlocks[ii].prefix());
+        fprintf(stderr, "ERROR: File %u segments 1 and %u differ in prefix: 0x%s vs 0x%s\n",
+                oi, ii, toHex(prefix), toHex(inBlocks[ii].prefix()));
       assert(prefix == inBlocks[ii].prefix());
     }
 
@@ -329,8 +290,8 @@ kmerCountBlockWriter::mergeBatches(uint32 oi) {
     //  to loop infinitely.
 
     while (1) {
-      uint64  minSuffix = UINT64_MAX;
-      uint64  sumValue  = 0;
+      kmdata  minSuffix = ~((kmdata)0);
+      kmvalu  sumValue  = 0;
 
       //  Find the smallest suffix over all the inputs;
       //  Remember the sum of their values.
@@ -350,7 +311,7 @@ kmerCountBlockWriter::mergeBatches(uint32 oi) {
 
       //  If no values, we're done.
 
-      if ((minSuffix == UINT64_MAX) && (sumValue == 0))
+      if ((minSuffix == ~((kmdata)0)) && (sumValue == 0))
         break;
 
       //  Set the suffix/value in our merged list, reallocating if needed.
@@ -361,7 +322,7 @@ kmerCountBlockWriter::mergeBatches(uint32 oi) {
       savnKmers++;
 
       if (savnKmers > nKmersMax)
-        fprintf(stderr, "savnKmers %lu > nKmersMax %lu\n", savnKmers, nKmersMax);
+        fprintf(stderr, "savnKmers %lu > nKmersMax %lu minSuffix 0x%s\n", savnKmers, nKmersMax, toHex(minSuffix));
       assert(savnKmers <= nKmersMax);
 
       //  Move to the next element of the lists we pulled data from.  If the list is
@@ -384,7 +345,7 @@ kmerCountBlockWriter::mergeBatches(uint32 oi) {
 
     //  Finally, don't forget to insert the values into the histogram!
 
-#pragma omp critical (kmerCountBlockWriterAddValue)
+#pragma omp critical (merylBlockWriterAddValue)
     for (uint32 kk=0; kk<savnKmers; kk++)
       _writer->_stats.addValue(values[kk]);
 

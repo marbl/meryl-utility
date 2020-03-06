@@ -187,17 +187,38 @@ template void reverseComplement<uint8>(char *seq, uint8 *qlt, int len);   //  so
 
 
 
+//  Compress homopolymer runs to a single letter.  Returns the length of the
+//  compressed sequence.
+//
+//  'bases' does not need to be NUL terminated.
+//
+//  If 'compr' is supplied, the compressed sequence is returned.  'compr' can be
+//  the same array as 'bases'.  The output string is always NUL terminated.
+//
+//  If 'ntoc' is supplied, a mapping from 'normal' position to 'compressed'
+//  position is returned.  This output is INCORRECT if 'skip' is set (the
+//  values of any skipped bases are undefined).
+//
+//  If 'skip' is set, ignore these bases at the start of the sequence that
+//  are the same.  This is to allow one to homopoly compress a sequence in
+//  chunks; compress the first 1000 bases, the the next 1000, and so on.
+//  Each pass sets skip to the last base of the previous chunk.
+//
 uint32
-homopolyCompress(char *bases, uint32 basesLen, char *compr, uint32 *ntoc) {
+homopolyCompress(char *bases, uint32 basesLen, char *compr, uint32 *ntoc, char skip) {
   uint32  cc = 0;  //  position of the start of the run
   uint32  rr = 1;  //  position of the scan head
   uint32  sl = 0;  //  length of the compressed sequence
 
-  if (compr)                 //  Either the first base, or
-    compr[sl] = bases[cc];   //  the terminating NUL.
+  while ((bases[cc] == skip) &&   //  If 'skip' is set, ignore these bases
+         (cc < basesLen))         //  at the start of 'bases'.
+    cc++;
 
-  if (ntoc)                  //  Save the mapping from the first
-    ntoc[cc] = sl;           //  normal to first compressed base.
+  if (compr)                      //  Either the first base, or
+    compr[sl] = bases[cc];        //  the terminating NUL.
+
+  if (ntoc)                       //  Save the mapping from the first
+    ntoc[cc] = sl;                //  normal to first compressed base.
 
   if (basesLen == 0)
     return(0);
@@ -208,7 +229,7 @@ homopolyCompress(char *bases, uint32 basesLen, char *compr, uint32 *ntoc) {
 
     //  In a run, move the scan head one position, and set the
     //  mapping to the last compressed base.
-    if ((bases[cc] | 0x20) == (bases[rr] | 0x20)) {
+    if ((bases[cc] | 0x20) == (bases[rr] | 0x20)) {    //  Convert to lowercase before comparing.
       if (ntoc)
         ntoc[rr] = sl - 1;
       rr++;

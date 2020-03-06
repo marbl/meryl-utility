@@ -31,7 +31,7 @@ char  *reverseComplementCopy(char *seq, int len);
 template<typename qvType>
 void   reverseComplement(char *seq, qvType *qlt, int len);
 
-uint32 homopolyCompress(char *bases, uint32 basesLen, char   *compr=NULL, uint32 *ntoc=NULL);
+uint32 homopolyCompress(char *bases, uint32 basesLen, char *compr=NULL, uint32 *ntoc=NULL, char skip=0x7f);
 
 
 //  Encode a sequence into chunk.  The length of the chunk in bytes is returned.

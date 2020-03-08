@@ -211,8 +211,10 @@ homopolyCompress(char *bases, uint32 basesLen, char *compr, uint32 *ntoc, char s
   uint32  sl = 0;  //  length of the compressed sequence
 
   while ((bases[cc] == skip) &&   //  If 'skip' is set, ignore these bases
-         (cc < basesLen))         //  at the start of 'bases'.
+         (cc < basesLen)) {        //  at the start of 'bases'.
     cc++;
+    rr++;
+  }
 
   if (compr)                      //  Either the first base, or
     compr[sl] = bases[cc];        //  the terminating NUL.

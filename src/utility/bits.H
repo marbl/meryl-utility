@@ -793,9 +793,7 @@ private:
   }
 
   void     clearBlock(void) {
-    uint64 mm = _dataBlockLenMax / 64;
-
-    for (uint64 ii=0; ii<mm; ii++)
+    for (uint64 ii=0; ii<_dataBlockLenMaxW; ii++)
       _data[ii] = 0;
   };
   
@@ -808,7 +806,7 @@ private:
 
     //  If enough space in the current block, just return.
 
-    if (_dataPos + spaceNeeded < _dataBlockLenMax)
+    if (_dataPos + spaceNeeded < _dataBlockLenMaxB)
       return;
 
     //  Othwerwise, terminate the current block.
@@ -825,10 +823,10 @@ private:
       setArraySize(_dataBlockLen, _dataBlocksLen, _dataBlocksMax, _dataBlocksLen + 128);
     }
 
-    assert(spaceNeeded <= _dataBlockLenMax);
+    assert(spaceNeeded <= _dataBlockLenMaxB);
 
     _dataPos = 0;
-    _data    = _dataBlocks[_dataBlocksLen - 1] = new uint64 [_dataBlockLenMax / sizeof(uint64)];
+    _data    = _dataBlocks[_dataBlocksLen - 1] = new uint64 [_dataBlockLenMaxW];
 
     clearBlock();
 
@@ -840,24 +838,28 @@ private:
     _dataBit  = 64;
   };
 
+  uint64    bitsToWords(uint64 bits) {
+    return(bits / 64 + ((bits % 64) ? 1 : 0));
+  };
 
-  uint64   _dataBlockLenMax; //  Allocated length, of each block (in BITS).
+  uint64   _dataBlockLenMaxB;  //  Allocated length of each block (in BITS).
+  uint64   _dataBlockLenMaxW;  //  Allocated length of each block (in WORDS). 
 
-  uint32   _dataBlocksLen;   //  Number of allocated data blocks.
-  uint32   _dataBlocksMax;   //  Number of blocks we can allocate.
+  uint32   _dataBlocksLen;     //  Number of allocated data blocks.
+  uint32   _dataBlocksMax;     //  Number of blocks we can allocate.
 
-  uint64  *_dataBlockBgn;    //  Starting position, in the global file, of this block.
-  uint64  *_dataBlockLen;    //  Length of this block.
-  uint64 **_dataBlocks;      //  Just piles of bits.  Nothing interesting here.
+  uint64  *_dataBlockBgn;      //  Starting position, in the global file, of this block.
+  uint64  *_dataBlockLen;      //  Length of this block.
+  uint64 **_dataBlocks;        //  Just piles of bits.  Nothing interesting here.
 
-  uint64   _dataPos;         //  Position in this block, in BITS.
-  uint64  *_data;            //  Pointer to the currently active data block.
+  uint64   _dataPos;           //  Position in this block, in BITS.
+  uint64  *_data;              //  Pointer to the currently active data block.
 
-  uint64   _dataBlk;         //  Active data block.
-  uint64   _dataWrd;         //  Active word in the active data block.
-  uint64   _dataBit;         //  Active bit in the active word in the active data block (aka, number of bits left in this word)
+  uint64   _dataBlk;           //  Active data block.
+  uint64   _dataWrd;           //  Active word in the active data block.
+  uint64   _dataBit;           //  Active bit in the active word in the active data block (aka, number of bits left in this word)
 
-  uint64   _fibData[93];      //  A pile of Fibonacci numbers.
+  uint64   _fibData[93];       //  A pile of Fibonacci numbers.
 };
 
 

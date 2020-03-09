@@ -202,10 +202,21 @@ merylFileWriter::writeBlockToFile(FILE            *datFile,
 
   //  Dump data.
   //
-  //  The value coding type was, prior to Feb 2020, 1 for 32-bit and 2 for 64-bit binary
-  //  data.
+  //  Unary coding requires that the whole value fit in one block.  The
+  //  largest unary number we'll see is 2^unaryBits -- and that's already
+  //  computed in unarySum.  We'll set the stuffedBits block size
+  //  to 
 
-  stuffedBits   *dumpData = new stuffedBits(8 * 64 * 1024);   //  64 KB
+  uint64         blockSize;
+
+  blockSize  = 10 * 64;                    //  For the header.
+  blockSize += 2 * unarySum;               //  For the unary encoded prefix bits
+  blockSize += nKmers * binaryBits / 16;   //  For the binary encoded suffix bits
+  blockSize += nKmers * 32 / 16;           //  For the value bits
+
+  blockSize = (blockSize & 0xfffffffffffffc00llu) + 1024;   //  Make it a multiple of 1024.
+
+  stuffedBits   *dumpData = new stuffedBits(blockSize);
 
   dumpData->setBinary(64, 0x7461446c7972656dllu);    //  Magic number, part 1.
   dumpData->setBinary(64, 0x0a3030656c694661llu);    //  Magic number, part 2.

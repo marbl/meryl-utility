@@ -51,7 +51,7 @@ main(int argc, char **argv) {
     }
 
     else if (strncmp(argv[arg], "-v", 2) == 0) {
-      arg += lf.enable(argv[arg], NULL);
+      arg += lf.enable(argv[arg], (const char *)NULL);
     }
 
     else if (strncmp(argv[arg], "-D", 2) == 0) {

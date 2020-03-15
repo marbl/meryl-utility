@@ -382,7 +382,28 @@ showFibonacciNumbers(void) {
 
 
 
+void
+testExpandCompress(void) {
+  uint64   o = 0x0000000000000003llu;
+  uint64   e = 0;
+  uint64   c = 0;
 
+  for (uint32 xx=0; xx<22; xx++) {
+    if (xx == 21)
+      fprintf(stdout, "A successful test will now fail an assert in function expandTo3().\n");
+
+    e = expandTo3(o);
+    c = compressTo2(e);
+
+    if (c != o)
+      fprintf(stdout, "orig 0x%s expanded %022lo compressed 0x%s FAIL\n", toHex(o), e, toHex(c));
+    assert(c == o);
+
+    fprintf(stdout, "orig 0x%s expanded %021lo compressed 0x%s\n", toHex(o), e, toHex(c));
+
+    o <<= 2;
+  }
+}
 
 
 
@@ -460,6 +481,10 @@ main(int argc, char **argv) {
 
     else if (strcmp(argv[arg], "-show-fibonacci") == 0) {
       showFibonacciNumbers();
+    }
+
+    else if (strcmp(argv[arg], "-expand") == 0) {
+      testExpandCompress();
     }
 
     else if (strcmp(argv[arg], "") == 0) {

@@ -23,6 +23,10 @@
 void
 merylFileWriter::initialize(uint32 prefixSize, bool isMultiSet) {
 
+  if ((_initialized == true) &&
+      (prefixSize != _prefixSize))
+    fprintf(stderr, "merylFileWriter::initialize()-- asked to initialize with different prefixSize (new %u existing %u).\n", prefixSize, _prefixSize), exit(1);
+
   if (_initialized == true)    //  Nothing to do if we're already done.
     return;
 
@@ -65,8 +69,8 @@ merylFileWriter::initialize(uint32 prefixSize, bool isMultiSet) {
 
     //  Now we're initialized!
 
-    fprintf(stderr, "merylFileWriter()-- Creating '%s' for %u-mers, with prefixSize %u suffixSize %u numFiles %lu\n",
-            _outName, (_prefixSize + _suffixSize) / 2, _prefixSize, _suffixSize, _numFiles);
+    //fprintf(stderr, "merylFileWriter()-- Creating '%s' for %u-mers, with prefixSize %u suffixSize %u numFiles %lu\n",
+    //        _outName, (_prefixSize + _suffixSize) / 2, _prefixSize, _suffixSize, _numFiles);
 
     _initialized = true;
   }

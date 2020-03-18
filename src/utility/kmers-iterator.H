@@ -31,11 +31,13 @@
 class kmerIterator {
 public:
   kmerIterator(void) {
+    assert(kmer::merSize() > 0);
     reset();
     addSequence(NULL, 0);
   };
   kmerIterator(FILE *input);
   kmerIterator(char *buffer, uint64 bufferLen) {
+    assert(kmer::merSize() > 0);
     reset();
     addSequence(buffer, bufferLen);
   };

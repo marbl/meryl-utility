@@ -149,23 +149,23 @@ private:
 
 public:
   template<typename OBJ>
-  void   writeIFFarray(char *name, OBJ *array, uint32 nObjects) {
+  void   writeIFFarray(char const *name, OBJ *array, uint32 nObjects) {
     writeIFFchunk(name, array, sizeof(OBJ) * nObjects);
   };
 
   template<typename OBJ>
-  void   writeIFFobject(char *name, OBJ &object) {
+  void   writeIFFobject(char const *name, OBJ &object) {
     writeIFFchunk(name, &object, sizeof(OBJ));
   };
 
   template<typename OBJ>
-  void   writeIFFobject(char *name, OBJ *object) {
+  void   writeIFFobject(char const *name, OBJ *object) {
     writeIFFchunk(name, object, sizeof(OBJ));
   };
 
-  void   writeIFFchunk(char *name, void *data=NULL, uint32 dataLength=0);
+  void   writeIFFchunk(char const *name, void *data=NULL, uint32 dataLength=0);
 
-  void   closeIFFchunk(char *name=NULL);
+  void   closeIFFchunk(char const *name=NULL);
 
 private:
   void                 open(void);

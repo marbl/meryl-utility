@@ -503,7 +503,7 @@ writeBuffer::write(void const *data, uint64 length) {
 //  to ALL container chunks.
 //
 void
-writeBuffer::writeIFFchunk(char *name, void *data, uint32 dataLength) {
+writeBuffer::writeIFFchunk(char const *name, void *data, uint32 dataLength) {
   uint8  header [4 * sizeof(uint8) + sizeof(uint32)] = { 0 };
   uint8  padding[4 * sizeof(uint8)]                  = { 0 };
 
@@ -593,7 +593,7 @@ writeBuffer::appendIFFdata(void *data, uint32 dataLength) {
 //  empty, write the block.
 //
 void
-writeBuffer::closeIFFchunk(char *name) {
+writeBuffer::closeIFFchunk(char const *name) {
 
   //  If no chunk to close, report an error.
 

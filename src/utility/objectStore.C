@@ -18,6 +18,7 @@
  */
 
 #include "types.H"
+#include "arrays.H"
 #include "strings.H"
 
 #include "objectStore.H"
@@ -245,13 +246,13 @@ fetchFromObjectStore(char *requested) {
 
   //  Build up a command we can execute after forking.
 
-  char  *args[8];
+  char *args[8];
 
   args[0] = basename(da);
-  args[1] = "download";
-  args[2] = "--overwrite";
-  args[3] = "--no-progress";
-  args[4] = "--output";
+  args[1] = duplicateString("download");        //  Thanks, execve, for wanting mutable
+  args[2] = duplicateString("--overwrite");     //  strings and making us jump through
+  args[3] = duplicateString("--no-progress");   //  a hoop to get them without compiler
+  args[4] = duplicateString("--output");        //  warnings.
   args[5] = requested;
   args[6] = object;
   args[7] = NULL;
@@ -292,6 +293,11 @@ fetchFromObjectStore(char *requested) {
   //  If no file, it's fatal.
   if (fileExists(requested) == false)
     fprintf(stderr, "fetchFromObjectStore()-- failed fetch file '%s'.\n", requested), exit(1);
+
+  delete [] args[1];
+  delete [] args[2];
+  delete [] args[3];
+  delete [] args[4];
 
   delete [] path;
   delete [] object;

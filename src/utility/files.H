@@ -39,44 +39,44 @@ using namespace std;
 #define O_LARGEFILE 0
 #endif
 
-void    AS_UTL_findBaseFileName(char *basename, const char *filename);
+void    AS_UTL_findBaseFileName(char *basename, char const *filename);
 
 bool    AS_UTL_readLine(char *&L, uint32 &Llen, uint32 &Lmax, FILE *F);
 
-void    AS_UTL_mkdir(const char *dirname);
-void    AS_UTL_rmdir(const char *dirname);
+void    AS_UTL_mkdir(char const *dirname);
+void    AS_UTL_rmdir(char const *dirname);
 
-void    AS_UTL_symlink(const char *pathToFile, const char *pathToLink);
+void    AS_UTL_symlink(char const *pathToFile, char const *pathToLink);
 
-void    AS_UTL_unlink(const char *prefix, char separator='.', char const *suffix=NULL);
+void    AS_UTL_unlink(char const *prefix, char separator='.', char const *suffix=NULL);
 
-void    AS_UTL_rename(const char *oldname, const char *newname);
+void    AS_UTL_rename(char const *oldname, char const *newname);
 
-bool    AS_UTL_makeReadOnly(const char *prefix, char separator='.', const char *suffix=NULL);
-bool    AS_UTL_makeWritable(const char *prefix, char separator='.', const char *suffix=NULL);
+bool    AS_UTL_makeReadOnly(char const *prefix, char separator='.', char const *suffix=NULL);
+bool    AS_UTL_makeWritable(char const *prefix, char separator='.', char const *suffix=NULL);
 
 //  Tests on existence of paths, files and directories.
-bool    pathExists     (const char *prefix, char separator='.', const char *suffix=NULL);                        //  true if file or dir 'path' exists
-bool    fileExists     (const char *prefix, char separator='.', const char *suffix=NULL, bool writable=false);   //  true if file        'path' exists (and is writable)
-bool    directoryExists(const char *prefix, char separator='.', const char *suffix=NULL);                        //  true if         dir 'path' exists
+bool    pathExists     (char const *prefix, char separator='.', char const *suffix=NULL);                        //  true if file or dir 'path' exists
+bool    fileExists     (char const *prefix, char separator='.', char const *suffix=NULL, bool writable=false);   //  true if file        'path' exists (and is writable)
+bool    directoryExists(char const *prefix, char separator='.', char const *suffix=NULL);                        //  true if         dir 'path' exists
 
-off_t   AS_UTL_sizeOfFile(const char *path);
+off_t   AS_UTL_sizeOfFile(char const *path);
 off_t   AS_UTL_sizeOfFile(FILE *file);
 
 off_t   AS_UTL_ftell(FILE *stream);
 void    AS_UTL_fseek(FILE *stream, off_t offset, int whence);
 
 //  Search CANU_INSTALL_PATH, MERYL_INSTALL_PATH and PATH for a data file.
-char   *findSharedFile(char *relpath, char *filename);
+char const *findSharedFile(char const *relpath, char const *filename);
 
 //  Read a file-of-files into a vector
-void    AS_UTL_loadFileList(char *fileName, vector<char *> &FILE);
+void    AS_UTL_loadFileList(char const *fileName, vector<char const *> &FILE);
 
 FILE   *AS_UTL_openInputFile (char const *prefix, char separator='.', char const *suffix=NULL, bool doOpen=true);
 FILE   *AS_UTL_openOutputFile(char const *prefix, char separator='.', char const *suffix=NULL, bool doOpen=true);
 
-void    AS_UTL_closeFile(FILE *&F, const char *filename, char separator, char const *suffix, bool critical=true);
-void    AS_UTL_closeFile(FILE *&F, const char *filename=NULL, bool critical=true);
+void    AS_UTL_closeFile(FILE *&F, char const *filename, char separator, char const *suffix, bool critical=true);
+void    AS_UTL_closeFile(FILE *&F, char const *filename=NULL, bool critical=true);
 
 void    AS_UTL_createEmptyFile(char const *prefix, char separator='.', char const *suffix=NULL);
 
@@ -145,7 +145,7 @@ void    AS_UTL_saveFile(char const *prefix, OBJ *objects, uint64 numberToWrite) 
 //
 uint64
 loadFromFile(void        *objects,
-             const char  *description,
+             char const  *description,
              uint64       objectSize,
              uint64       nObjects,
              FILE        *file,
@@ -153,19 +153,19 @@ loadFromFile(void        *objects,
 
 template<typename OBJ>
 uint64
-loadFromFile(OBJ *array, const char *description, uint64 nObjects, FILE *file, bool exact=true) {
+loadFromFile(OBJ *array, char const *description, uint64 nObjects, FILE *file, bool exact=true) {
   return(loadFromFile(array, description, sizeof(OBJ), nObjects, file, exact));
 }
 
 template<typename OBJ>
 uint64
-loadFromFile(OBJ &object, const char *description, FILE *file, bool exact=true) {
+loadFromFile(OBJ &object, char const *description, FILE *file, bool exact=true) {
   return(loadFromFile(&object, description, sizeof(OBJ), 1, file, exact));
 }
 
 template<typename OBJ>
 uint64
-loadFromFile(OBJ *object, const char *description, FILE *file, bool exact=true) {
+loadFromFile(OBJ *object, char const *description, FILE *file, bool exact=true) {
   return(loadFromFile(object, description, sizeof(OBJ), 1, file, exact));
 }
 
@@ -173,27 +173,27 @@ loadFromFile(OBJ *object, const char *description, FILE *file, bool exact=true) 
 
 
 void
-writeToFile(void        *objects,
-            const char  *description,
+writeToFile(void const  *objects,
+            char const  *description,
             uint64       objectSize,
             uint64       nObjects,
             FILE        *file);
 
 template<typename OBJ>
 void
-writeToFile(OBJ *array, const char *description, uint64 nObjects, FILE *file) {
+writeToFile(OBJ const *array, char const *description, uint64 nObjects, FILE *file) {
   writeToFile(array, description, sizeof(OBJ), nObjects, file);
 }
 
 template<typename OBJ>
 void
-writeToFile(OBJ &object, const char *description, FILE *file) {
+writeToFile(OBJ &object, char const *description, FILE *file) {
   writeToFile(&object, description, sizeof(OBJ), 1, file);
 }
 
 template<typename OBJ>
 void
-writeToFile(OBJ *object, const char *description, FILE *file) {
+writeToFile(OBJ const *object, char const *description, FILE *file) {
   writeToFile(object, description, sizeof(OBJ), 1, file);
 }
 
@@ -206,21 +206,21 @@ writeToFile(OBJ *object, const char *description, FILE *file) {
 //  Writes sequence as fasta, with at most 'bl' letters per line (unlimited if 0).
 void
 AS_UTL_writeFastA(FILE *f,
-                  char *s, int sl, int bl,
-                  char *h, ...);
+                  char const *s, int sl, int bl,
+                  char const *h, ...);
 
 //  Writes FastQ, with Sanger QVs.
 void
-AS_UTL_writeFastQ(FILE  *f,
-                  char  *s, int sl,
-                  char  *q, int ql,   //  As Sanger QV, already encoded
-                  char  *h, ...);
+AS_UTL_writeFastQ(FILE *f,
+                  char const *s, int sl,
+                  char const *q, int ql,   //  As Sanger QV, already encoded
+                  char const *h, ...);
 
 void
-AS_UTL_writeFastQ(FILE  *f,
-                  char  *s, int sl,
-                  uint8 *q, int ql,   //  As Sanger QV, from integer values
-                  char  *h, ...);
+AS_UTL_writeFastQ(FILE *f,
+                  char  const *s, int sl,
+                  uint8 const *q, int ql,   //  As Sanger QV, from integer values
+                  char  const *h, ...);
 
 
 #include "files-compressed.H"

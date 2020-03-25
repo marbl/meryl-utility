@@ -37,7 +37,7 @@
 //  But if a directory, do nothing.
 
 void
-AS_UTL_findBaseFileName(char *basename, const char *filename) {
+AS_UTL_findBaseFileName(char *basename, char const *filename) {
 
   strcpy(basename, filename);
 
@@ -55,8 +55,8 @@ AS_UTL_findBaseFileName(char *basename, const char *filename) {
 
 
 void
-writeToFile(void        *objects,
-            const char  *description,
+writeToFile(void const  *objects,
+            char const  *description,
             uint64       objectSize,
             uint64       nObjects,
             FILE        *file) {
@@ -89,7 +89,7 @@ writeToFile(void        *objects,
 
 uint64
 loadFromFile(void        *objects,
-             const char  *description,
+             char const  *description,
              uint64       objectSize,
              uint64       nObjects,
              FILE        *file,
@@ -240,7 +240,7 @@ AS_UTL_readLine(char *&L, uint32 &Llen, uint32 &Lmax, FILE *F) {
 
 //  Ensure that directory 'dirname' exists.
 void
-AS_UTL_mkdir(const char *dirname) {
+AS_UTL_mkdir(char const *dirname) {
   struct stat  st;
 
   //  Stat the file.  Don't fail if the file doesn't exist though.
@@ -268,7 +268,7 @@ AS_UTL_mkdir(const char *dirname) {
 
 //  Remove a directory, or do nothing if the file doesn't exist.
 void
-AS_UTL_rmdir(const char *dirname) {
+AS_UTL_rmdir(char const *dirname) {
 
   if (directoryExists(dirname) == false)
     return;
@@ -282,7 +282,7 @@ AS_UTL_rmdir(const char *dirname) {
 
 
 void
-AS_UTL_symlink(const char *pathToFile, const char *pathToLink) {
+AS_UTL_symlink(char const *pathToFile, char const *pathToLink) {
 
   //  Fail horribly if the file doesn't exist.
 
@@ -308,7 +308,7 @@ AS_UTL_symlink(const char *pathToFile, const char *pathToLink) {
 
 //  Remove a file, or do nothing if the file doesn't exist.
 void
-AS_UTL_unlink(const char *prefix, char separator, char const *suffix) {
+AS_UTL_unlink(char const *prefix, char separator, char const *suffix) {
   char   filename[FILENAME_MAX];
 
   if (suffix)
@@ -330,7 +330,7 @@ AS_UTL_unlink(const char *prefix, char separator, char const *suffix) {
 
 //  Rename a file, or do nothing if the file doesn't exist.
 void
-AS_UTL_rename(const char *oldname, const char *newname) {
+AS_UTL_rename(char const *oldname, char const *newname) {
 
   if (pathExists(oldname) == false)
     return;
@@ -346,7 +346,7 @@ AS_UTL_rename(const char *oldname, const char *newname) {
 
 //  Remove ALL write bits from a given path.
 bool
-AS_UTL_makeReadOnly(const char *prefix, char separator, const char *suffix) {
+AS_UTL_makeReadOnly(char const *prefix, char separator, char const *suffix) {
   char         path[FILENAME_MAX];
   struct stat  s;
 
@@ -376,7 +376,7 @@ AS_UTL_makeReadOnly(const char *prefix, char separator, const char *suffix) {
 
 //  Set write bits on a given path, relative to what is allowed in the umask.
 bool
-AS_UTL_makeWritable(const char *prefix, char separator, const char *suffix) {
+AS_UTL_makeWritable(char const *prefix, char separator, char const *suffix) {
   char         path[FILENAME_MAX];
   struct stat  s;
 
@@ -409,7 +409,7 @@ AS_UTL_makeWritable(const char *prefix, char separator, const char *suffix) {
 
 
 bool
-pathExists(const char *prefix, char separator, const char *suffix) {
+pathExists(char const *prefix, char separator, char const *suffix) {
   struct stat  s;
   char   path[FILENAME_MAX];
 
@@ -430,7 +430,7 @@ pathExists(const char *prefix, char separator, const char *suffix) {
 
 
 bool
-fileExists(const char *prefix, char separator, const char *suffix,
+fileExists(char const *prefix, char separator, char const *suffix,
            bool        writable) {
   struct stat  s;
   char   path[FILENAME_MAX];
@@ -461,7 +461,7 @@ fileExists(const char *prefix, char separator, const char *suffix,
 
 
 bool
-directoryExists(const char *prefix, char separator, const char *suffix) {
+directoryExists(char const *prefix, char separator, char const *suffix) {
   struct stat  s;
   char   path[FILENAME_MAX];
 
@@ -495,7 +495,7 @@ directoryExists(const char *prefix, char separator, const char *suffix) {
 
 
 off_t
-AS_UTL_sizeOfFile(const char *path) {
+AS_UTL_sizeOfFile(char const *path) {
   struct stat  s;
 
   errno = 0;
@@ -595,8 +595,8 @@ AS_UTL_fseek(FILE *stream, off_t offset, int whence) {
 //
 //  'relpath' should be something like 'share/sequence'.
 //
-char *
-findSharedFile(char *relpath, char *filename) {
+char const *
+findSharedFile(char const *relpath, char const *filename) {
   static
   char     fp[FILENAME_MAX + 1] = {0};
   char    *env;
@@ -659,7 +659,7 @@ findSharedFile(char *relpath, char *filename) {
 
 
 void
-AS_UTL_loadFileList(char *fileName, vector<char *> &fileList) {
+AS_UTL_loadFileList(char const *fileName, vector<char const *> &fileList) {
 
   FILE *F = AS_UTL_openInputFile(fileName);
 
@@ -760,7 +760,7 @@ AS_UTL_openOutputFile(char const *prefix,
 
 
 void
-AS_UTL_closeFile(FILE *&F, const char *prefix, char separator, char const *suffix, bool critical) {
+AS_UTL_closeFile(FILE *&F, char const *prefix, char separator, char const *suffix, bool critical) {
 
   if ((F == NULL) || (F == stdout) || (F == stderr))
     return;
@@ -794,7 +794,7 @@ AS_UTL_closeFile(FILE *&F, const char *prefix, char separator, char const *suffi
 }
 
 
-void    AS_UTL_closeFile(FILE *&F, const char *filename, bool critical) {
+void    AS_UTL_closeFile(FILE *&F, char const *filename, bool critical) {
   AS_UTL_closeFile(F, filename, '.', NULL, critical);
 }
 
@@ -809,9 +809,9 @@ void    AS_UTL_createEmptyFile(char const *prefix, char separator, char const *s
 
 
 void
-AS_UTL_writeFastA(FILE  *f,
-                  char  *s, int sl, int bl,
-                  char  *h, ...) {
+AS_UTL_writeFastA(FILE *f,
+                  char const *s, int sl, int bl,
+                  char const *h, ...) {
   va_list ap;
   char   *o  = new char [sl + sl / ((bl == 0) ? sl : bl) + 2];
   int     si = 0;
@@ -838,10 +838,10 @@ AS_UTL_writeFastA(FILE  *f,
 
 
 void
-AS_UTL_writeFastQ(FILE  *f,
-                  char  *s, int sl,
-                  char  *q, int ql,
-                  char  *h, ...) {
+AS_UTL_writeFastQ(FILE *f,
+                  char const *s, int sl,
+                  char const *q, int ql,
+                  char const *h, ...) {
   va_list ap;
   int     qi = 0;
   int     oi = 0;
@@ -863,10 +863,10 @@ AS_UTL_writeFastQ(FILE  *f,
 
 
 void
-AS_UTL_writeFastQ(FILE  *f,
-                  char  *s, int sl,
-                  uint8 *q, int ql,
-                  char  *h, ...) {
+AS_UTL_writeFastQ(FILE *f,
+                  char  const *s, int sl,
+                  uint8 const *q, int ql,
+                  char  const *h, ...) {
   va_list ap;
   char   *o  = new char [ql + 1];
   int     qi = 0;

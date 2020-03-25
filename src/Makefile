@@ -425,8 +425,11 @@ ifeq ($(origin CXXFLAGS), undefined)
   #     gcc7:  -Wno-format-truncation  - sprintf() into possibly smaller buffer
   #            -Wno-parentheses
   CXXFLAGS += -Wall -Wextra -Wformat
-  CXXFLAGS += -Wno-write-strings -Wno-char-subscripts -Wno-sign-compare
-  CXXFLAGS += -Wno-unused-function -Wno-unused-parameter -Wno-unused-variable
+  CXXFLAGS += -Wno-char-subscripts
+  CXXFLAGS += -Wno-sign-compare
+  CXXFLAGS += -Wno-unused-function
+  CXXFLAGS += -Wno-unused-parameter
+  CXXFLAGS += -Wno-unused-variable
   CXXFLAGS += -Wno-deprecated-declarations
   CXXFLAGS += -std=c++11
 else

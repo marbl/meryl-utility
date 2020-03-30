@@ -409,7 +409,7 @@ merylExactLookup::load(void) {
           value -= _valueOffset;
 
           if (value > _maxValue + 1 - _minValue)
-            fprintf(stderr, "minValue " F_U32 " maxValue " F_U32 " value " F_U64 " bits " F_U32 "\n",
+            fprintf(stderr, "minValue " F_U64 " maxValue " F_U64 " value " F_U64 " bits " F_U32 "\n",
                     _minValue, _maxValue, value, _valueBits);
           assert(value <= uint64MASK(_valueBits));
 

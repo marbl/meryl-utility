@@ -305,11 +305,11 @@ dumpMerylDataFile(char *name) {
   F = AS_UTL_openInputFile(name, '.', "merylIndex");
 
   fprintf(stdout, "\n");
-  fprintf(stdout, "            prefix    blkPos    nKmers\n");
-  fprintf(stdout, "------------------ --------- ---------\n");
+  fprintf(stdout, "    prefix    blkPos    nKmers\n");
+  fprintf(stdout, "---------- --------- ---------\n");
 
   while (loadFromFile(I, "merylFileIndex", F, false) != 0) {
-    fprintf(stdout, "0x%016lx %9lu %9lu\n", I.blockPrefix(), I.blockPosition(), I.numKmers());
+    fprintf(stdout, "0x%08x %9lu %9lu\n", I.blockPrefix(), I.blockPosition(), I.numKmers());
   }
 
   AS_UTL_closeFile(F);
@@ -430,7 +430,7 @@ dumpMerylDataFile(char *name) {
     for (uint32 kk=0; kk<nKmers; kk++) {
       tp += pd[kk];
 
-      fprintf(stdout, "%8u %11u %011x %2u %016lx %2u %016lx %8lx\n",
+      fprintf(stdout, "%8u %11lu %011lx %2u %016lx %2u %016lx %8lx\n",
               kk, pd[kk], tp, ls, s1[kk], rs, s2[kk], va[kk]);
     }
   }

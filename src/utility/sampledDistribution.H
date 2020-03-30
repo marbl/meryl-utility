@@ -38,7 +38,7 @@ public:
   };
 
 
-  void     loadDistribution(char *path) {
+  void     loadDistribution(char const *path) {
 
     if ((path == NULL) || (path[0] == 0))
       return;

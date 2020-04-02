@@ -73,6 +73,8 @@ public:
 
     if (s0 < 0.0)              //  Assume negative values are due to stability problems,
       s0 = 0.0;                //  and not mismatched insert() and delete() values.
+    if (-1e-10 <= m0 && m0 <= 1e-10)
+      m0 = 0.0;
 
     if (_nn == 0)
       fprintf(stderr, "ERROR: stdDev has no data; can't remove() old value.\n"), exit(1);

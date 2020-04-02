@@ -706,8 +706,6 @@ $(foreach TGT,${ALL_TGTS},\
 $(foreach TGT,${ALL_TGTS},\
   $(eval -include ${${TGT}_DEPS}))
 
-	@if [ ! -e ${TARGET_DIR}/bin ]                ; then mkdir -p ${TARGET_DIR}/bin                ; fi
-
 #  Makefile processed.  Regenerate the version number file, make some
 #  directories, and report that we're starting the build.
 

@@ -108,7 +108,6 @@ testBig(uint32 nSamples) {
 
   fprintf(stderr, "\n");
   fprintf(stderr, "testBig for nSamples %u\n", nSamples);
-  fprintf(stderr, "\n");
 
   for (uint32 ii=0; ii<nSamples; ii++) {
     uint32  val = (mt.mtRandom32() % 10);
@@ -121,9 +120,48 @@ testBig(uint32 nSamples) {
 
   hist.finalizeData();
 
-  fprintf(stderr, "size:   %lu\n", hist.numberOfObjects());
-  fprintf(stderr, "mean:   %f +- %f\n", hist.mean(), hist.stddev());
-  fprintf(stderr, "median: %lu +- %lu\n", hist.median(), hist.mad());
+  fprintf(stderr, "  size:   %lu\n", hist.numberOfObjects());
+  fprintf(stderr, "  mean:   %f +- %f\n", hist.mean(), hist.stddev());
+  fprintf(stderr, "  median: %lu +- %lu\n", hist.median(), hist.mad());
+}
+
+
+
+//  This is testing for an odd bit of apparent numerical instability where
+//  the second to last remove() resulted in a negative variance.  d=0.0019
+//  was the original case, but many others failed too.
+void
+testStability(void) {
+  double sum = 0.0;
+
+  fprintf(stderr, "\n");
+  fprintf(stderr, "testStability (shouldn't crash)\n");
+
+  for (double d = 0.0000; d < 0.5000; d += 0.0001) {
+    stdDev<double>  sd;
+
+    sd.insert(0.000000);
+    sd.insert(d);
+    sd.insert(0.000000);
+
+    sd.remove(0.000000);
+    sd.remove(0.000000);  //  Fails here; the two if's in remove() resolve.
+
+    sum += sd.mean();     //  Add d.
+
+    assert(d - 0.00001 <= sd.mean());
+    assert(sd.mean() <= d + 0.00001);
+    assert(sd.variance() == 0.0);
+
+    sd.remove(d);
+
+    sum += sd.mean();     //  Add zero.
+
+    assert(sd.mean()     == 0.0);
+    assert(sd.variance() == 0.0);
+  }
+
+  fprintf(stderr, "  %18.16f\n", sum);
 }
 
 
@@ -142,6 +180,11 @@ main(int argc, char **argv) {
   testBig(10);
   testBig(100);
   testBig(1000);
+
+  testStability();
+
+  fprintf(stderr, "\n");
+  fprintf(stderr, "Success!\n");
 
   exit(0);
 }

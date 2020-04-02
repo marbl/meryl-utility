@@ -71,14 +71,14 @@ public:
     if (n0 == 0)   m0 = 0.0;   //  Reset mean and variance to zero when we can.
     if (n0 <= 1)   s0 = 0.0;   //  See tests/stddevTest.C testStability() for details.
 
+    if (s0 < 0.0)              //  Assume negative values are due to stability problems,
+      s0 = 0.0;                //  and not mismatched insert() and delete() values.
+
     if (_nn == 0)
       fprintf(stderr, "ERROR: stdDev has no data; can't remove() old value.\n"), exit(1);
 
     if (_nn & 0x80000000)
       fprintf(stderr, "ERROR: stdDev has been finalized; can't remove() old value.\n"), exit(1);
-
-    if (s0 < 0.0)
-      fprintf(stderr, "ERROR: stdDev has negative variance; mismatch in values supplied to insert() and remove()?\n"), exit(1);
 
     _nn = n0;
     _mn = m0;

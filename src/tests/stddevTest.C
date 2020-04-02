@@ -166,6 +166,37 @@ testStability(void) {
 
 
 
+//  Same idea, but this one fails before we hit the
+//  reset for one item.  Grrrr!
+void
+testStability2(uint32 n) {
+  double sum = 0.0;
+  stdDev<double>  sd;
+
+  if (n == 1) {
+    fprintf(stderr, "\n");
+    fprintf(stderr, "testStability2 (values should be positive zero)\n");
+  }
+
+  for (uint32 ii=0; ii<n; ii++)
+    sd.insert(0.000000);
+
+  sd.insert(0.000190);
+  sd.remove(0.000190);
+  fprintf(stderr, "%2u  %26.24f\n", n, sd.variance());
+  assert(sd.variance() >= 0.0);
+
+  sd.insert(0.000220);
+  sd.remove(0.000220);
+  fprintf(stderr, "%2u  %26.24f\n", n, sd.variance());
+  assert(sd.variance() >= 0.0);
+
+  for (uint32 ii=0; ii<n; ii++)
+    sd.remove(0.000000);
+}
+
+
+
 int
 main(int argc, char **argv) {
 
@@ -182,6 +213,11 @@ main(int argc, char **argv) {
   testBig(1000);
 
   testStability();
+
+  testStability2(1);
+  testStability2(2);
+  testStability2(3);
+  testStability2(4);
 
   fprintf(stderr, "\n");
   fprintf(stderr, "Success!\n");

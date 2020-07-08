@@ -58,7 +58,6 @@ SOURCES      := utility/runtime.C \
                 utility/hexDump.C \
                 utility/md5.C \
                 utility/mt19937ar.C \
-                utility/objectStore.C \
                 utility/speedCounter.C \
                 utility/sweatShop.C
 

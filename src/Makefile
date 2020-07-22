@@ -338,8 +338,9 @@ DIR_STACK :=
 INCDIRS :=
 TGT_STACK :=
 
-# Discover our OS and architecture.  These are used to set the BUILD_DIR and TARGET_DIR to
-# something more useful than 'build' and '.'.
+# Discover our OS and architecture.  These were previously used to set
+# BUILD_DIR and TARGET_DIR to allow multi-platform builds.  DESTDIR will do
+# that for us too.
 
 OSTYPE      := $(shell echo `uname`)
 OSVERSION   := $(shell echo `uname -r`)
@@ -364,31 +365,18 @@ ifeq (${OSTYPE}, SunOS)
   endif
 endif
 
-#  Some filesystems cannot use < or > in file names, but for reasons unknown
-#  (or, at least, reasons we're not going to admit to), files in the overlap
-#  store are named ####<###>.  Enabling POSIX_FILE_NAMES Will change the
-#  names to ####.###.
-#
-#  Be aware this will break object store compatibility.
-#
-ifeq ($(POSIX_FILE_NAMES), 1)
-  CXXFLAGS += -DPOSIX_FILE_NAMES
+#  Set paths for building and installing.  If DESTDIR doesn't exist, use the
+#  directory just above us.
 
+ifeq "$(strip ${DESTDIR})" ""
+  BUILD_DIR    := $(realpath ..)/build/obj
+  TARGET_DIR   := $(realpath ..)/build
 else
-  #  Try to create non-<posix> file names.  It's tempting to use 'wildcard' instead
-  #  of the 'ls', but it doesn't work.
-  $(shell touch "non-<posix>-name" > /dev/null 2>&1)
-
-  ifeq (non-<posix>-name, $(shell ls "non-<posix>-name" 2> /dev/null))
-    #$(info Extended POSIX filenames allowed.)
-  else
-    #$(info POSIX filenames required.)
-    CXXFLAGS += -DPOSIX_FILE_NAMES
-  endif
-
-  $(shell rm -f "non-<posix>-name")
+  BUILD_DIR    := $(DESTDIR)/canu/build/obj
+  TARGET_DIR   := $(DESTDIR)/canu/build
 endif
 
+#
 #  Set compiler and flags based on discovered hardware
 #
 #  By default, debug symbols are included in all builds (even optimized).
@@ -404,7 +392,6 @@ endif
 #
 #  BUILDJEMALLOC will enable jemalloc library support.
 #
-
 
 ifeq ($(origin CXXFLAGS), undefined)
   ifeq ($(BUILDOPTIMIZED), 1)
@@ -707,11 +694,11 @@ $(foreach TGT,${ALL_TGTS},\
 #  Makefile processed.  Regenerate the version number file, make some
 #  directories, and report that we're starting the build.
 
-$(shell ../scripts/version_update.pl meryl-utility utility/version.H)
+$(eval $(shell ../scripts/version_update.pl meryl-utility utility/version.H))
 
 $(shell mkdir -p ${TARGET_DIR}/bin)
 
-$(info For '${OSTYPE}' '${OSVERSION}' as '${MACHINETYPE}' into '${DESTDIR}${PREFIX}/$(OSTYPE)-$(MACHINETYPE)/{bin,obj}'.)
+$(info For '${OSTYPE}' '${OSVERSION}' as '${MACHINETYPE}' into '${TARGET_DIR}/{bin,obj}'.)
 $(info Using '$(shell which ${CXX})' version '${GXX_VV}'.)
 ifneq ($(origin CXXFLAGSUSER), undefined)
 $(info Using user-supplied CXXFLAGS '${CXXFLAGSUSER}'.)

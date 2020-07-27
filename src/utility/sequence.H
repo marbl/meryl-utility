@@ -78,6 +78,46 @@ public:
 
   uint64            length(void)       { return(_seqLen); };
 
+  //  Copy bases from bgn to end, but not including end.
+  //  Will NUL-terminate only if requested.
+  //  Returns false if bgn or end are out of range or inconsistent.
+  //
+  bool              copy(char  *bout,
+                         uint32 bgn, uint32 end,
+                         bool terminate = true) {
+    if ((end < bgn) || (_seqLen < end))
+      return(false);
+
+    for (uint32 ii=bgn; ii<end; ii++)
+      bout[ii-bgn] = _seq[ii];
+
+    if (terminate)
+      bout[end-bgn] = 0;
+
+    return(true);
+  };
+
+  bool              copy(char  *bout,
+                         uint8 *qout,
+                         uint32 bgn, uint32 end,
+                         bool terminate = true) {
+    if ((end < bgn) || (_seqLen < end))
+      return(false);
+
+    for (uint32 ii=bgn; ii<end; ii++) {
+      bout[ii-bgn] = _seq[ii];
+      qout[ii-bgn] = _qlt[ii];
+    }
+
+    if (terminate) {
+      bout[end-bgn] = 0;
+      qout[end-bgn] = 0;
+    }
+
+    return(true);
+  };
+
+
 private:
   uint32            _nameMax;
   char             *_name;

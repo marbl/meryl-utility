@@ -45,58 +45,16 @@ compressedFileType(char const *filename) {
 
 
 compressedFileReader::compressedFileReader(const char *filename) {
-  char    cmd[FILENAME_MAX];
-  int32   len = 0;
 
   _file     = NULL;
   _filename = duplicateString(filename);
+
+  _type     = compressedFileType(_filename);
+
   _pipe     = false;
   _stdi     = false;
 
-  cftType   ft = compressedFileType(_filename);
-
-  if ((ft != cftSTDIN) && (fileExists(_filename) == false))
-    fprintf(stderr, "ERROR:  Failed to open input file '%s': %s\n", _filename, strerror(errno)), exit(1);
-
-  errno = 0;
-
-  switch (ft) {
-    case cftGZ:
-      snprintf(cmd, FILENAME_MAX, "gzip -dc '%s'", _filename);
-      _file = popen(cmd, "r");
-      _pipe = true;
-      break;
-
-    case cftBZ2:
-      snprintf(cmd, FILENAME_MAX, "bzip2 -dc '%s'", _filename);
-      _file = popen(cmd, "r");
-      _pipe = true;
-      break;
-
-    case cftXZ:
-      snprintf(cmd, FILENAME_MAX, "xz -dc '%s'", _filename);
-      _file = popen(cmd, "r");
-      _pipe = true;
-
-      if (_file == NULL)    //  popen() returns NULL on error.  It does not reliably set errno.
-        fprintf(stderr, "ERROR:  Failed to open input file '%s': popen() returned NULL\n", _filename), exit(1);
-
-      errno = 0;
-      break;
-
-    case cftSTDIN:
-      _file = stdin;
-      _stdi = true;
-      break;
-
-    default:
-      _file = fopen(_filename, "r");
-      _pipe = false;
-      break;
-  }
-
-  if (errno)
-    fprintf(stderr, "ERROR:  Failed to open input file '%s': %s\n", _filename, strerror(errno)), exit(1);
+  reopen();
 }
 
 
@@ -115,6 +73,72 @@ compressedFileReader::~compressedFileReader() {
     AS_UTL_closeFile(_file);
 
   delete [] _filename;
+}
+
+
+
+void
+compressedFileReader::reopen(void) {
+  char    cmd[FILENAME_MAX];
+
+  //  If input from stdin, do nothing.  reopen() on this makes no sense,
+  //  and doing nothing is _possibly_ more correct than failing.
+  if (_stdi)
+    return;
+
+  //  Close any existing file.
+  if ((_file) && (_pipe ==  true))   pclose(_file);
+  if ((_file) && (_pipe == false))   AS_UTL_closeFile(_file);
+
+  //  Blow up if the file doesn't exist, or we can't read it, or ...
+  if ((_type != cftSTDIN) && (fileExists(_filename) == false))
+    fprintf(stderr, "ERROR:  Failed to open input file '%s': %s\n", _filename, strerror(errno)), exit(1);
+
+  //  Open the file!
+  errno = 0;
+
+  switch (_type) {
+    case cftGZ:
+      snprintf(cmd, FILENAME_MAX, "gzip -dc '%s'", _filename);
+      _file = popen(cmd, "r");
+      _pipe = true;
+      break;
+
+    case cftBZ2:
+      snprintf(cmd, FILENAME_MAX, "bzip2 -dc '%s'", _filename);
+      _file = popen(cmd, "r");
+      _pipe = true;
+      break;
+
+    case cftXZ:
+      snprintf(cmd, FILENAME_MAX, "xz -dc '%s'", _filename);
+      _file = popen(cmd, "r");
+      _pipe = true;
+      break;
+
+    case cftSTDIN:
+      _file = stdin;
+      _stdi = true;
+      break;
+
+    default:
+      _file = fopen(_filename, "r");
+      _pipe = false;
+      break;
+  }
+
+  //  Catch errors.
+  //   - popen() does not set errno, so all we can do is fail.
+  //   - otherwise, we can say something intelligent.
+
+  if (_file == nullptr) {
+    if (_pipe)
+      fprintf(stderr, "ERROR:  Failed to open file with command '%s'\n", cmd);
+    else
+      fprintf(stderr, "ERROR:  Failed to open input file '%s': %s\n", _filename, strerror(errno));
+
+    exit(1);
+  }
 }
 
 

@@ -134,21 +134,11 @@ private:
 
 class dnaSeqFile {
 public:
-  dnaSeqFile(const char *filename, bool indexed=false);
+  dnaSeqFile(char const *filename, bool indexed=false);
   ~dnaSeqFile();
 
-  compressedFileReader  *_file;
-  readBuffer            *_buffer;
+  void     reopen(void);
 
-  dnaSeqIndexEntry      *_index;
-  uint64                 _indexLen;
-  uint64                 _indexMax;
-
-private:
-  bool     loadIndex(void);
-  void     saveIndex(void);
-
-public:
   void     generateIndex(void);
 
   //  If indexed, searches the index for the proper sequence.
@@ -160,34 +150,21 @@ public:
   //
   //  Returns true if found, false if not.
   //
-  bool     findSequence(uint64 i);
-  bool     findSequence(const char *name);
+  bool        findSequence(uint64 i);
+  bool        findSequence(char const *name);
 
   //  Returns the number of sequences in the file.
-  uint64   numberOfSequences(void) {
+  uint64      numberOfSequences(void) {
     return(_indexLen);
   };
 
   //  Returns the length of sequence i.  If no such sequence, returns UINT64_MAX.
-  uint64   sequenceLength(uint64 i);
+  uint64      sequenceLength(uint64 i);
 
-  char    *filename(void) {
-    return(_file->filename());
+  char const *filename(void) {
+    return(_filename);
   }
 
-private:
-  uint64
-  loadFASTA(char   *&name,     uint32  &nameMax,
-            char   *&seq,
-            uint8  *&qlt,      uint64  &seqMax);
-
-  uint64
-  loadFASTQ(char   *&name,     uint32  &nameMax,
-            char   *&seq,
-            uint8  *&qlt,      uint64  &seqMax);
-
-
-public:
   //  Return the next sequence in the file.
   //  Returns false if EOF, true otherwise, even if the sequence is length zero.
   //
@@ -212,6 +189,32 @@ public:
                    uint64   maxLength,
                    uint64  &seqLength,
                    bool    &endOfSequence);
+
+private:
+  bool     loadIndex(void);
+  void     saveIndex(void);
+
+  uint64
+  loadFASTA(char   *&name,     uint32  &nameMax,
+            char   *&seq,
+            uint8  *&qlt,      uint64  &seqMax);
+
+  uint64
+  loadFASTQ(char   *&name,     uint32  &nameMax,
+            char   *&seq,
+            uint8  *&qlt,      uint64  &seqMax);
+
+private:
+  char                  *_filename;
+  bool                   _indexed;
+
+  compressedFileReader  *_file;
+  readBuffer            *_buffer;
+
+  dnaSeqIndexEntry      *_index;
+  uint64                 _indexLen;
+  uint64                 _indexMax;
+
 };
 
 

@@ -481,33 +481,58 @@ public:
 
 
 
-dnaSeqFile::dnaSeqFile(const char *filename, bool indexed) {
+dnaSeqFile::dnaSeqFile(char const *filename, bool indexed) {
 
-  _file     = new compressedFileReader(filename);
-  _buffer   = new readBuffer(_file->file());
+  _filename = duplicateString(filename);
+  _indexed  = indexed;
 
-  _index    = NULL;
+  _file     = nullptr;
+  _buffer   = nullptr;
+
+  _index    = nullptr;
   _indexLen = 0;
   _indexMax = 0;
 
-  if (indexed == false)
-    return;
-
-  if (_file->isCompressed() == true)
-    fprintf(stderr, "ERROR: cannot index compressed input '%s'.\n", filename), exit(1);
-
-  if (_file->isNormal() == false)
-    fprintf(stderr, "ERROR: cannot index pipe input.\n"), exit(1);
-
-  generateIndex();
+  reopen();
 }
 
 
 
 dnaSeqFile::~dnaSeqFile() {
+  delete [] _filename;
   delete    _file;
   delete    _buffer;
   delete [] _index;
+}
+
+
+
+//  Open, or reopen, an input file.
+//
+void
+dnaSeqFile::reopen(void) {
+
+  //  If a _file exists already, reopen it, otherwise, make a new one.
+  if (_file)
+    _file->reopen();
+  else
+    _file = new compressedFileReader(_filename);
+
+  //  Since the file object is always new, we need to make a new read buffer.
+  delete _buffer;
+
+  _buffer = new readBuffer(_file->file());
+
+  //  Create an index if requested.
+  if (_indexed == true) {
+    if (_file->isCompressed() == true)
+      fprintf(stderr, "ERROR: cannot index compressed input '%s'.\n", _filename), exit(1);
+
+    if (_file->isNormal() == false)
+      fprintf(stderr, "ERROR: cannot index pipe input.\n"), exit(1);
+
+    generateIndex();
+  }
 }
 
 
@@ -538,7 +563,7 @@ dnaSeqFile::sequenceLength(uint64 i) {
 
 
 bool
-dnaSeqFile::findSequence(const char *name) {
+dnaSeqFile::findSequence(char const *name) {
   fprintf(stderr, "dnaSeqFile::findSequence(const char *) not supported.\n");
   exit(1);
   return(false);

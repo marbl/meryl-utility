@@ -1,4 +1,5 @@
-TARGET       := libcanu.a
+MODULE       :=    meryl-utility
+TARGET       := libmeryl-utility.a
 SOURCES      := utility/runtime.C \
                 \
                 utility/edlib.C \

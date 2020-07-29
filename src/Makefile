@@ -372,8 +372,8 @@ ifeq "$(strip ${DESTDIR})" ""
   BUILD_DIR    := $(realpath ..)/build/obj
   TARGET_DIR   := $(realpath ..)/build
 else
-  BUILD_DIR    := $(DESTDIR)/canu/build/obj
-  TARGET_DIR   := $(DESTDIR)/canu/build
+  BUILD_DIR    := $(DESTDIR)/$(MODULE)/build/obj
+  TARGET_DIR   := $(DESTDIR)/$(MODULE)/build
 endif
 
 #
@@ -694,7 +694,7 @@ $(foreach TGT,${ALL_TGTS},\
 #  Makefile processed.  Regenerate the version number file, make some
 #  directories, and report that we're starting the build.
 
-$(eval $(shell ../scripts/version_update.pl meryl-utility utility/version.H))
+$(eval $(shell ../scripts/version_update.pl $(MODULE) utility/version.H))
 
 $(shell mkdir -p ${TARGET_DIR}/bin)
 

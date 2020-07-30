@@ -2,6 +2,7 @@ MODULE       :=    meryl-utility
 TARGET       := libmeryl-utility.a
 SOURCES      := utility/runtime.C \
                 \
+                utility/align-ssw.C \
                 utility/edlib.C \
                 \
                 utility/files.C \
@@ -62,7 +63,8 @@ SRC_INCDIRS  := . \
 SUBMAKEFILES := 
 
 ifeq ($(BUILDTESTS), 1)
-SUBMAKEFILES += tests/bitsTest.mk \
+SUBMAKEFILES += tests/alignTest-ssw.mk \
+                tests/bitsTest.mk \
                 tests/filesTest.mk \
                 tests/intervalListTest.mk \
                 tests/loggingTest.mk \

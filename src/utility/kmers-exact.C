@@ -461,9 +461,9 @@ merylExactLookup::load(void) {
 bool
 merylExactLookup::exists_test(kmer k) {
 
-  uint64  kmer   = (uint64)k;
-  uint64  prefix = kmer >> _suffixBits;
-  uint64  suffix = kmer  & _suffixMask;
+  kmdata  kmer   = (kmdata)k;
+  kmdata  prefix = kmer >> _suffixBits;
+  kmdata  suffix = kmer  & _suffixMask;
 
   uint64  bgn = _suffixBgn[prefix];
   uint64  mid;
@@ -498,9 +498,9 @@ merylExactLookup::exists_test(kmer k) {
   }
 
   fprintf(stderr, "\n");
-  fprintf(stderr, "FAILED kmer   0x%016lx\n", kmer);
-  fprintf(stderr, "FAILED prefix 0x%016lx\n", prefix);
-  fprintf(stderr, "FAILED suffix 0x%016lx\n", suffix);
+  fprintf(stderr, "FAILED kmer   0x%s\n", toHex(kmer));
+  fprintf(stderr, "FAILED prefix 0x%s\n", toHex(prefix));
+  fprintf(stderr, "FAILED suffix 0x%s\n", toHex(suffix));
   fprintf(stderr, "\n");
   fprintf(stderr, "original  %9lu %9lu\n", _suffixBgn[prefix], _suffixBgn[prefix + 1]);
   fprintf(stderr, "final     %9lu %9lu\n", bgn, end);
@@ -514,7 +514,8 @@ merylExactLookup::exists_test(kmer k) {
 
     tag = _sufData->get(mid);
 
-    fprintf(stderr, "TEST bgn %8lu %8lu %8lu end -- dat %lu =?= %lu suffix\n", bgn, mid, end, tag, suffix);
+    fprintf(stderr, "TEST bgn %8lu %8lu %8lu end -- dat %s =?= %s suffix\n",
+            bgn, mid, end, toHex(tag), toHex(suffix));
 
     if (tag == suffix)
       return(true);
@@ -529,7 +530,8 @@ merylExactLookup::exists_test(kmer k) {
   for (mid=bgn; mid < end; mid++) {
     tag = _sufData->get(mid);
 
-    fprintf(stderr, "ITER bgn %8lu %8lu %8lu end -- dat %lu =?= %lu suffix\n", bgn, mid, end, tag, suffix);
+    fprintf(stderr, "ITER bgn %8lu %8lu %8lu end -- dat %s =?= %s suffix\n",
+            bgn, mid, end, toHex(tag), toHex(suffix));
 
     if (tag == suffix)
       return(true);

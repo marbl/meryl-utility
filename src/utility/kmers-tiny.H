@@ -155,10 +155,12 @@ public:
     return(_mer);
   };
 
-  operator uint64 () const {
-    assert(0);
-    return(_mer);
-  };
+  operator uint64 () const = delete;   //  Explicitly fail of someone tries to convert us to an integer
+  operator  int64 () const = delete;   //  instead of to a kmdata.  Without these, a cast to, say, uint64
+  operator uint32 () const = delete;   //  would be first convert to kmdata (uint128) then down to uint64.
+  operator  int32 () const = delete;   //  With these, you'll either get a compile-time error (because
+  operator uint16 () const = delete;   //  these are private) or link time error (because they're not
+  operator  int16 () const = delete;   //  defined.
 
   void     setPrefixSuffix(kmpref prefix, kmdata suffix, uint32 width) {
     _mer   = prefix;

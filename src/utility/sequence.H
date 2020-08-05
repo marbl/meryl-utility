@@ -50,6 +50,35 @@ void   decode3bitSequence(uint8 *chunk, uint32 chunkLen, char *seq, uint32 seqLe
 void   decode8bitSequence(uint8 *chunk, uint32 chunkLen, char *seq, uint32 seqLen);
 
 
+//  Encode/decode an ACGT base to 0132.  Relies on the ASCII encoding:
+//
+//    A      a     01c0 000 1 == 0 -> 0
+//    C      c     01c0 001 1 == 1 -> 1
+//    T      t     01c1 010 0 == 2 -> 2
+//    G      g     01c0 011 1 == 3 -> 3
+//    N      n     01c0 111 0 == 7 -> 4
+//                      ^^^
+//  Decoding will always return uppercase letters (c=0).
+//
+//  The inline arrays, in gcc anyway, compile to a single 64-bit constant
+//  and is equivalent to the C code:
+//
+//    0x0706050403020100llu >> (((base >> 1) & 0x07) << 3) & 0x0f
+//
+//  with the additional optimization of removing the redundant shifts.
+
+inline
+uint8
+encode2bitBase(char  base) {
+  return((uint8 [8]){0, 1, 2, 3, 4, 4, 4, 4}[base >> 1 & 0x07]);
+}
+
+inline
+char
+decode2bitBase(uint8 base) {
+  return("ACTGNNNN"[base & 0x07]);
+}
+
 
 
 class dnaSeqIndexEntry;   //  Internal use only, sorry.

@@ -68,7 +68,7 @@
 
 //  initialize with a single seed
 void
-mtRandom::construct(uint32 s) {
+mtRandom::mtSetSeed(uint32 s) {
 
   mt[0] = s;
 
@@ -92,7 +92,7 @@ mtRandom::construct(uint32 s) {
 /* slight change for C++, 2004/2/26 */
 mtRandom::mtRandom(uint32 *init_key, uint32 key_length) {
 
-  construct(19650218UL);
+  mtSetSeed(19650218UL);
 
   int   i   = 1;
   int   j   = 0;

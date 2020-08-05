@@ -234,15 +234,15 @@ private:
             uint8  *&qlt,      uint64  &seqMax);
 
 private:
-  char                  *_filename;
-  bool                   _indexed;
+  char                  *_filename = nullptr;
+  bool                   _indexed  = false;
 
-  compressedFileReader  *_file;
-  readBuffer            *_buffer;
+  compressedFileReader  *_file     = nullptr;
+  readBuffer            *_buffer   = nullptr;
 
-  dnaSeqIndexEntry      *_index;
-  uint64                 _indexLen;
-  uint64                 _indexMax;
+  dnaSeqIndexEntry      *_index    = nullptr;
+  uint64                 _indexLen = 0;
+  uint64                 _indexMax = 0;
 
 };
 

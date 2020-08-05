@@ -474,16 +474,8 @@ struct dnaSeqIndexEntry {
 
 
 dnaSeqFile::dnaSeqFile(char const *filename, bool indexed) {
-
   _filename = duplicateString(filename);
   _indexed  = indexed;
-
-  _file     = nullptr;
-  _buffer   = nullptr;
-
-  _index    = nullptr;
-  _indexLen = 0;
-  _indexMax = 0;
 
   reopen();
 }

@@ -466,15 +466,7 @@ encode8bitSequence(uint8 *&chunk, char *seq, uint32 seqLen) {
 //    for FASTA, the '>'
 //    for FASTQ, the '@'.
 
-class dnaSeqIndexEntry {
-public:
-  dnaSeqIndexEntry() {
-    _fileOffset     = UINT64_MAX;
-    _sequenceLength = 0;
-  };
-  ~dnaSeqIndexEntry() {
-  };
-
+struct dnaSeqIndexEntry {
   uint64   _fileOffset;
   uint64   _sequenceLength;
 };

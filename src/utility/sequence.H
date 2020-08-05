@@ -81,7 +81,7 @@ decode2bitBase(uint8 base) {
 
 
 
-class dnaSeqIndexEntry;   //  Internal use only, sorry.
+struct dnaSeqIndexEntry;   //  Internal use only, sorry.
 
 class dnaSeq {
 public:

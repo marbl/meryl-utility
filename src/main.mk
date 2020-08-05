@@ -3,6 +3,7 @@ TARGET       := libmeryl-utility.a
 SOURCES      := utility/runtime.C \
                 \
                 utility/align-ssw.C \
+                utility/align-ssw-driver.C \
                 utility/edlib.C \
                 \
                 utility/files.C \

@@ -894,3 +894,42 @@ AS_UTL_writeFastQ(FILE *f,
 
 
 
+//  A rather complicated output function.
+//    if seq is FASTQ and not wanting FASTA output -> FASTQ
+//    if seq is FASTA and     wanting FASTQ output -> FASTQ with fixed QV
+//    else                                         -> FASTA
+//
+//  The else cases are
+//    seq is FASTQ and     want FASTA output
+//    seq is FASTA and     want FASTA output
+//    seq is FASTA and not want FASTQ output
+//
+void
+outputSequence(FILE  *OUT,
+               char  *outputName,
+               char  *outputBases,
+               uint8 *outputQuals,  uint32  outputBasesLen,
+               bool   isFASTA,
+               bool   isFASTQ,
+               bool   outputFASTA,
+               bool   outputFASTQ,
+               uint8  QV) {
+
+  if      ((isFASTQ == true) && (outputFASTA == false))
+    AS_UTL_writeFastQ(OUT,
+                      outputBases, outputBasesLen,
+                      outputQuals, outputBasesLen, "@%s\n", outputName);
+
+  else if ((isFASTA == true) && (outputFASTQ == true)) {
+    for (uint32 ii=0; ii<outputBasesLen; ii++)
+      outputQuals[ii] = QV;
+
+    AS_UTL_writeFastQ(OUT,
+                      outputBases, outputBasesLen,
+                      outputQuals, outputBasesLen, "@%s\n", outputName);
+  }
+
+  else
+    AS_UTL_writeFastA(OUT,
+                      outputBases, outputBasesLen, 0, ">%s\n", outputName);
+}

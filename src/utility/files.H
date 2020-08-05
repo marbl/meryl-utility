@@ -222,6 +222,19 @@ AS_UTL_writeFastQ(FILE *f,
                   uint8 const *q, int ql,   //  As Sanger QV, from integer values
                   char  const *h, ...);
 
+//  Writes FASTA or FASTQ, depending on what data is present and what format
+//  is explicitly desired.
+void
+outputSequence(FILE  *OUT,
+               char  *outputName,
+               char  *outputBases,
+               uint8 *outputQuals,  uint32  outputBasesLen,
+               bool   isFASTA,
+               bool   isFASTQ,
+               bool   outputFASTA,
+               bool   outputFASTQ,
+               uint8  QV);
+
 
 #include "files-compressed.H"
 #include "files-buffered.H"

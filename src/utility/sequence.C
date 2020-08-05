@@ -762,18 +762,26 @@ dnaSeqFile::loadSequence(char   *&name,     uint32  &nameMax,
   while (_buffer->peek() == '\n')
     _buffer->read();
 
-  if      (_buffer->peek() == '>')
-    seqLen = loadFASTA(name, nameMax,
-                       seq,
-                       qlt, seqMax);
+  if      (_buffer->peek() == '>') {
+    _isFASTA = true;
+    _isFASTQ = false;
 
-  else if (_buffer->peek() == '@')
-    seqLen = loadFASTQ(name, nameMax,
-                       seq,
-                       qlt, seqMax);
+    seqLen = loadFASTA(name, nameMax, seq, qlt, seqMax);
+  }
 
-  else
+  else if (_buffer->peek() == '@') {
+    seqLen = loadFASTQ(name, nameMax, seq, qlt, seqMax);
+
+    _isFASTA = false;
+    _isFASTQ = true;
+  }
+
+  else {
+    _isFASTA = false;
+    _isFASTQ = false;
+
     return(false);
+  }
 
   return(true);
 }

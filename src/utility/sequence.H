@@ -194,6 +194,13 @@ public:
     return(_filename);
   }
 
+public:
+  //  Return true if the last sequence loaded looks like FASTA or FASTQ.
+  //  If no sequence has been loaded yet, BOTH functions will return false.
+  //
+  bool   isFASTA(void)   { return(_isFASTA); };
+  bool   isFASTQ(void)   { return(_isFASTQ); };
+
   //  Return the next sequence in the file.
   //  Returns false if EOF, true otherwise, even if the sequence is length zero.
   //
@@ -236,6 +243,9 @@ private:
 private:
   char                  *_filename = nullptr;
   bool                   _indexed  = false;
+
+  bool                   _isFASTA  = false;
+  bool                   _isFASTQ  = false;
 
   compressedFileReader  *_file     = nullptr;
   readBuffer            *_buffer   = nullptr;

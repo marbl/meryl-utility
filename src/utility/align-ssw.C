@@ -925,7 +925,10 @@ int32_t mark_mismatch (int32_t ref_begin1,
 
   ref += ref_begin1;
   read += read_begin1;
-  if (read_begin1 > 0) new_cigar[p ++] = to_cigar_int(read_begin1, 'S');
+
+  //if (read_begin1 > 0)
+  //  new_cigar[p ++] = to_cigar_int(read_begin1, 'S');
+
   for (i = 0; i < (*cigarLen); ++i) {
     op = cigar_int_to_op((*cigar)[i]);
     length = cigar_int_to_len((*cigar)[i]);
@@ -959,7 +962,9 @@ int32_t mark_mismatch (int32_t ref_begin1,
   new_cigar = store_previous_m (0, &length_m, &length_x, &p, &s, new_cigar);
     
   length = readLen - read_end1 - 1;
-  if (length > 0) new_cigar = add_cigar(new_cigar, &p, &s, length, 'S');
+
+  //if (length > 0)
+  //  new_cigar = add_cigar(new_cigar, &p, &s, length, 'S');
     
   (*cigarLen) = p;    
   free(*cigar);

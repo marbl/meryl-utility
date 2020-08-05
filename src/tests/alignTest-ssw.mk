@@ -1,5 +1,5 @@
-TARGET   := alignTest-SSW
-SOURCES  := alignTest-SSW.C
+TARGET   := alignTest-ssw
+SOURCES  := alignTest-ssw.C
 
 SRC_INCDIRS := .. ../utility
 

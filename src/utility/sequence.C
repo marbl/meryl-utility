@@ -729,14 +729,14 @@ dnaSeqFile::loadFASTQ(char   *&name,     uint32  &nameMax,
     ;
   }
 
-  //  Read qualities.
+  //  Read qualities and convert to integers.
 
   for (ch=_buffer->read(); (ch != '\n') && (ch != 0); ch=_buffer->read()) {
     if ((ch == '\n') || (ch == '\r') || (ch == '\t') || (ch == ' '))
       continue;
     if (qltLen+1 >= seqMax)
       resizeArrayPair(seq, qlt, qltLen, seqMax, 3 * seqMax / 2);
-    qlt[qltLen++] = ch;
+    qlt[qltLen++] = ch - '!';
   }
 
   //fprintf(stderr, "READ FASTQ name %u seq %lu qlt %lu\n", nameLen, seqLen, qltLen);

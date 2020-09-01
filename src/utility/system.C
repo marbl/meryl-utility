@@ -34,7 +34,11 @@
 #endif
 
 #if !defined(__CYGWIN__) && !defined(_WIN32)
+#if defined(__linux__)
+#include <linux/sysctl.h>
+#else
 #include <sys/sysctl.h>
+#endif
 #endif
 
 

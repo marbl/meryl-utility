@@ -103,7 +103,7 @@ getProcessTime(void) {
   double         tm = 0;
 
   if (gettimeofday(&tp, NULL) == 0)
-    tm  = tp.tv_sec + tp.tv_usec / 100000.0;
+    tm  = tp.tv_sec + tp.tv_usec / 1000000.0;
 
   if (st == 0.0)
     st = tm;

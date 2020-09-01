@@ -69,5 +69,6 @@ SUBMAKEFILES += tests/alignTest-ssw.mk \
                 tests/filesTest.mk \
                 tests/intervalListTest.mk \
                 tests/loggingTest.mk \
-                tests/stddevTest.mk
+                tests/stddevTest.mk \
+                tests/systemTest.mk
 endif

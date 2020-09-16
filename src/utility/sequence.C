@@ -596,42 +596,89 @@ dnaSeqFile::sequenceLength(uint64 i) {
 ////////////////////////////////////////
 //  dnaSeqFile indexing
 //
+
+const uint64 dnaSeqVersion01 = 0x3130716553616e64;   //  dnaSeq01
+const uint64 dnaSeqVersion02 = 0x3230716553616e64;   //  dnaSeq02 - not used yet
+
+
+char const *
+makeIndexName(char const *prefix) {
+  char const *suffix = ".dnaSeqIndex";
+  uint32      plen   = strlen(prefix);
+  uint32      slen   = strlen(suffix);
+  char       *iname  = new char [plen + slen + 1];
+
+  memcpy(iname,        prefix, plen + 1);   //  +1 for the NUL byte.
+  memcpy(iname + plen, suffix, slen + 1);
+
+  return(iname);
+}
+
+
+//  Load an index.  Returns true if one was loaded.
 bool
 dnaSeqFile::loadIndex(void) {
-  char   indexName[FILENAME_MAX+1];
+  char const  *indexName = makeIndexName(_filename);
+  FILE        *indexFile = nullptr;
 
-  snprintf(indexName, FILENAME_MAX, "%s.index", _file->filename());
+  if (fileExists(indexName) == true) {
+    FILE   *indexFile = AS_UTL_openInputFile(indexName);
+    uint64  magic;
+    uint64  size;
+    uint64  date;
 
-  if (fileExists(indexName) == false)
-    return(false);
+    loadFromFile(magic,     "dnaSeqFile::magic",    indexFile);
+    loadFromFile(size,      "dnaSeqFile::size",     indexFile);
+    loadFromFile(date,      "dnaSeqFile::date",     indexFile);
+    loadFromFile(_indexLen, "dnaSeqFile::indexLen", indexFile);
 
-  FILE   *indexFile = AS_UTL_openInputFile(indexName);
+    if (magic != dnaSeqVersion01) {
+      fprintf(stderr, "ERROR: file '%s' isn't a dnaSeqIndex; manually remove this file.\n", indexName);
+      exit(1);
+    }
 
-  loadFromFile(_indexLen, "dnaSeqFile::indexLen", indexFile);
+    if ((size == AS_UTL_sizeOfFile(_filename)) &&
+        (date == AS_UTL_timeOfFile(_filename))) {
+      _index = new dnaSeqIndexEntry [_indexLen];
 
-  _index = new dnaSeqIndexEntry [_indexLen];
+      loadFromFile(_index, "dnaSeqFile::index", _indexLen, indexFile);
 
-  loadFromFile(_index, "dnaSeqFile::index", _indexLen, indexFile);
+    } else {
+      fprintf(stderr, "WARNING: file '%s' disagrees with index; recreating index.\n", _filename);
 
-  AS_UTL_closeFile(indexFile, indexName);
+      _index    = nullptr;
+      _indexLen = 0;
+      _indexMax = 0;
+    }
 
-  return(true);
+    AS_UTL_closeFile(indexFile, indexName);
+  }
+
+  delete [] indexName;
+
+  return(_index != nullptr);   //  Return true if we have an index.
 }
 
 
 
 void
 dnaSeqFile::saveIndex(void) {
-  char   indexName[FILENAME_MAX+1];
+  char const *indexName = makeIndexName(_filename);
+  FILE       *indexFile = AS_UTL_openOutputFile(indexName);
 
-  snprintf(indexName, FILENAME_MAX, "%s.index", _file->filename());
+  uint64  magic = dnaSeqVersion01;
+  uint64  size  = AS_UTL_sizeOfFile(_filename);
+  uint64  date  = AS_UTL_timeOfFile(_filename);
 
-  FILE   *indexFile = AS_UTL_openOutputFile(indexName);
-
-  writeToFile(_indexLen, "dnaSeqFile::indexLen",            indexFile);
+  writeToFile(magic,     "dnaSeqFile::magic",    indexFile);
+  writeToFile(size,      "dnaSeqFile::size",     indexFile);
+  writeToFile(date,      "dnaSeqFile::date",     indexFile);
+  writeToFile(_indexLen, "dnaSeqFile::indexLen", indexFile);
   writeToFile(_index,    "dnaSeqFile::index",    _indexLen, indexFile);
 
   AS_UTL_closeFile(indexFile, indexName);
+
+  delete [] indexName;
 }
 
 
@@ -645,6 +692,8 @@ dnaSeqFile::generateIndex(void) {
   uint8          *qlt     = NULL;
   uint64          seqLen  = 0;
 
+  //  If we can load an index, do it and return.
+
   if (loadIndex() == true)
     return;
 
@@ -656,10 +705,10 @@ dnaSeqFile::generateIndex(void) {
   _index[_indexLen]._sequenceLength = 0;
 
   //  While we read sequences:
-  //    update the length of the sequence (we've already save the position)
+  //    update the length of the sequence (we've already saved the position)
   //    make space for more sequences
   //    save the position of the next sequence
-  //
+
   while (loadSequence(name, nameMax, seq, qlt, seqMax, seqLen) == true) {
     _index[_indexLen]._sequenceLength = seqLen;
 
@@ -671,8 +720,7 @@ dnaSeqFile::generateIndex(void) {
     _index[_indexLen]._sequenceLength = 0;
   }
 
-  //for (uint32 ii=0; ii<_indexLen; ii++)
-  //  fprintf(stderr, "%u offset %lu length %lu\n", ii, _index[ii]._fileOffset, _index[ii]._sequenceLength);
+  //  If we've made an index, save it.
 
   if (_indexLen > 0)
     saveIndex();

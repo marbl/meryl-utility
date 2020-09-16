@@ -123,17 +123,6 @@ private:
 
 
 
-struct dnaSeqIndexHeader {    //  Header on the index; description of
-  uint64   _magic;            //  the file.  The index will be rebuilt
-  uint64   _size;             //  if the size or date are different than
-  uint64   _date;             //  the file reports.
-};
-
-struct dnaSeqIndexEntry {     //  Offset of the first byte in the record:
-  uint64   _fileOffset;       //  '>' for FASTA, '@' for fastq.
-  uint64   _sequenceLength;   //
-};
-
 //  An interface to FASTA and FASTQ files.
 //
 //  findSequence() will return true if the specified sequence is found in the
@@ -225,6 +214,11 @@ private:
 
   compressedFileReader  *_file     = nullptr;
   readBuffer            *_buffer   = nullptr;
+
+  struct dnaSeqIndexEntry {     //  Offset of the first byte in the record:
+    uint64   _fileOffset;       //  '>' for FASTA, '@' for fastq.
+    uint64   _sequenceLength;   //
+  };
 
   dnaSeqIndexEntry      *_index    = nullptr;
   uint64                 _indexLen = 0;

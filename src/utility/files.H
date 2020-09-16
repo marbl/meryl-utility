@@ -63,6 +63,9 @@ bool    directoryExists(char const *prefix, char separator='.', char const *suff
 off_t   AS_UTL_sizeOfFile(char const *path);
 off_t   AS_UTL_sizeOfFile(FILE *file);
 
+uint64  AS_UTL_timeOfFile(char const *path);
+uint64  AS_UTL_timeOfFile(FILE *file);
+
 off_t   AS_UTL_ftell(FILE *stream);
 void    AS_UTL_fseek(FILE *stream, off_t offset, int whence);
 

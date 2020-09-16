@@ -521,6 +521,33 @@ AS_UTL_sizeOfFile(FILE *file) {
 
 
 
+uint64
+AS_UTL_timeOfFile(char const *path) {
+  struct stat  s;
+
+  errno = 0;
+  if (stat(path, &s) == -1)
+    fprintf(stderr, "Failed to stat() file '%s': %s\n", path, strerror(errno)), exit(1);
+
+  return(s.st_mtim.tv_sec);
+}
+
+
+
+uint64
+AS_UTL_timeOfFile(FILE *file) {
+  struct stat  s;
+  off_t        size = 0;
+
+  errno = 0;
+  if (fstat(fileno(file), &s) == -1)
+    fprintf(stderr, "Failed to stat() FILE*: %s\n", strerror(errno)), exit(1);
+
+  return(s.st_mtim.tv_sec);
+}
+
+
+
 off_t
 AS_UTL_ftell(FILE *stream) {
 

@@ -461,17 +461,64 @@ encode8bitSequence(uint8 *&chunk, char *seq, uint32 seqLen) {
 
 
 
+////////////////////////////////////////
+//  dnaSeq functions
+//
 
-//  Saves the file offset of the first byte in the record:
-//    for FASTA, the '>'
-//    for FASTQ, the '@'.
-
-struct dnaSeqIndexEntry {
-  uint64   _fileOffset;
-  uint64   _sequenceLength;
+dnaSeq::dnaSeq() {
 };
 
 
+dnaSeq::~dnaSeq() {
+  delete [] _name;
+  delete [] _seq;
+  delete [] _qlt;
+};
+
+
+bool
+dnaSeq::copy(char  *bout,
+             uint32 bgn, uint32 end, bool terminate) {
+
+  if ((end < bgn) || (_seqLen < end))
+    return(false);
+
+  for (uint32 ii=bgn; ii<end; ii++)
+    bout[ii-bgn] = _seq[ii];
+
+  if (terminate)
+    bout[end-bgn] = 0;
+
+  return(true);
+}
+
+
+bool
+dnaSeq::copy(char  *bout,
+             uint8 *qout,
+             uint32 bgn, uint32 end, bool terminate) {
+
+  if ((end < bgn) || (_seqLen < end))
+    return(false);
+
+  for (uint32 ii=bgn; ii<end; ii++) {
+    bout[ii-bgn] = _seq[ii];
+    qout[ii-bgn] = _qlt[ii];
+  }
+
+  if (terminate) {
+    bout[end-bgn] = 0;
+    qout[end-bgn] = 0;
+  }
+
+  return(true);
+}
+
+
+
+////////////////////////////////////////
+//  dnaSeqFile functions
+//
 
 dnaSeqFile::dnaSeqFile(char const *filename, bool indexed) {
   _filename = duplicateString(filename);
@@ -546,15 +593,9 @@ dnaSeqFile::sequenceLength(uint64 i) {
 
 
 
-bool
-dnaSeqFile::findSequence(char const *name) {
-  fprintf(stderr, "dnaSeqFile::findSequence(const char *) not supported.\n");
-  exit(1);
-  return(false);
-}
-
-
-
+////////////////////////////////////////
+//  dnaSeqFile indexing
+//
 bool
 dnaSeqFile::loadIndex(void) {
   char   indexName[FILENAME_MAX+1];

@@ -109,6 +109,9 @@ public:
                          uint8 *qout,
                          uint32 bgn, uint32 end, bool terminate = true);
 
+  bool              wasError(void)     { return((_error & 0x01) == 0x01); };
+  bool              wasReSync(void)    { return((_error & 0x02) == 0x02); };
+
 private:
   char             *_name    = nullptr;
   uint32            _nameMax = 0;
@@ -117,6 +120,8 @@ private:
   uint8            *_qlt     = nullptr;
   uint64            _seqMax  = 0;         //  Space allocated.
   uint64            _seqLen  = 0;         //  Actual length.
+
+  uint32            _error   = 0;
 
   friend class dnaSeqFile;
 };
@@ -173,16 +178,14 @@ public:
   bool   isFASTQ(void)   { return(_isFASTQ); };
 
 public:
-  bool   loadSequence(char   *&name,     uint32  &nameMax,
+  bool   loadSequence(char   *&name, uint32 &nameMax,
                       char   *&seq,
-                      uint8  *&qlt,      uint64  &seqMax,
-                      uint64  &seqLen);
+                      uint8  *&qlt,  uint64 &seqMax, uint64 &seqLen, uint32 &errorCode);
 
   bool   loadSequence(dnaSeq &seq) {
-    return(loadSequence(seq._name,    seq._nameMax,
+    return(loadSequence(seq._name, seq._nameMax,
                         seq._seq,
-                        seq._qlt,     seq._seqMax,
-                        seq._seqLen));
+                        seq._qlt,  seq._seqMax, seq._seqLen, seq._error));
   };
 
 public:
@@ -195,15 +198,15 @@ private:
   bool     loadIndex(void);
   void     saveIndex(void);
 
-  uint64
-  loadFASTA(char   *&name,     uint32  &nameMax,
-            char   *&seq,
-            uint8  *&qlt,      uint64  &seqMax);
+  bool
+  loadFASTA(char  *&name, uint32 &nameMax,
+            char  *&seq,
+            uint8 *&qlt,  uint64 &seqMax, uint64 &seqLen, uint64 &qltLen);
 
-  uint64
-  loadFASTQ(char   *&name,     uint32  &nameMax,
-            char   *&seq,
-            uint8  *&qlt,      uint64  &seqMax);
+  bool
+  loadFASTQ(char  *&name, uint32 &nameMax,
+            char  *&seq,
+            uint8 *&qlt,  uint64 &seqMax, uint64 &seqLen, uint64 &qltLen);
 
 private:
   char                  *_filename = nullptr;

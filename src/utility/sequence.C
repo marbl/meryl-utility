@@ -685,12 +685,7 @@ dnaSeqFile::saveIndex(void) {
 
 void
 dnaSeqFile::generateIndex(void) {
-  uint32          nameMax = 0;
-  char           *name    = NULL;
-  uint64          seqMax  = 0;
-  char           *seq     = NULL;
-  uint8          *qlt     = NULL;
-  uint64          seqLen  = 0;
+  dnaSeq     seq;
 
   //  If we can load an index, do it and return.
 
@@ -709,8 +704,16 @@ dnaSeqFile::generateIndex(void) {
   //    make space for more sequences
   //    save the position of the next sequence
 
-  while (loadSequence(name, nameMax, seq, qlt, seqMax, seqLen) == true) {
-    _index[_indexLen]._sequenceLength = seqLen;
+  while (loadSequence(seq) == true) {
+    if (seq.wasError()) {
+      fprintf(stderr, "WARNING: error reading sequence at/before '%s'\n", seq.name());
+    }
+
+    if (seq.wasReSync()) {
+      fprintf(stderr, "WARNING: lost sync reading before sequence '%s'\n", seq.name());
+    }
+
+    _index[_indexLen]._sequenceLength = seq.length();
 
     increaseArray(_index, _indexLen, _indexMax, 1048576);
 
@@ -720,127 +723,198 @@ dnaSeqFile::generateIndex(void) {
     _index[_indexLen]._sequenceLength = 0;
   }
 
-  //  If we've made an index, save it.
+  //  Save whatever index we made.
 
-  if (_indexLen > 0)
-    saveIndex();
+  saveIndex();
 }
 
 
 
-uint64
-dnaSeqFile::loadFASTA(char   *&name,     uint32  &nameMax,
-                      char   *&seq,
-                      uint8  *&qlt,      uint64  &seqMax) {
+static
+bool
+isWhiteSpace(char x) {
+  return((x == '\n') || (x == '\r') || (x == '\t') || (x == ' '));
+}
+
+
+bool
+dnaSeqFile::loadFASTA(char  *&name, uint32 &nameMax,
+                      char  *&seq,
+                      uint8 *&qlt,  uint64 &seqMax, uint64 &seqLen, uint64 &qltLen) {
   uint64  nameLen = 0;
-  uint64  seqLen  = 0;
   char    ch      = _buffer->read();
 
-  assert(ch == '>');
+  //  Skip any whitespace.
 
-  //  Read the header line into the name string.
+  while (isWhiteSpace(ch))
+    ch = _buffer->read();
+
+  //  Fail rather ungracefully if we aren't at a sequence start.
+
+  if (ch != '>')
+    return(false);
+
+  //  Read the header line into the name string.  We cannot skip whitespace
+  //  here, but we do allow DOS to insert a \r before any \n.
 
   for (ch=_buffer->read(); (ch != '\n') && (ch != 0); ch=_buffer->read()) {
+    if (ch == '\r')
+      continue;
     if (nameLen+1 >= nameMax)
       resizeArray(name, nameLen, nameMax, 3 * nameMax / 2);
     name[nameLen++] = ch;
   }
 
-  //  Read sequence, skipping whitespace, until we hit a new sequence (or eof).
+  //  Trim back the header line to remove white space at the end.  The
+  //  terminating NUL is tacked on at the end.
 
-  for (ch=_buffer->readuntil('>'); (ch != '>') && (ch != 0); ch=_buffer->readuntil('>')) {
-    if ((ch == '\n') || (ch == '\r') || (ch == '\t') || (ch == ' '))
-      continue;
+  while ((nameLen > 0) && (isWhiteSpace(name[nameLen-1])))
+    nameLen--;
 
+  name[nameLen] = 0;
+
+  //  Read sequence, skipping whitespace, until we hit a new sequence or eof.
+
+  seqLen = 0;
+  qltLen = 0;
+
+  for (ch = _buffer->peek(); ((ch != '>') &&
+                              (ch != '@') &&
+                              (ch !=  0)); ch = _buffer->peek()) {
     assert(_buffer->eof() == false);
 
-    if (seqLen+1 >= seqMax)
-      resizeArrayPair(seq, qlt, seqLen, seqMax, 3 * seqMax / 2);
+    ch = _buffer->read();
 
-    seq[seqLen] = ch;
-    qlt[seqLen] = 0;
-
-    seqLen++;
-  }
-
-  name[nameLen] = 0;
-  seq[seqLen] = 0;
-  qlt[seqLen] = 0;
-
-  assert(nameLen < nameMax);
-  assert(seqLen  < seqMax);
-
-  return(seqLen);
-}
-
-
-
-uint64
-dnaSeqFile::loadFASTQ(char   *&name,     uint32  &nameMax,
-                      char   *&seq,
-                      uint8  *&qlt,      uint64  &seqMax) {
-  uint32  nameLen = 0;
-  uint64  seqLen  = 0;
-  uint64  qltLen  = 0;
-  char    ch      = _buffer->read();
-
-  assert(ch == '@');
-
-  //  Read the header line into the name string.
-
-  for (ch=_buffer->read(); (ch != '\n') && (ch != 0); ch=_buffer->read()) {
-    if (nameLen+1 >= nameMax)
-      resizeArray(name, nameLen, nameMax, 3 * nameMax / 2);
-    name[nameLen++] = ch;
-  }
-
-  //  Read sequence.
-
-  for (ch=_buffer->read(); (ch != '\n') && (ch != 0); ch=_buffer->read()) {
-    if ((ch == '\n') || (ch == '\r') || (ch == '\t') || (ch == ' '))
+    if (isWhiteSpace(ch))
       continue;
+
     if (seqLen+1 >= seqMax)
       resizeArrayPair(seq, qlt, seqLen, seqMax, 3 * seqMax / 2);
+
     seq[seqLen++] = ch;
+    qlt[qltLen++] = 0;
   }
 
-  //  Skip header line
-
-  for (ch=_buffer->read(); (ch != '\n') && (ch != 0); ch=_buffer->read()) {
-    ;
-  }
-
-  //  Read qualities and convert to integers.
-
-  for (ch=_buffer->read(); (ch != '\n') && (ch != 0); ch=_buffer->read()) {
-    if ((ch == '\n') || (ch == '\r') || (ch == '\t') || (ch == ' '))
-      continue;
-    if (qltLen+1 >= seqMax)
-      resizeArrayPair(seq, qlt, qltLen, seqMax, 3 * seqMax / 2);
-    qlt[qltLen++] = ch - '!';
-  }
-
-  //fprintf(stderr, "READ FASTQ name %u seq %lu qlt %lu\n", nameLen, seqLen, qltLen);
-
-  name[nameLen] = 0;
   seq[seqLen] = 0;
   qlt[qltLen] = 0;
 
   assert(nameLen < nameMax);
   assert(seqLen  < seqMax);
   assert(qltLen  < seqMax);
-  assert(seqLen == qltLen);
 
-  return(seqLen);
+  return(true);
 }
 
 
 
 bool
-dnaSeqFile::loadSequence(char   *&name,     uint32  &nameMax,
-                         char   *&seq,
-                         uint8  *&qlt,      uint64  &seqMax,
-                         uint64  &seqLen) {
+dnaSeqFile::loadFASTQ(char  *&name, uint32 &nameMax,
+                      char  *&seq,
+                      uint8 *&qlt,  uint64 &seqMax, uint64 &seqLen, uint64 &qltLen) {
+  uint32  nameLen = 0;
+  char    ch      = _buffer->read();
+
+  //  Skip any whitespace.
+
+  while (isWhiteSpace(ch))
+    ch = _buffer->read();
+
+  //  Fail rather ungracefully if we aren't at a sequence start.
+
+  if (ch != '@')
+    return(false);
+
+  //  Read the header line into the name string.  We cannot skip whitespace
+  //  here, but we do allow DOS to insert a \r before any \n.
+
+  for (ch=_buffer->read(); (ch != '\n') && (ch != 0); ch=_buffer->read()) {
+    if (ch == '\r')
+      continue;
+    if (nameLen+1 >= nameMax)
+      resizeArray(name, nameLen, nameMax, 3 * nameMax / 2);
+    name[nameLen++] = ch;
+  }
+
+  //  Trim back the header line to remove white space at the end.
+
+  while ((nameLen > 0) && (isWhiteSpace(name[nameLen-1])))
+    nameLen--;
+
+  name[nameLen] = 0;
+
+  //  Skip any whitespace, again.  Once we hit non-whitespace we'll suck in
+  //  the whole line.
+
+  while (isWhiteSpace(ch))
+    ch = _buffer->read();
+
+  //  Read sequence.  Pesky DOS files end with \r\n, and it suffices
+  //  to stop on the \n and ignore all the rest.
+
+  seqLen = 0;
+  qltLen = 0;
+
+  for (; (ch != '\n') && (ch != 0); ch=_buffer->read()) {
+    if (isWhiteSpace(ch))
+      continue;
+    if (seqLen+1 >= seqMax)
+      resizeArrayPair(seq, qlt, seqLen, seqMax, 3 * seqMax / 2);
+    seq[seqLen++] = ch;
+  }
+
+  //  Skip any more whitespace, fail if we're not at a quality start, then
+  //  suck in the quality line.  And then skip more whitespace.
+
+  while (isWhiteSpace(ch))
+    ch = _buffer->read();
+
+  if (ch != '+')
+    return(false);
+
+  for (ch=_buffer->read(); (ch != '\n') && (ch != 0); ch=_buffer->read()) {
+    ;
+  }
+
+  while (isWhiteSpace(ch))
+    ch = _buffer->read();
+
+  //  Read qualities and convert to integers.
+
+  for (; (ch != '\n') && (ch != 0); ch=_buffer->read()) {
+    if (isWhiteSpace(ch))
+      continue;
+    if (qltLen+1 >= seqMax)
+      resizeArrayPair(seq, qlt, qltLen, seqMax, 3 * seqMax / 2);
+    qlt[qltLen++] = ch - '!';
+  }
+
+  //  Skip whitespace after the sequence.  This one is a little weird.  It
+  //  tests if the _next_ letter is whitespace, and if so, gets it from the
+  //  buffer.  After this loop, the _next_ letter in the buffer should be
+  //  either a '>' or a '@'.
+
+  while (isWhiteSpace(_buffer->peek()))
+    _buffer->read();
+
+  seq[seqLen] = 0;
+  qlt[qltLen] = 0;
+
+  assert(nameLen < nameMax);
+  assert(seqLen  < seqMax);
+  assert(qltLen  < seqMax);
+
+  return(true);
+}
+
+
+
+bool
+dnaSeqFile::loadSequence(char  *&name, uint32 &nameMax,
+                         char  *&seq,
+                         uint8 *&qlt,  uint64 &seqMax, uint64 &seqLen, uint32 &error) {
+  uint64 qltLen = 0;
+
+  //  Allocate space for the arrays, if they're currently unallocated.
 
   if (nameMax == 0)
     resizeArray(name, 0, nameMax, (uint32)1024);
@@ -848,21 +922,55 @@ dnaSeqFile::loadSequence(char   *&name,     uint32  &nameMax,
   if (seqMax == 0)
     resizeArrayPair(seq, qlt, 0, seqMax, (uint64)65536);
 
-  while (_buffer->peek() == '\n')
+  //  Clear our return values.
+
+  bool   loadSuccess = false;
+
+  _isFASTA = false;
+  _isFASTQ = false;
+
+  name[0] = 0;
+  seq[0]  = 0;
+  qlt[0]  = 0;
+  seqLen  = 0;
+
+  error   = 0;
+
+  //  Skip any whitespace at the start of the file, or before the next FASTQ
+  //  sequence (the FASTA reader will automagically skip whitespace at the
+  //  end of the sequence).
+
+  while (isWhiteSpace(_buffer->peek()))
     _buffer->read();
 
-  if      (_buffer->peek() == '>') {
-    _isFASTA = true;
-    _isFASTQ = false;
+  //  If we're not at a sequence start, scan ahead to find the next one.
+  //  Not bulletproof; FASTQ qv's can match this.
 
-    seqLen = loadFASTA(name, nameMax, seq, qlt, seqMax);
+  if ((_buffer->peek() != '>') &&
+      (_buffer->peek() != '@') &&
+      (_buffer->peek() !=  0)) {
+    //fprintf(stderr, "dnaSeqFile::loadSequence()-- sequence sync lost at position %lu, attempting to find the next sequence.\n", _buffer->tell());
+    error |= 0x02;
+  }
+
+  bool  lastWhite = isWhiteSpace(_buffer->peek());
+
+  while ((_buffer->peek() != '>') &&
+         (_buffer->peek() != '@') &&
+         (_buffer->peek() !=  0)) {
+    _buffer->read();
+  }
+
+  //  Peek at the file to decide what type of sequence we need to read.
+
+  if      (_buffer->peek() == '>') {
+    _isFASTA    = true;
+    loadSuccess = loadFASTA(name, nameMax, seq, qlt, seqMax, seqLen, qltLen);
   }
 
   else if (_buffer->peek() == '@') {
-    seqLen = loadFASTQ(name, nameMax, seq, qlt, seqMax);
-
-    _isFASTA = false;
-    _isFASTQ = true;
+    _isFASTQ    = true;
+    loadSuccess = loadFASTQ(name, nameMax, seq, qlt, seqMax, seqLen, qltLen);
   }
 
   else {
@@ -870,6 +978,23 @@ dnaSeqFile::loadSequence(char   *&name,     uint32  &nameMax,
     _isFASTQ = false;
 
     return(false);
+  }
+
+  //  If we failed to load a sequence, report an error message and zero out
+  //  the sequence.  Leave the name as-is so we can at least return a length
+  //  zero sequence.  If we failed to load a name, it'll still be set to NUL.
+
+  if (loadSuccess == false) {
+    //if (name[0] == 0)
+    //  fprintf(stderr, "dnaSeqFile::loadSequence()-- failed to read sequence correctly at position %lu.\n", _buffer->tell());
+    //else
+    //  fprintf(stderr, "dnaSeqFile::loadSequence()-- failed to read sequence '%s' correctly at position %lu.\n", name, _buffer->tell());
+
+    error |= 0x01;
+
+    seq[0]  = 0;
+    qlt[0]  = 0;
+    seqLen  = 0;
   }
 
   return(true);

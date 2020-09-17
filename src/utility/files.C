@@ -840,9 +840,10 @@ AS_UTL_writeFastA(FILE *f,
                   char const *s, int sl, int bl,
                   char const *h, ...) {
   va_list ap;
-  char   *o  = new char [sl + sl / ((bl == 0) ? sl : bl) + 2];
-  int     si = 0;
-  int     oi = 0;
+  int     olen = sl + ((bl == 0) ? (1) : (sl / bl)) + 2;
+  char   *o    = new char [olen];
+  int     si   = 0;
+  int     oi   = 0;
 
   while (si < sl) {
     o[oi++] = s[si++];
@@ -850,8 +851,10 @@ AS_UTL_writeFastA(FILE *f,
     if (bl != 0 && (si % bl) == 0)
       o[oi++] = '\n';
   }
-  if (o[oi-1] != '\n')
+
+  if ((oi == 0) || (o[oi-1] != '\n'))
     o[oi++] = '\n';
+
   o[oi] = 0;
 
   va_start(ap, h);

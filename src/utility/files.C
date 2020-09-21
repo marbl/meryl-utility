@@ -344,6 +344,27 @@ AS_UTL_rename(char const *oldname, char const *newname) {
 
 
 
+void
+AS_UTL_rename(char const *oldprefix, char oldseparator, char const *oldsuffix,
+              char const *newprefix, char newseparator, char const *newsuffix) {
+  char   oldpath[FILENAME_MAX+1] = {0};
+  char   newpath[FILENAME_MAX+1] = {0};
+
+  snprintf(oldpath, FILENAME_MAX, "%s%c%s", oldprefix, oldseparator, oldsuffix);
+  snprintf(newpath, FILENAME_MAX, "%s%c%s", newprefix, newseparator, newsuffix);
+
+  if (pathExists(oldpath) == false)
+    return;
+
+  errno = 0;
+  rename(oldpath, newpath);
+  if (errno)
+    fprintf(stderr, "AS_UTL_renane()--  Failed to rename file '%s' to '%s': %s\n",
+            oldpath, newpath, strerror(errno)), exit(1);
+}
+
+
+
 //  Remove ALL write bits from a given path.
 bool
 AS_UTL_makeReadOnly(char const *prefix, char separator, char const *suffix) {

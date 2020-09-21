@@ -51,6 +51,8 @@ void    AS_UTL_symlink(char const *pathToFile, char const *pathToLink);
 void    AS_UTL_unlink(char const *prefix, char separator='.', char const *suffix=NULL);
 
 void    AS_UTL_rename(char const *oldname, char const *newname);
+void    AS_UTL_rename(char const *oldprefix, char oldseparator, char const *oldsuffix,
+                      char const *newprefix, char newseparator, char const *newsuffix);
 
 bool    AS_UTL_makeReadOnly(char const *prefix, char separator='.', char const *suffix=NULL);
 bool    AS_UTL_makeWritable(char const *prefix, char separator='.', char const *suffix=NULL);

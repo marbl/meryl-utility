@@ -23,26 +23,35 @@
 int
 main(int argc, char **argv) {
 
+  fprintf(stderr, "This is most useful if you run it as 'time %s'\n", argv[0]);
+  fprintf(stderr, "then compare the two reports.\n");
+  fprintf(stderr, "\n");
+
   getProcessTime();  //  initialize.
 
   double   *array = new double [1024 * 1024];
-
-#error An error.
 
   for (int jj=0; jj<128; jj++)
     for (int ii=0; ii<1024*1024; ii++)
       array[ii] = sin(ii) + cos(jj);
 
-  fprintf(stderr, "getTime()               %f\n",  getTime());
+  double     t = getTime();
+  time_t     T = t;
+
+  fprintf(stderr, "getTime()               %f\n",     t);
+  fprintf(stderr, "getTime()  (ctime)      %s\n",     ctime(&T));
   fprintf(stderr, "\n");
-  fprintf(stderr, "getCPUTime              %f\n",  getCPUTime());
-  fprintf(stderr, "getProcessTime()        %f\n",  getProcessTime());
-  fprintf(stderr, "getProcessSize()        %lu\n", getProcessSize());
-  fprintf(stderr, "getProcessSizeLimit()   %lu\n", getProcessSizeLimit());
-  fprintf(stderr, "getBytesAllocated()     %lu\n", getBytesAllocated());
+  fprintf(stderr, "getCPUTime              %f\n",     getCPUTime());
+  fprintf(stderr, "getProcessTime()        %f\n",     getProcessTime());
+  fprintf(stderr, "getProcessSize()        %lu\n",    getProcessSize());
+  fprintf(stderr, "getProcessSizeLimit()   %lu\n",    getProcessSizeLimit());
+  fprintf(stderr, "getProcessSizeLimit()   %lu GB\n", getProcessSizeLimit() >> 30);
+  fprintf(stderr, "getBytesAllocated()     %lu\n",    getBytesAllocated());
   fprintf(stderr, "\n");
-  fprintf(stderr, "getPhysicalMemorySize() %lu\n", getPhysicalMemorySize());
-  fprintf(stderr, "getPageSize()           %lu\n", getPageSize());
+  fprintf(stderr, "getPhysicalMemorySize() %lu\n",    getPhysicalMemorySize());
+  fprintf(stderr, "getPhysicalMemorySize() %lu GB\n", getPhysicalMemorySize() >> 30);
+  fprintf(stderr, "getPageSize()           %lu\n",    getPageSize());
+  fprintf(stderr, "\n");
 
   return(0);
 }

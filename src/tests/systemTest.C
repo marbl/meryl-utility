@@ -52,6 +52,10 @@ main(int argc, char **argv) {
   fprintf(stderr, "getPhysicalMemorySize() %lu GB\n", getPhysicalMemorySize() >> 30);
   fprintf(stderr, "getPageSize()           %lu\n",    getPageSize());
   fprintf(stderr, "\n");
+  fprintf(stderr, "getMaxMemoryAllowed()   %lu\n",    getMaxMemoryAllowed());
+  fprintf(stderr, "getMaxMemoryAllowed()   %lu GB\n", getMaxMemoryAllowed() >> 30);
+  fprintf(stderr, "getMaxThreadsAllowed()  %u\n",     getMaxThreadsAllowed());
+  fprintf(stderr, "\n");
 
   return(0);
 }

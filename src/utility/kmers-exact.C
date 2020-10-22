@@ -50,8 +50,11 @@ bitsToMB(uint64 bits) {
 //  Set some basic boring stuff.
 //
 void
-merylExactLookup::initialize(uint64               minValue_,
-                             uint64               maxValue_) {
+merylExactLookup::initialize(merylFileReader *input_, uint64 minValue_, uint64 maxValue_) {
+
+  //  Save a pointer to the input data.
+
+  _input = input_;
 
   //  Silently make minValue and maxValue be valid values.
 
@@ -104,10 +107,10 @@ merylExactLookup::initialize(uint64               minValue_,
   _prePtrBits     = countNumberOfBits64(_nSuffix);   //  Width of an entry in the prefix table.
   _prePtrBits     = 64;
 
-  _suffixBgn      = NULL;
-  _suffixEnd      = NULL;
-  _sufData        = NULL;
-  _valData        = NULL;
+  _suffixBgn      = nullptr;
+  _suffixEnd      = nullptr;
+  _sufData        = nullptr;
+  _valData        = nullptr;
 }
 
 
@@ -117,31 +120,51 @@ merylExactLookup::initialize(uint64               minValue_,
 //  use for indexing (prefixSize), and how many bits of data we need
 //  to store explicitly (suffixBits and valueBits).
 //
-bool
-merylExactLookup::configure(void) {
+void
+merylExactLookup::configure(double  memInGB,
+                            double &memInGBmin,
+                            double &memInGBmax,
+                            bool    useMinimalMemory,
+                            bool    useOptimalMemory,
+                            bool    reportMemory,
+                            bool    reportSizes) {
 
-  //  First, find the prefixBits that results in the smallest allocated memory size.
-  //  Due to threading over the files, we cannot use a prefix smaller than 6 bits.
+  //  Convert the memory in GB to memory in BITS.  If no memory
+  //  size is supplied, as the OS how big we can get.
+
+  if (memInGB == 0.0)
+    _maxMemory = getMaxMemoryAllowed() * 8;
+  else
+    _maxMemory = (uint64)(memInGB * 1024.0 * 1024.0 * 1024.0 * 8);
+
+  //  Find the prefixBits that results in the smallest allocated memory size.
+  //  Due to threading over the files, we cannot use a prefix smaller than 6
+  //  bits.
   //
   //  While it's nice to find the smallest memory size possible, that's also
   //  about the slowest possible.  Instead, empirically determined on a small
-  //  test, allow a very sparse table of 16 to 32 prefixes per kmer (if possible).
+  //  test, allow a very sparse table of 16 to 32 prefixes per kmer (if
+  //  possible).
 
   uint64  minSpace   = UINT64_MAX;
   uint64  optSpace   = UINT64_MAX;
+  uint64  usdSpace   = UINT64_MAX;
 
   //  _nSuffix here is just the number of distinct kmers in the input.  We'll
   //  search for prefix sizes up to that size plus a bit more to show that
   //  what we pick really is the best size.
+  //
+  //  We save the smallest size, and the 'optimal' size, defined as something
+  //  at least as big as the smallest, but not more than 8 times larger.
 
   uint32  pbMin      = 0;
   uint32  pbOpt      = 0;
-  uint32  pbMax      = countNumberOfBits64(_nSuffix) + 4;
+  uint32  pbMax      = countNumberOfBits64(_nSuffix) + 1;
 
   if (pbMax > kmer::merSize() * 2)
     pbMax = kmer::merSize() * 2;
 
-  for (uint32 pb=1; pb<pbMax; pb++) {
+  for (uint32 pb=0; pb<pbMax; pb++) {
     uint64  nprefix = (uint64)1 << pb;
     uint64  space   = nprefix * _prePtrBits + _nSuffix * (_Kbits - pb) + _nSuffix * _valueBits;
 
@@ -150,23 +173,43 @@ merylExactLookup::configure(void) {
       minSpace     = space;
     }
 
-    if (space < _maxMemory) {
+    if ((space < _maxMemory) && (pb < pbMin + 4)) {
       pbOpt        = pb;
       optSpace     = space;
-
-      _prefixBits  =          pb;
-      _suffixBits  = _Kbits - pb;
-
-      _suffixMask  = uint64MASK(_suffixBits);
-      _dataMask    = uint64MASK(_valueBits);
-
-      _nPrefix     = nprefix;
     }
+  }
+
+  //  Set parameters.  For logging, we need these set even if
+  //  useMinimalMemory and useOptimalMemory are false -- this happens when
+  //  we're called from estimateMemoryUsage.
+
+  if (useMinimalMemory == true) {
+    usdSpace = minSpace;
+
+    _prefixBits  =          pbMin;
+    _suffixBits  = _Kbits - pbMin;
+
+    _suffixMask  = uint64MASK(_suffixBits);
+    _dataMask    = uint64MASK(_valueBits);
+
+    _nPrefix     = (uint64)1 << pbMin;
+  }
+
+  if (useOptimalMemory == true) {
+    usdSpace = optSpace;
+
+    _prefixBits  =          pbOpt;
+    _suffixBits  = _Kbits - pbOpt;
+
+    _suffixMask  = uint64MASK(_suffixBits);
+    _dataMask    = uint64MASK(_valueBits);
+
+    _nPrefix     = (uint64)1 << pbOpt;
   }
 
   //  And do it all again to keep the users entertained.
 
-  if (_verbose) {
+  if (reportMemory) {
     fprintf(stderr, "\n");
     fprintf(stderr, " p       prefixes             bits gigabytes (allowed: %lu GB)\n", _maxMemory >> 33);
     fprintf(stderr, "-- -------------- ---------------- ---------\n");
@@ -181,38 +224,36 @@ merylExactLookup::configure(void) {
       uint64  nprefix = (uint64)1 << pb;
       uint64  space   = nprefix * _prePtrBits + _nSuffix * (_Kbits - pb) + _nSuffix * _valueBits;
 
-      if      (pb == pbMin)
+      if     ((pb == pbMin) &&
+              (pb == pbOpt))
         fprintf(stderr, "%2u %14lu %16lu %9.3f (smallest)\n", pb, nprefix, space, bitsToGB(space));
-
+      else if (pb == pbMin)
+        fprintf(stderr, "%2u %14lu %16lu %9.3f (smallest)\n", pb, nprefix, space, bitsToGB(space));
       else if (pb == pbOpt)
-        fprintf(stderr, "%2u %14lu %16lu %9.3f (used)\n",     pb, nprefix, space, bitsToGB(space));
-
+        fprintf(stderr, "%2u %14lu %16lu %9.3f (faster)\n",   pb, nprefix, space, bitsToGB(space));
       else
         fprintf(stderr, "%2u %14lu %16lu %9.3f\n",            pb, nprefix, space, bitsToGB(space));
     }
 
     fprintf(stderr, "-- -------------- ---------------- ---------\n");
+    fprintf(stderr, "   %14lu total kmers\n", _nSuffix);
     fprintf(stderr, "\n");
-
-    if (_prefixBits == 0) {
-      fprintf(stderr, "Not enough memory to load %lu distinct %u-kmers.\n", _nSuffix, _Kbits / 2);
-      fprintf(stderr, "Need at least %.3f GB memory.\n", bitsToGB(minSpace));
-    }
-
-    else {
-      fprintf(stderr, "For %lu distinct %u-mers (with %u bits used for indexing and %u bits for tags):\n", _nSuffix, _Kbits / 2, _prefixBits, _suffixBits);
-      fprintf(stderr, "  %7.3f GB memory\n",                                       bitsToGB(optSpace));
-      fprintf(stderr, "  %7.3f GB memory for index (%lu elements %u bits wide)\n", bitsToGB(_nPrefix * _prePtrBits), _nPrefix, _prePtrBits);
-      fprintf(stderr, "  %7.3f GB memory for tags  (%lu elements %u bits wide)\n", bitsToGB(_nSuffix * _suffixBits), _nSuffix, _suffixBits);
-      fprintf(stderr, "  %7.3f GB memory for data  (%lu elements %u bits wide)\n", bitsToGB(_nSuffix * _valueBits),  _nSuffix, _valueBits);
-      fprintf(stderr, "\n");
-    }
   }
 
-  if (_prefixBits == 0)
-    return(false);
+  if (reportSizes) {
+    fprintf(stderr, "\n");
+    fprintf(stderr, "For %lu distinct %u-mers (with %u bits used for indexing and %u bits for tags):\n", _nSuffix, _Kbits / 2, _prefixBits, _suffixBits);
+    fprintf(stderr, "  %7.3f GB memory for kmer indices - %12lu elements %2u bits wide)\n", bitsToGB(_nPrefix * _prePtrBits), _nPrefix, _prePtrBits);
+    fprintf(stderr, "  %7.3f GB memory for kmer tags    - %12lu elements %2u bits wide)\n", bitsToGB(_nSuffix * _suffixBits), _nSuffix, _suffixBits);
+    fprintf(stderr, "  %7.3f GB memory for kmer values  - %12lu elements %2u bits wide)\n", bitsToGB(_nSuffix * _valueBits),  _nSuffix, _valueBits);
+    fprintf(stderr, "  %7.3f GB memory\n",                                                  bitsToGB(usdSpace));
+    fprintf(stderr, "\n");
+  }
 
-  return(true);
+  //  Copy the min and optimal memory sizes to the output variables.
+
+  memInGBmin = bitsToGB(minSpace);
+  memInGBmax = bitsToGB(optSpace);
 }
 
 
@@ -330,13 +371,16 @@ merylExactLookup::count(void) {
 //  prevent the need for any locking or coordination when filling out the
 //  array.
 //
-void
+double
 merylExactLookup::allocate(void) {
-  uint64  arraySize, arrayBlockMin;
+  uint64  arraySize;
+  uint64  arrayBlockMin;
+  double  memInGBused = 0.0;
 
   if (_suffixBits > 0) {
-    arraySize     = _nSuffix * _suffixBits;
-    arrayBlockMin = max(arraySize / 1024llu, 268435456llu);   //  In bits, so 32MB per block.
+    arraySize      = _nSuffix * _suffixBits;
+    arrayBlockMin  = max(arraySize / 1024llu, 268435456llu);   //  In bits, so 32MB per block.
+    memInGBused   += bitsToGB(arraySize);
 
     if (_verbose)
       fprintf(stderr, "Allocating space for %lu suffixes of %u bits each -> %lu bits (%.3f GB) in blocks of %.3f MB\n",
@@ -349,6 +393,7 @@ merylExactLookup::allocate(void) {
   if (_valueBits > 0) {
     arraySize     = _nSuffix * _valueBits;
     arrayBlockMin = max(arraySize / 1024llu, 268435456llu);   //  In bits, so 32MB per block.
+    memInGBused   += bitsToGB(arraySize);
 
     if (_verbose)
       fprintf(stderr, "                     %lu values   of %u bits each -> %lu bits (%.3f GB) in blocks of %.3f MB\n",
@@ -357,6 +402,8 @@ merylExactLookup::allocate(void) {
     _valData = new wordArray(_valueBits, arrayBlockMin);
     _valData->allocate(_nSuffix);
   }
+
+  return(memInGBused);
 }
 
 
@@ -367,10 +414,6 @@ merylExactLookup::allocate(void) {
 //  In this case, we overallocate, but cannot cleanup at the end.
 void
 merylExactLookup::load(void) {
-
-  count();
-  allocate();
-
   uint32   nf = _input->numFiles();
 
 #pragma omp parallel for schedule(dynamic, 1)
@@ -455,6 +498,55 @@ merylExactLookup::load(void) {
     fprintf(stderr, "Loaded " F_U64 " kmers.  Skipped " F_U64 " (too low) and " F_U64 " (too high) kmers.\n",
             _nKmersLoaded, _nKmersTooLow, _nKmersTooHigh);
 }
+
+
+
+void
+merylExactLookup::estimateMemoryUsage(merylFileReader *input_,
+                                      double           maxMemInGB_,
+                                      double          &minMemInGB_,
+                                      double          &optMemInGB_,
+                                      uint64           minValue_,
+                                      uint64           maxValue_) {
+  initialize(input_, minValue_, maxValue_);
+  configure(maxMemInGB_, minMemInGB_, optMemInGB_, false, false, true, false);
+}
+
+
+
+double
+merylExactLookup::load(merylFileReader *input_,
+                       double           maxMemInGB_,
+                       bool             useMinimalMemory,
+                       bool             useOptimalMemory,
+                       uint64           minValue_,
+                       uint64           maxValue_) {
+  double  minMem  = 0.0;
+  double  maxMem  = 0.0;
+  double  memInGBused = 0.0;
+
+  initialize(input_, minValue_, maxValue_);            //  Initialize ourself.
+
+  configure(maxMemInGB_,                               //  Find parameters.
+            minMem,
+            maxMem,
+            useMinimalMemory,
+            useOptimalMemory,
+            false,
+            true);
+
+  if (_prefixBits == 0)                                //  Fail if needed.
+    return(0.0);
+
+  count();                                             //  Count kmers/prefix.
+  memInGBused = allocate();                            //  Allocate space.
+  load();                                              //  Load data.
+
+  return(memInGBused);
+}
+
+
+
 
 
 

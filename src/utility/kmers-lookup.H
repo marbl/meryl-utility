@@ -24,26 +24,10 @@
 #error "include kmers.H, not this."
 #endif
 
-
 class merylExactLookup {
 public:
-  merylExactLookup(merylFileReader *input_,
-                   uint32               maxMemory_ = 0,
-                   uint64               minValue_  = 0,
-                   uint64               maxValue_  = UINT64_MAX) {
-
-    _input     = input_;
-    _maxMemory = maxMemory_;   //  maxMemory_ is In GB; _maxMemory should be in BITS!
-    _verbose   = true;
-
-    if (_maxMemory == 0)
-      _maxMemory   = getPhysicalMemorySize() * 8;
-    else
-      _maxMemory <<= 33;
-
-    initialize(minValue_, maxValue_);  //  Do NOT use minValue_ or maxValue_ from now on!
+  merylExactLookup() {
   };
-
   ~merylExactLookup() {
     delete [] _suffixBgn;
     delete [] _suffixEnd;
@@ -51,24 +35,100 @@ public:
     delete    _valData;
   };
 
-  //  To use this object:
-  //    lookup = new merylExactLookup(input, 0, 0, UINT32_MAX);
-  //    if (lookup->configure() == true)
-  //      lookup->load()
-  //
-
 private:
-  void     initialize(uint64 minValue_, uint64 maxValue_);
-public:
-  bool     configure(void);
-private:
+  void     initialize(merylFileReader *input_, uint64 minValue_, uint64 maxValue_);
+  void     configure(double  memInGB,
+                     double &memInGBmin,
+                     double &memInGBmax,
+                     bool    useMinimalMemory,
+                     bool    useOptimalMemory,
+                     bool    reportMemory,
+                     bool    reportSizes);
   void     count(void);
-  void     allocate(void);
-public:
+  double   allocate(void);
   void     load(void);
 
+  uint64   value_value(uint64 value);
+
+public:
+  void     estimateMemoryUsage(merylFileReader *input_,
+                               double           maxMemInGB_,
+                               double          &minMemInGB_,
+                               double          &optMemInGB_,
+                               uint64           minValue_ = 0,
+                               uint64           maxValue_ = UINT64_MAX);
+
+public:
+  //  Load a new meryl database into the lookup table.
+  //
+  double   load(merylFileReader *input_,
+                double           maxMemInGB_,
+                bool             useMinimalMemory,
+                bool             useOptimalMemory,
+                uint64           minValue_      = 0,
+                uint64           maxValue_      = UINT64_MAX);
+
+public:
+  //  For describing what we've loaded.
+  //
+  uint64   nKmers(void)  {  return(_nKmersLoaded);  };
+
+  //  The accessors.
+  //
+  //  Return true/false if the kmer exists/does not.
+  //  Return true/false if the kmer exists/does not, and populate 'value' with the value.
+  //  Return the value of the kmer, or zero if it doesn't exist.
+  //
+  bool     exists(kmer k);
+  bool     exists(kmer k, uint64 &value);
+  uint64   value(kmer k);
+
+  //  For testing the implementation.
+  //
+  bool     exists_test(kmer k);
+
 private:
-  uint64           value_value(uint64 value) {
+  merylFileReader  *_input         = nullptr;
+
+  uint64            _maxMemory     = 0;
+  bool              _verbose       = false;
+
+  uint64            _minValue      = 0;    //  Minimum value stored in the table -| both of these filter the
+  uint64            _maxValue      = 0;    //  Maximum value stored in the table -| input kmers.
+  uint64            _valueOffset   = 0;    //  Offset of values stored in the table.
+
+  uint64            _nKmersLoaded  = 0;
+  uint64            _nKmersTooLow  = 0;
+  uint64            _nKmersTooHigh = 0;
+
+  uint32            _Kbits;
+
+  uint32            _prefixBits    = 0;    //  How many high-end bits of the kmer is an index into _suffixBgn.
+  uint32            _suffixBits    = 0;    //  How many bits of the kmer are in the suffix table.
+  uint32            _valueBits     = 0;    //  How many bits of the suffix entry are data.
+
+  kmdata            _suffixMask    = 0;
+  uint64            _dataMask      = 0;
+
+  uint64            _nPrefix       = 0;    //  How many entries in _suffixBgn  == 2 ^ _prefixBits.
+  uint64            _nSuffix       = 0;    //  How many entries in _suffixData == nDistinct in the input database.
+
+  uint32            _prePtrBits    = 0;    //  How many bits wide is _suffixBgn (used only if _suffixBgn is a wordArray).
+
+  uint64           *_suffixBgn = nullptr;  //  The start of a block of data in suffix Data.  The end is the next start.
+  uint64           *_suffixEnd = nullptr;  //  The end.  Temporary.
+  wordArray        *_sufData   = nullptr;  //  Finally, kmer suffix data!
+  wordArray        *_valData   = nullptr;  //  Finally, value data!
+};
+
+
+
+
+
+
+inline
+  uint64
+merylExactLookup::value_value(uint64 value) {
     if (_valueBits == 0)               //  Return 'true' if no value
       return(1);                       //  is stored.
 
@@ -80,12 +140,12 @@ private:
     return(value + _valueOffset);      //  Otherwise, return the value.
   };
 
-public:
-  uint64           nKmers(void)  {  return(_nKmersLoaded);  };
 
 
   //  Return true/false if the kmer exists/does not.
-  bool             exists(kmer k) {
+inline
+bool
+merylExactLookup::exists(kmer k) {
     kmdata  kmer   = (kmdata)k;
     uint64  prefix = kmer >> _suffixBits;
     kmdata  suffix = kmer  & _suffixMask;
@@ -126,9 +186,12 @@ public:
   }
 
 
+
   //  Return true/false if the kmer exists/does not.
   //  And populate 'value' with the value of the kmer.
-  bool             exists(kmer k, uint64 &value) {
+inline
+  bool
+merylExactLookup::exists(kmer k, uint64 &value) {
     kmdata  kmer   = (kmdata)k;
     uint64  prefix = kmer >> _suffixBits;
     kmdata  suffix = kmer  & _suffixMask;
@@ -181,7 +244,9 @@ public:
 
 
   //  Returns the value of the kmer, '0' if it doesn't exist.
-  uint64           value(kmer k) {
+inline
+  uint64
+  merylExactLookup::value(kmer k) {
     kmdata  kmer   = (kmdata)k;
     uint64  prefix = kmer >> _suffixBits;
     kmdata  suffix = kmer  & _suffixMask;
@@ -230,41 +295,6 @@ public:
   };
 
 
-  bool             exists_test(kmer k);
 
-
-private:
-  merylFileReader  *_input;
-
-  uint64                _maxMemory;
-  bool                  _verbose;
-
-  uint64                _minValue;    //  Minimum value stored in the table -| both of these filter the
-  uint64                _maxValue;    //  Maximum value stored in the table -| input kmers.
-  uint64                _valueOffset; //  Offset of values stored in the table.
-
-  uint64                _nKmersLoaded;
-  uint64                _nKmersTooLow;
-  uint64                _nKmersTooHigh;
-
-  uint32                _Kbits;
-
-  uint32                _prefixBits;  //  How many high-end bits of the kmer is an index into _suffixBgn.
-  uint32                _suffixBits;  //  How many bits of the kmer are in the suffix table.
-  uint32                _valueBits;   //  How many bits of the suffix entry are data.
-
-  kmdata                _suffixMask;
-  uint64                _dataMask;
-
-  uint64                _nPrefix;     //  How many entries in _suffixBgn  == 2 ^ _prefixBits.
-  uint64                _nSuffix;     //  How many entries in _suffixData == nDistinct in the input database.
-
-  uint32                _prePtrBits;  //  How many bits wide is _suffixBgn (used only if _suffixBgn is a wordArray).
-
-  uint64               *_suffixBgn;   //  The start of a block of data in suffix Data.  The end is the next start.
-  uint64               *_suffixEnd;   //  The end.  Temporary.
-  wordArray            *_sufData;     //  Finally, kmer suffix data!
-  wordArray            *_valData;     //  Finally, value data!
-};
 
 #endif  //  MERYL_UTIL_KMER_LOOKUP_H

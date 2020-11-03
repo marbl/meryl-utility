@@ -3579,7 +3579,6 @@ parasail_result_t* parasail_sg_qe_db_trace_striped_32_dispatcher(
     }
     return parasail_sg_qe_db_trace_striped_32_pointer(s1, s1Len, s2, s2Len, open, gap, matrix);
 }
-
 #endif
 
 
@@ -3595,7 +3594,6 @@ parasail_result_t* parasail_sg_qe_db_trace_striped_16_dispatcher(
     }
     else
 #endif
-#if 0
 #if HAVE_SSE41
     if (parasail_can_use_sse41()) {
         parasail_sg_qe_db_trace_striped_16_pointer = parasail_sg_qe_db_trace_striped_sse41_128_16;
@@ -3620,15 +3618,14 @@ parasail_result_t* parasail_sg_qe_db_trace_striped_16_dispatcher(
     }
     else
 #endif
-#endif
     {
         parasail_sg_qe_db_trace_striped_16_pointer = parasail_sg_qe_db;
     }
     return parasail_sg_qe_db_trace_striped_16_pointer(s1, s1Len, s2, s2Len, open, gap, matrix);
 }
 
-#if 0
 
+#if 0
 parasail_result_t* parasail_sg_qe_db_trace_striped_8_dispatcher(
         const char * const restrict s1, const int s1Len,
         const char * const restrict s2, const int s2Len,

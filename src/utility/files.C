@@ -550,7 +550,11 @@ AS_UTL_timeOfFile(char const *path) {
   if (stat(path, &s) == -1)
     fprintf(stderr, "Failed to stat() file '%s': %s\n", path, strerror(errno)), exit(1);
 
+#ifdef __APPLE__
+  return(s.st_mtimespec.tv_sec);
+#else
   return(s.st_mtim.tv_sec);
+#endif
 }
 
 
@@ -564,7 +568,11 @@ AS_UTL_timeOfFile(FILE *file) {
   if (fstat(fileno(file), &s) == -1)
     fprintf(stderr, "Failed to stat() FILE*: %s\n", strerror(errno)), exit(1);
 
+#ifdef __APPLE__
+  return(s.st_mtimespec.tv_sec);
+#else
   return(s.st_mtim.tv_sec);
+#endif
 }
 
 

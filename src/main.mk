@@ -2,6 +2,9 @@ MODULE       :=    meryl-utility
 TARGET       := libmeryl-utility.a
 SOURCES      := utility/runtime.C \
                 \
+                utility/align-ksw2-extz.C \
+                utility/align-ksw2-extz2-sse.C \
+                utility/align-ksw2-driver.C \
                 utility/align-ssw.C \
                 utility/align-ssw-driver.C \
                 utility/align-parasail-driver.C \
@@ -84,6 +87,7 @@ SUBMAKEFILES :=
 
 ifeq ($(BUILDTESTS), 1)
 SUBMAKEFILES += tests/alignTest-ssw.mk \
+                tests/alignTest-ksw2.mk \
                 tests/bitsTest.mk \
                 tests/filesTest.mk \
                 tests/intervalListTest.mk \

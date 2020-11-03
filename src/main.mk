@@ -4,6 +4,7 @@ SOURCES      := utility/runtime.C \
                 \
                 utility/align-ssw.C \
                 utility/align-ssw-driver.C \
+                utility/align-parasail-driver.C \
                 utility/edlib.C \
                 \
                 utility/files.C \
@@ -37,7 +38,24 @@ SOURCES      := utility/runtime.C \
                 utility/md5.C \
                 utility/mt19937ar.C \
                 utility/speedCounter.C \
-                utility/sweatShop.C
+                utility/sweatShop.C \
+                \
+                parasail/cpuid.c \
+                parasail/memory.c \
+                parasail/memory_sse.c \
+                parasail/memory_avx2.c \
+                parasail/sg.c \
+                parasail/sg_trace.c \
+                parasail/sg_trace_striped_sse2_128_16.c \
+                parasail/sg_trace_striped_sse2_128_32.c \
+                parasail/sg_trace_striped_sse41_128_16.c \
+                parasail/sg_trace_striped_sse41_128_32.c \
+                parasail/sg_trace_striped_avx2_256_16.c \
+                parasail/sg_trace_striped_avx2_256_32.c \
+                parasail/sg_qx_dispatch.c \
+                parasail/sg_qb_de_dispatch.c \
+                parasail/sg_qe_db_dispatch.c \
+                parasail/cigar.c
 
 
 ifeq (${BUILDSTACKTRACE}, 1)
@@ -59,7 +77,8 @@ endif
 
 
 SRC_INCDIRS  := . \
-                utility
+                utility \
+                parasail
 
 SUBMAKEFILES := 
 
@@ -69,6 +88,7 @@ SUBMAKEFILES += tests/alignTest-ssw.mk \
                 tests/filesTest.mk \
                 tests/intervalListTest.mk \
                 tests/loggingTest.mk \
+                tests/parasailTest.mk \
                 tests/stddevTest.mk \
                 tests/systemTest.mk
 endif

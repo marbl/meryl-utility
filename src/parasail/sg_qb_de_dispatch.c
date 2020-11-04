@@ -234,8 +234,8 @@ parasail_function_t * parasail_sg_qb_de_trace_scan_32_pointer = parasail_sg_qb_d
 parasail_function_t * parasail_sg_qb_de_trace_scan_16_pointer = parasail_sg_qb_de_trace_scan_16_dispatcher;
 parasail_function_t * parasail_sg_qb_de_trace_scan_8_pointer = parasail_sg_qb_de_trace_scan_8_dispatcher;
 parasail_function_t * parasail_sg_qb_de_trace_striped_64_pointer = parasail_sg_qb_de_trace_striped_64_dispatcher;
-parasail_function_t * parasail_sg_qb_de_trace_striped_32_pointer = parasail_sg_qb_de_trace_striped_32_dispatcher;
 #endif
+parasail_function_t * parasail_sg_qb_de_trace_striped_32_pointer = parasail_sg_qb_de_trace_striped_32_dispatcher;
 parasail_function_t * parasail_sg_qb_de_trace_striped_16_pointer = parasail_sg_qb_de_trace_striped_16_dispatcher;
 #if 0
 parasail_function_t * parasail_sg_qb_de_trace_striped_8_pointer = parasail_sg_qb_de_trace_striped_8_dispatcher;
@@ -3537,6 +3537,7 @@ parasail_result_t* parasail_sg_qb_de_trace_striped_64_dispatcher(
     }
     return parasail_sg_qb_de_trace_striped_64_pointer(s1, s1Len, s2, s2Len, open, gap, matrix);
 }
+#endif
 
 parasail_result_t* parasail_sg_qb_de_trace_striped_32_dispatcher(
         const char * const restrict s1, const int s1Len,
@@ -3579,7 +3580,6 @@ parasail_result_t* parasail_sg_qb_de_trace_striped_32_dispatcher(
     }
     return parasail_sg_qb_de_trace_striped_32_pointer(s1, s1Len, s2, s2Len, open, gap, matrix);
 }
-#endif
 
 parasail_result_t* parasail_sg_qb_de_trace_striped_16_dispatcher(
         const char * const restrict s1, const int s1Len,
@@ -6825,6 +6825,7 @@ parasail_result_t* parasail_sg_qb_de_trace_striped_64(
 {
     return parasail_sg_qb_de_trace_striped_64_pointer(s1, s1Len, s2, s2Len, open, gap, matrix);
 }
+#endif
 
 parasail_result_t* parasail_sg_qb_de_trace_striped_32(
         const char * const restrict s1, const int s1Len,
@@ -6834,7 +6835,6 @@ parasail_result_t* parasail_sg_qb_de_trace_striped_32(
 {
     return parasail_sg_qb_de_trace_striped_32_pointer(s1, s1Len, s2, s2Len, open, gap, matrix);
 }
-#endif
 
 parasail_result_t* parasail_sg_qb_de_trace_striped_16(
         const char * const restrict s1, const int s1Len,

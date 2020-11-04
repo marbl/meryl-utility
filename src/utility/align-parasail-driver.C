@@ -212,6 +212,109 @@ parasailLib::align(char const *seqA_, uint32 seqlenA_, int32 bgnA_, int32 endA_,
 
 
 
+//  Draw the alignment, truncating long match regions to at most 2 *
+//  maxMatchLength letters, with dots to indicate bases dropped.
+//
+void
+parasailLib::display(uint32 maxMatchLength) {
+  char const  *aseq = _seqA + bgnA();
+  char const  *bseq = _seqB + bgnB();
+
+  char        *aaln = new char [16 + _aLen + 16 + 1];
+  char        *baln = new char [16 + _aLen + 16 + 1];
+
+  uint32 apos = 0;  //  Position in the output strings.
+  uint32 bpos = 0;
+
+  //  Start off showing how much sequence wasn't aligned.
+
+  if (bgnA() > 0)
+    sprintf(aaln, "%6u ", bgnA());
+  else
+    sprintf(aaln, "%6s ", "");
+
+  if (bgnB() > 0)
+    sprintf(baln, "%6u ", bgnB());
+  else
+    sprintf(baln, "%6s ", "");
+
+  apos = strlen(aaln);
+  bpos = strlen(baln);
+
+  //  Walk down the cigar string, adding bases as appropriate.
+
+  for (uint32 c=0; c<cigarLength(); c++) {
+    aaln[apos++] = ' ';    aaln[apos++] = cigarCode(c);    aaln[apos++] = ' ';
+    baln[bpos++] = ' ';    baln[bpos++] = '*';             baln[bpos++] = ' ';
+
+    switch (cigarCode(c)) {
+      case 'M':
+      case '=':
+      case 'X':
+        if (cigarValu(c) < maxMatchLength) {
+          for (uint32 p=0; p<cigarValu(c); p++) {
+            aaln[apos++] = *aseq++;
+            baln[bpos++] = *bseq++;
+          }
+        } else {
+          uint32  dl = (maxMatchLength - 6) / 2;
+
+          for (uint32 p=0; p < dl; p++) {
+            aaln[apos++] = *aseq++;
+            baln[bpos++] = *bseq++;
+          }
+
+          sprintf(aaln + apos, "..%u..", cigarValu(c) - dl - dl);
+          sprintf(baln + bpos, "..%u..", cigarValu(c) - dl - dl);
+
+          apos = strlen(aaln);
+          bpos = strlen(baln);
+
+          aseq += cigarValu(c) - dl - dl;
+          bseq += cigarValu(c) - dl - dl;
+
+          for (uint32 p=0; p < dl; p++) {
+            aaln[apos++] = *aseq++;
+            baln[bpos++] = *bseq++;
+          }
+        }
+        break;
+
+      case 'I':
+        for (uint32 p=0; p<cigarValu(c); p++) {
+          aaln[apos++] = *aseq++;
+          baln[bpos++] = '-';
+        }
+        break;
+
+      case 'D':
+        for (uint32 p=0; p<cigarValu(c); p++) {
+          aaln[apos++] = '-';
+          baln[bpos++] = *bseq++;
+        }
+        break;
+
+      default:
+        assert(0);
+        break;
+    }
+
+    aaln[apos] = 0;
+    baln[bpos] = 0;
+
+  }
+
+  fprintf(stdout, "\n");
+  fprintf(stdout, "A %s\n", aaln);
+  fprintf(stdout, "B %s\n", baln);
+  fprintf(stdout, "\n");
+
+  delete [] aaln;
+  delete [] baln;
+}
+
+
+
 void
 parasailLib::analyzeAlignment(void) {
 

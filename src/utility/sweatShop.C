@@ -286,7 +286,7 @@ sweatShop::worker(sweatShopWorker *workerData) {
 
     err = pthread_mutex_unlock(&_stateMutex);
     if (err != 0)
-      fprintf(stderr, "sweatShop::worler()--  Failed to lock mutex (%d).  Fail.\n", err), exit(1);
+      fprintf(stderr, "sweatShop::worker()--  Failed to lock mutex (%d).  Fail.\n", err), exit(1);
 
 
     if (workerData->workerQueueLen == 0) {

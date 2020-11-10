@@ -44,6 +44,21 @@ compressedFileType(char const *filename) {
 
 
 
+static
+bool
+pigzAvailable(void) {
+  FILE *F = popen("pigz -h > /dev/null 2>&1", "r");
+
+  if (F == nullptr)
+    return(false);
+
+  int32 e = pclose(F);
+
+  return(e == 0);   //  If no error, then 'pigz' was able to run.
+}
+
+
+
 compressedFileReader::compressedFileReader(const char *filename) {
 
   _file     = NULL;
@@ -79,7 +94,10 @@ compressedFileReader::~compressedFileReader() {
 
 void
 compressedFileReader::reopen(void) {
-  char    cmd[FILENAME_MAX];
+  char   cmd[FILENAME_MAX];
+
+  int32  nThreads = omp_get_max_threads();
+  bool   pigz     = false;
 
   //  If input from stdin, do nothing.  reopen() on this makes no sense,
   //  and doing nothing is _possibly_ more correct than failing.
@@ -94,12 +112,18 @@ compressedFileReader::reopen(void) {
   if ((_type != cftSTDIN) && (fileExists(_filename) == false))
     fprintf(stderr, "ERROR:  Failed to open input file '%s': %s\n", _filename, strerror(errno)), exit(1);
 
+  if (_type == cftGZ)
+    pigz = pigzAvailable();
+
   //  Open the file!
   errno = 0;
 
   switch (_type) {
     case cftGZ:
-      snprintf(cmd, FILENAME_MAX, "gzip -dc '%s'", _filename);
+      if (pigz)
+        snprintf(cmd, FILENAME_MAX, "pigz -dc -p %d '%s'", nThreads, _filename);
+      else
+        snprintf(cmd, FILENAME_MAX, "gzip -dc '%s'", _filename);
       _file = popen(cmd, "r");
       _pipe = true;
       break;
@@ -146,8 +170,8 @@ compressedFileReader::reopen(void) {
 compressedFileWriter::compressedFileWriter(const char *filename, int32 level) {
   char   cmd[FILENAME_MAX];
 
-  int32  nThreads      = omp_get_max_threads();
-  bool   pigzAvailable = false;
+  int32  nThreads = omp_get_max_threads();
+  bool   pigz     = false;
 
   _file     = NULL;
   _filename = duplicateString(filename);
@@ -158,22 +182,8 @@ compressedFileWriter::compressedFileWriter(const char *filename, int32 level) {
 
   //  Decide if we have pigz or gzip available.
 
-  if (ft == cftGZ) {
-    snprintf(cmd, FILENAME_MAX, "pigz -h > /dev/null 2>&1");
-
-    FILE *F = popen(cmd, "r");
-    int32 e = pclose(F);
-
-    if (e == 0)
-      pigzAvailable = true;
-  }
-
-#if 0
-  if (pigzAvailable)
-    fprintf(stderr, "Using pigz for compression.\n");
-  else
-    fprintf(stderr, "Using gzip for compression.\n");
-#endif
+  if (ft == cftGZ)
+    pigz = pigzAvailable();
 
   //  Open the output processor for input.
 
@@ -181,7 +191,7 @@ compressedFileWriter::compressedFileWriter(const char *filename, int32 level) {
 
   switch (ft) {
     case cftGZ:
-      if (pigzAvailable)
+      if (pigz)
         snprintf(cmd, FILENAME_MAX, "pigz -%dc -p %d > '%s'", level, nThreads, _filename);
       else
         snprintf(cmd, FILENAME_MAX, "gzip -%dc > '%s'", level, _filename);

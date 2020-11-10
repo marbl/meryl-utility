@@ -550,9 +550,12 @@ dnaSeqFile::reopen(void) {
     _file = new compressedFileReader(_filename);
 
   //  Since the file object is always new, we need to make a new read buffer.
+  //  gzip inputs seem to be (on FreeBSD) returning only 64k blocks
+  //  regardless of the size of our buffer; but uncompressed inputs will
+  //  benefit slightly from a bit larger buffer.
   delete _buffer;
 
-  _buffer = new readBuffer(_file->file());
+  _buffer = new readBuffer(_file->file(), 128 * 1024);
 
   //  Create an index if requested.
   if (_indexed == true) {

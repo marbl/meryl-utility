@@ -66,8 +66,8 @@ private:
 
   //  Utilities for the loader thread
   //void    loaderAdd(sweatShopState *thisState);
-  void    loaderSave(sweatShopState *&tail, sweatShopState *&head, sweatShopState *thisState);
-  void    loaderAppend(sweatShopState *&tail, sweatShopState *&head);
+  void    loaderAddToLocal(sweatShopState *&tail, sweatShopState *&head, sweatShopState *thisState);
+  void    loaderAppendToGlobal(sweatShopState *&tail, sweatShopState *&head, uint32 num);
 
   pthread_mutex_t        _stateMutex;
 

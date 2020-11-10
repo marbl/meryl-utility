@@ -174,8 +174,12 @@ public:
   uint64      sequenceLength(uint64 i);
 
 public:
-  bool   isFASTA(void)   { return(_isFASTA); };
-  bool   isFASTQ(void)   { return(_isFASTQ); };
+  //  True if the last sequence loaded was from a FASTA or FASTQ file.
+  bool   isFASTA(void)      { return(_isFASTA); };
+  bool   isFASTQ(void)      { return(_isFASTQ); };
+
+  //  True if the input file is compressed (gzip, xz, etc).
+  bool   isCompressed(void) { return(_file->isCompressed()); };
 
 public:
   bool   loadSequence(char   *&name, uint32 &nameMax,

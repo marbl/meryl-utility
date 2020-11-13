@@ -45,16 +45,8 @@ SOURCES      := utility/runtime.C \
                 \
                 parasail/cpuid.c \
                 parasail/memory.c \
-                parasail/memory_sse.c \
-                parasail/memory_avx2.c \
                 parasail/sg.c \
                 parasail/sg_trace.c \
-                parasail/sg_trace_striped_sse2_128_16.c \
-                parasail/sg_trace_striped_sse2_128_32.c \
-                parasail/sg_trace_striped_sse41_128_16.c \
-                parasail/sg_trace_striped_sse41_128_32.c \
-                parasail/sg_trace_striped_avx2_256_16.c \
-                parasail/sg_trace_striped_avx2_256_32.c \
                 parasail/sg_qx_dispatch.c \
                 parasail/sg_qb_de_dispatch.c \
                 parasail/sg_qe_db_dispatch.c \

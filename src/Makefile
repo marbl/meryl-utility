@@ -421,7 +421,6 @@ ifeq ($(origin CXXFLAGS), undefined)
   CXXFLAGS += -Wno-deprecated-declarations
   CXXFLAGS += -Wno-format-truncation
   CXXFLAGS += -std=c++11
-	CXXFLAGS += -mavx2
 
   CFLAGS += -Wall -Wextra -Wformat
   CFLAGS += -Wno-char-subscripts
@@ -431,7 +430,6 @@ ifeq ($(origin CXXFLAGS), undefined)
   CFLAGS += -Wno-unused-variable
   CFLAGS += -Wno-deprecated-declarations
   CFLAGS += -Wno-format-truncation
-  CFLAGS += -mavx2
 else
   CXXFLAGSUSER := ${CXXFLAGS}
 endif

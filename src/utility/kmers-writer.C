@@ -54,7 +54,9 @@ merylFileWriter::initialize(uint32 prefixSize, bool isMultiSet) {
       _prefixSize = 12;  //max((uint32)8, 2 * kmer::merSize() / 3);
 
     _suffixSize         = 2 * kmer::merSize() - _prefixSize;
-    _suffixMask         = uint64MASK(_suffixSize);
+    _suffixMask         = 0;
+    _suffixMask         = ~_suffixMask;
+    _suffixMask       >>= 8 * sizeof(kmdata) - _suffixSize;
 
     //  Decide how many files to write.  We can make up to 2^32 files, but will
     //  run out of file handles _well_ before that.  For now, limit to 2^6 = 64 files.

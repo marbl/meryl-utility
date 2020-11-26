@@ -26,15 +26,6 @@
 
 #include <algorithm>
 
-//  Define this to enable testing that the width of the data element is greater than zero.  The
-//  uint64MASK() macro (bri.h) does not generate a mask for 0.  Compiler warnings are issued,
-//  because you shouldn't use this in production code.
-//
-//  As it's expensive, emit a warning if it's enabled.
-//
-//#define CHECK_WIDTH
-//#warning CHECK_WIDTH is EXPENSIVE
-
 
 //  Writing in the middle of data is toublesome.
 //  This code currently will not split an object across two allocated blocks,

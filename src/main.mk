@@ -36,6 +36,7 @@ SOURCES      := utility/runtime.C \
                 utility/kmers.C \
                 \
                 utility/bits.C \
+                utility/bits-wordArray.C \
                 \
                 utility/hexDump.C \
                 utility/md5.C \

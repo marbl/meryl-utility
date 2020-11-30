@@ -36,7 +36,7 @@ public:
   };
 
 private:
-  void     initialize(merylFileReader *input_, uint64 minValue_, uint64 maxValue_);
+  void     initialize(merylFileReader *input_, kmvalu minValue_, kmvalu maxValue_);
   void     configure(double  memInGB,
                      double &memInGBmin,
                      double &memInGBmax,
@@ -48,15 +48,15 @@ private:
   double   allocate(void);
   void     load(void);
 
-  uint64   value_value(uint64 value);
+  kmvalu   value_value(kmvalu value);
 
 public:
   void     estimateMemoryUsage(merylFileReader *input_,
                                double           maxMemInGB_,
                                double          &minMemInGB_,
                                double          &optMemInGB_,
-                               uint64           minValue_ = 0,
-                               uint64           maxValue_ = UINT64_MAX);
+                               kmvalu           minValue_ = 0,
+                               kmvalu           maxValue_ = kmvalumax);
 
 public:
   //  Load a new meryl database into the lookup table.
@@ -65,8 +65,8 @@ public:
                 double           maxMemInGB_,
                 bool             useMinimalMemory,
                 bool             useOptimalMemory,
-                uint64           minValue_      = 0,
-                uint64           maxValue_      = UINT64_MAX);
+                kmvalu           minValue_      = 0,
+                kmvalu           maxValue_      = kmvalumax);
 
 public:
   //  For describing what we've loaded.
@@ -80,8 +80,8 @@ public:
   //  Return the value of the kmer, or zero if it doesn't exist.
   //
   bool     exists(kmer k);
-  bool     exists(kmer k, uint64 &value);
-  uint64   value(kmer k);
+  bool     exists(kmer k, kmvalu &value);
+  kmvalu   value(kmer k);
 
   //  For testing the implementation.
   //
@@ -91,11 +91,11 @@ private:
   merylFileReader  *_input         = nullptr;
 
   uint64            _maxMemory     = 0;
-  bool              _verbose       = false;
+  bool              _verbose       = true;
 
-  uint64            _minValue      = 0;    //  Minimum value stored in the table -| both of these filter the
-  uint64            _maxValue      = 0;    //  Maximum value stored in the table -| input kmers.
-  uint64            _valueOffset   = 0;    //  Offset of values stored in the table.
+  kmvalu            _minValue      = 0;    //  Minimum value stored in the table -| both of these filter the
+  kmvalu            _maxValue      = 0;    //  Maximum value stored in the table -| input kmers.
+  kmvalu            _valueOffset   = 0;    //  Offset of values stored in the table.
 
   uint64            _nKmersLoaded  = 0;
   uint64            _nKmersTooLow  = 0;
@@ -108,7 +108,6 @@ private:
   uint32            _valueBits     = 0;    //  How many bits of the suffix entry are data.
 
   kmdata            _suffixMask    = 0;
-  uint64            _dataMask      = 0;
 
   uint64            _nPrefix       = 0;    //  How many entries in _suffixBgn  == 2 ^ _prefixBits.
   uint64            _nSuffix       = 0;    //  How many entries in _suffixData == nDistinct in the input database.
@@ -127,12 +126,12 @@ private:
 
 
 inline
-uint64
-merylExactLookup::value_value(uint64 value) {
+kmvalu
+merylExactLookup::value_value(kmvalu value) {
   if (_valueBits == 0)               //  Return 'true' if no value
     return(1);                       //  is stored.
 
-  value &= buildLowBitMask<uint64>(_valueBits);
+  value &= buildLowBitMask<kmvalu>(_valueBits);
 
   //if (value == 0)                    //  Return zero if the value
   //  return(0);                       //  is actually zero.
@@ -191,9 +190,9 @@ merylExactLookup::exists(kmer k) {
 //  And populate 'value' with the value of the kmer.
 inline
 bool
-merylExactLookup::exists(kmer k, uint64 &value) {
+merylExactLookup::exists(kmer k, kmvalu &value) {
   kmdata  kmer   = (kmdata)k;
-  uint64  prefix = kmer >> _suffixBits;
+  kmdata  prefix = kmer >> _suffixBits;
   kmdata  suffix = kmer  & _suffixMask;
 
   uint64  bgn = _suffixBgn[prefix];
@@ -245,10 +244,10 @@ merylExactLookup::exists(kmer k, uint64 &value) {
 
 //  Returns the value of the kmer, '0' if it doesn't exist.
 inline
-uint64
+kmvalu
 merylExactLookup::value(kmer k) {
   kmdata  kmer   = (kmdata)k;
-  uint64  prefix = kmer >> _suffixBits;
+  kmdata  prefix = kmer >> _suffixBits;
   kmdata  suffix = kmer  & _suffixMask;
 
   uint64  bgn = _suffixBgn[prefix];
@@ -293,8 +292,6 @@ merylExactLookup::value(kmer k) {
 
   return(0);
 };
-
-
 
 
 #endif  //  MERYL_UTIL_KMER_LOOKUP_H

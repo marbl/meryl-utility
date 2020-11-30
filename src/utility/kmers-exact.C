@@ -50,7 +50,7 @@ bitsToMB(uint64 bits) {
 //  Set some basic boring stuff.
 //
 void
-merylExactLookup::initialize(merylFileReader *input_, uint64 minValue_, uint64 maxValue_) {
+merylExactLookup::initialize(merylFileReader *input_, kmvalu minValue_, kmvalu maxValue_) {
 
   //  Save a pointer to the input data.
 
@@ -61,7 +61,7 @@ merylExactLookup::initialize(merylFileReader *input_, uint64 minValue_, uint64 m
   if (minValue_ == 0)
     minValue_ = 1;
 
-  if (maxValue_ == UINT64_MAX) {
+  if (maxValue_ == kmvalumax) {
     uint32  nV = _input->stats()->histogramLength();
 
     maxValue_ = _input->stats()->histogramValue(nV - 1);
@@ -89,7 +89,6 @@ merylExactLookup::initialize(merylFileReader *input_, uint64 minValue_, uint64 m
     _valueBits = countNumberOfBits64(_maxValue + 1 - _minValue);
 
   _suffixMask     = 0;
-  _dataMask       = 0;
 
   _nPrefix        = 0;                               //  Number of entries in pointer table.
   _nSuffix        = 0;                               //  Number of entries in suffix dable.
@@ -97,7 +96,7 @@ merylExactLookup::initialize(merylFileReader *input_, uint64 minValue_, uint64 m
   //  Scan the histogram to count the number of kmers in range.
 
   for (uint32 ii=0; ii<_input->stats()->histogramLength(); ii++) {
-    uint64  v = _input->stats()->histogramValue(ii);
+    kmvalu  v = _input->stats()->histogramValue(ii);
 
     if ((_minValue <= v) &&
         (v <= _maxValue))
@@ -146,9 +145,9 @@ merylExactLookup::configure(double  memInGB,
   //  test, allow a very sparse table of 16 to 32 prefixes per kmer (if
   //  possible).
 
-  uint64  minSpace   = UINT64_MAX;
-  uint64  optSpace   = UINT64_MAX;
-  uint64  usdSpace   = UINT64_MAX;
+  uint64  minSpace   = uint64max;
+  uint64  optSpace   = uint64max;
+  uint64  usdSpace   = uint64max;
 
   //  _nSuffix here is just the number of distinct kmers in the input.  We'll
   //  search for prefix sizes up to that size plus a bit more to show that
@@ -189,8 +188,7 @@ merylExactLookup::configure(double  memInGB,
     _prefixBits  =          pbMin;
     _suffixBits  = _Kbits - pbMin;
 
-    _suffixMask  = buildLowBitMask<uint64>(_suffixBits);
-    _dataMask    = buildLowBitMask<uint64>(_valueBits);
+    _suffixMask  = buildLowBitMask<kmdata>(_suffixBits);
 
     _nPrefix     = (uint64)1 << pbMin;
   }
@@ -201,8 +199,7 @@ merylExactLookup::configure(double  memInGB,
     _prefixBits  =          pbOpt;
     _suffixBits  = _Kbits - pbOpt;
 
-    _suffixMask  = buildLowBitMask<uint64>(_suffixBits);
-    _dataMask    = buildLowBitMask<uint64>(_valueBits);
+    _suffixMask  = buildLowBitMask<kmdata>(_suffixBits);
 
     _nPrefix     = (uint64)1 << pbOpt;
   }
@@ -292,9 +289,9 @@ merylExactLookup::count(void) {
       block->decodeBlock();
 
       for (uint32 ss=0; ss<block->nKmers(); ss++) {
-        uint64   sdata  = 0;
-        uint64   prefix = 0;
-        uint64   value  = block->values()[ss];
+        kmdata   sdata  = 0;
+        kmdata   prefix = 0;
+        kmvalu   value  = block->values()[ss];
 
         if (value < _minValue) {
           tooLow++;
@@ -377,6 +374,8 @@ merylExactLookup::allocate(void) {
   uint64  arrayBlockMin;
   double  memInGBused = 0.0;
 
+  fprintf(stderr, "ALLOCATE %u %u\n", _suffixBits, _valueBits);
+
   if (_suffixBits > 0) {
     arraySize      = _nSuffix * _suffixBits;
     arrayBlockMin  = max(arraySize / 1024llu, 268435456llu);   //  In bits, so 32MB per block.
@@ -385,6 +384,8 @@ merylExactLookup::allocate(void) {
     if (_verbose)
       fprintf(stderr, "Allocating space for %lu suffixes of %u bits each -> %lu bits (%.3f GB) in blocks of %.3f MB\n",
               _nSuffix, _suffixBits, arraySize, bitsToGB(arraySize), bitsToMB(arrayBlockMin));
+
+    assert(_suffixBits <= 128);
 
     _sufData = new wordArray(_suffixBits, arrayBlockMin);
     _sufData->allocate(_nSuffix);
@@ -398,6 +399,8 @@ merylExactLookup::allocate(void) {
     if (_verbose)
       fprintf(stderr, "                     %lu values   of %u bits each -> %lu bits (%.3f GB) in blocks of %.3f MB\n",
               _nSuffix, _valueBits,  arraySize, bitsToGB(arraySize), bitsToMB(arrayBlockMin));
+
+    assert(_valueBits <= 64);
 
     _valData = new wordArray(_valueBits, arrayBlockMin);
     _valData->allocate(_nSuffix);
@@ -427,9 +430,9 @@ merylExactLookup::load(void) {
       block->decodeBlock();
 
       for (uint32 ss=0; ss<block->nKmers(); ss++) {
-        uint64   prefix = 0;
-        uint64   suffix = 0;
-        uint64   value  = block->values()[ss];
+        kmdata   prefix = 0;
+        kmdata   suffix = 0;
+        kmvalu   value  = block->values()[ss];
 
         if ((value < _minValue) ||         //  Sanity checking and counting done
             (_maxValue < value))           //  in count() above.
@@ -441,7 +444,7 @@ merylExactLookup::load(void) {
         prefix <<= _input->suffixSize();    //  kmerTiny::setPrefixSuffix().  From the kmer,
         prefix  |= block->suffixes()[ss];   //  generate the prefix we want to save it as.
 
-        suffix   = prefix & buildLowBitMask<uint64>(_suffixBits);
+        suffix   = prefix & buildLowBitMask<kmdata>(_suffixBits);
         prefix >>= _suffixBits;
 
         _sufData->set(_suffixBgn[prefix], suffix);
@@ -452,9 +455,9 @@ merylExactLookup::load(void) {
           value -= _valueOffset;
 
           if (value > _maxValue + 1 - _minValue)
-            fprintf(stderr, "minValue " F_U64 " maxValue " F_U64 " value " F_U64 " bits " F_U32 "\n",
+            fprintf(stderr, "minValue " F_U32 " maxValue " F_U32 " value " F_U32 " bits " F_U32 "\n",
                     _minValue, _maxValue, value, _valueBits);
-          assert(value <= buildLowBitMask<uint64>(_valueBits));
+          assert(value <= buildLowBitMask<kmvalu>(_valueBits));
 
           _valData->set(_suffixBgn[prefix], value);
         }
@@ -506,8 +509,8 @@ merylExactLookup::estimateMemoryUsage(merylFileReader *input_,
                                       double           maxMemInGB_,
                                       double          &minMemInGB_,
                                       double          &optMemInGB_,
-                                      uint64           minValue_,
-                                      uint64           maxValue_) {
+                                      kmvalu           minValue_,
+                                      kmvalu           maxValue_) {
   initialize(input_, minValue_, maxValue_);
   configure(maxMemInGB_, minMemInGB_, optMemInGB_, false, false, true, false);
 }
@@ -519,8 +522,8 @@ merylExactLookup::load(merylFileReader *input_,
                        double           maxMemInGB_,
                        bool             useMinimalMemory,
                        bool             useOptimalMemory,
-                       uint64           minValue_,
-                       uint64           maxValue_) {
+                       kmvalu           minValue_,
+                       kmvalu           maxValue_) {
   double  minMem  = 0.0;
   double  maxMem  = 0.0;
   double  memInGBused = 0.0;
@@ -561,7 +564,7 @@ merylExactLookup::exists_test(kmer k) {
   uint64  mid;
   uint64  end = _suffixBgn[prefix + 1];
 
-  uint64  tag;
+  kmdata  tag;
 
   //  Binary search for the matching tag.
 

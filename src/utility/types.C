@@ -228,6 +228,7 @@ template  char const *decodeRange<uint16> (char const *range, uint16  &bgn, uint
 template  char const *decodeRange <int16> (char const *range,  int16  &bgn,  int16  &end);
 template  char const *decodeRange<uint8>  (char const *range, uint8   &bgn, uint8   &end);
 template  char const *decodeRange <int8>  (char const *range,  int8   &bgn,  int8   &end);
+template  char const *decodeRange<double> (char const *range, double  &bgn, double  &end);
 
 template  void  decodeRange<uint128>(char const *range, vector<uint128> &bgn, vector<uint128> &end);
 template  void  decodeRange <int128>(char const *range, vector <int128> &bgn, vector <int128> &end);
@@ -239,6 +240,7 @@ template  void  decodeRange<uint16> (char const *range, vector<uint16>  &bgn, ve
 template  void  decodeRange <int16> (char const *range, vector <int16>  &bgn, vector <int16>  &end);
 template  void  decodeRange<uint8>  (char const *range, vector<uint8>   &bgn, vector<uint8>   &end);
 template  void  decodeRange <int8>  (char const *range, vector <int8>   &bgn, vector <int8>   &end);
+template  void  decodeRange <double>(char const *range, vector <double> &bgn, vector <double> &end);
 
 template  void  decodeRange<uint128>(char const *range, set<uint128> &values);
 template  void  decodeRange <int128>(char const *range, set <int128> &values);
@@ -250,6 +252,7 @@ template  void  decodeRange<uint16> (char const *range, set<uint16>  &values);
 template  void  decodeRange <int16> (char const *range, set <int16>  &values);
 template  void  decodeRange<uint8>  (char const *range, set<uint8>   &values);
 template  void  decodeRange <int8>  (char const *range, set <int8>   &values);
+template  void  decodeRange <double>(char const *range, set <double> &values);
 
 
 

@@ -100,8 +100,8 @@ typedef   int8_t            int8;
 //  integers.  This only really makes sense for the unsigned flavor, e.g.,
 //  when used for bit packed quantities.
 
-inline uint128   build_uint128(uint64 a, uint64 b)    { return(((uint128)a << 64) | ((uint128)b)); };
-inline  int128   build_int128 ( int64 a,  int64 b)    { return( ((int128)a << 64) |  ((int128)b)); };
+constexpr inline uint128   build_uint128(uint64 a, uint64 b)    { return(((uint128)a << 64) | ((uint128)b)); };
+constexpr inline  int128   build_int128 ( int64 a,  int64 b)    { return( ((int128)a << 64) |  ((int128)b)); };
 
 //  Some handy constants.
 //

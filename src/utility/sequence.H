@@ -130,6 +130,17 @@ private:
 
 //  An interface to FASTA and FASTQ files.
 //
+//  Upon object creation, you can request that an index of the file be
+//  generated.  Without an index, numberOfSequences(), findSequence() and
+//  sequenceLength() do not work well or at all.
+//
+//  generateIndex() will force an index to be generated.
+//  removeIndex will remove any index.
+//
+//  reopen() will reset the file to the start and.  If the 'indexed' flag is
+//  true, or an index already exists, an index is (re)created.  Note that
+//  setting 'indexed=false' will NOT remove an existing index.
+//
 //  findSequence() will return true if the specified sequence is found in the
 //  file and leave the file positioned such that the next loadSequence() will
 //  load that sequence.
@@ -163,8 +174,9 @@ public:
   dnaSeqFile(char const *filename, bool indexed=false);
   ~dnaSeqFile();
 
-  void        reopen(void);
+  void        reopen(bool indexed=false);
   void        generateIndex(void);
+  void        removeIndex(void);
 
 public:
   char const *filename(void)            { return(_filename); };
@@ -214,7 +226,6 @@ private:
 
 private:
   char                  *_filename = nullptr;
-  bool                   _indexed  = false;
 
   bool                   _isFASTA  = false;
   bool                   _isFASTQ  = false;

@@ -522,9 +522,8 @@ dnaSeq::copy(char  *bout,
 
 dnaSeqFile::dnaSeqFile(char const *filename, bool indexed) {
   _filename = duplicateString(filename);
-  _indexed  = indexed;
 
-  reopen();
+  reopen(indexed);
 }
 
 
@@ -541,7 +540,7 @@ dnaSeqFile::~dnaSeqFile() {
 //  Open, or reopen, an input file.
 //
 void
-dnaSeqFile::reopen(void) {
+dnaSeqFile::reopen(bool indexed) {
 
   //  If a _file exists already, reopen it, otherwise, make a new one.
   if (_file)
@@ -557,16 +556,10 @@ dnaSeqFile::reopen(void) {
 
   _buffer = new readBuffer(_file->file(), 128 * 1024);
 
-  //  Create an index if requested.
-  if (_indexed == true) {
-    if (_file->isCompressed() == true)
-      fprintf(stderr, "ERROR: cannot index compressed input '%s'.\n", _filename), exit(1);
+  //  If we have an index already or one is requested, (re)generate it.
 
-    if (_file->isNormal() == false)
-      fprintf(stderr, "ERROR: cannot index pipe input.\n"), exit(1);
-
+  if ((_index != nullptr) || (indexed == true))
     generateIndex();
-  }
 }
 
 
@@ -690,17 +683,32 @@ void
 dnaSeqFile::generateIndex(void) {
   dnaSeq     seq;
 
+  //  Fail if an index is requested for a compressed file.
+
+  if (_file->isCompressed() == true)
+    fprintf(stderr, "ERROR: cannot index compressed input '%s'.\n", _filename), exit(1);
+
+  if (_file->isNormal() == false)
+    fprintf(stderr, "ERROR: cannot index pipe input.\n"), exit(1);
+
   //  If we can load an index, do it and return.
 
   if (loadIndex() == true)
     return;
 
+  //  Rewind the buffer to make sure we're at the start of the file.
+
+  _buffer->seek(0);
+
+  //  Allocate space for the index, set the first entry to the current
+  //  position of the file.
+
   _indexLen = 0;
   _indexMax = 1048576;
   _index    = new dnaSeqIndexEntry [_indexMax];
 
-  _index[_indexLen]._fileOffset     = _buffer->tell();
-  _index[_indexLen]._sequenceLength = 0;
+  _index[0]._fileOffset     = _buffer->tell();
+  _index[0]._sequenceLength = 0;
 
   //  While we read sequences:
   //    update the length of the sequence (we've already saved the position)
@@ -729,6 +737,18 @@ dnaSeqFile::generateIndex(void) {
   //  Save whatever index we made.
 
   saveIndex();
+}
+
+
+
+void
+dnaSeqFile::removeIndex(void) {
+
+  delete [] _index;
+
+  _indexLen = 0;
+  _indexMax = 0;
+  _index    = nullptr;
 }
 
 

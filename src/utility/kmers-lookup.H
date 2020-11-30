@@ -35,22 +35,12 @@ public:
     delete    _valData;
   };
 
-private:
-  void     initialize(merylFileReader *input_, kmvalu minValue_, kmvalu maxValue_);
-  void     configure(double  memInGB,
-                     double &memInGBmin,
-                     double &memInGBmax,
-                     bool    useMinimalMemory,
-                     bool    useOptimalMemory,
-                     bool    reportMemory,
-                     bool    reportSizes);
-  void     count(void);
-  double   allocate(void);
-  void     load(void);
-
-  kmvalu   value_value(kmvalu value);
-
 public:
+  //  Optional.  Quickly analyze the input kmers and compute the minimum and
+  //  'optimal' memory needed for the lookup tables.
+  //
+  //  maxMemInGB is used as an upper limit on minMem and optMem.
+  //
   void     estimateMemoryUsage(merylFileReader *input_,
                                double           maxMemInGB_,
                                double          &minMemInGB_,
@@ -60,6 +50,17 @@ public:
 
 public:
   //  Load a new meryl database into the lookup table.
+  //
+  //  maxMemInGB is used as an upper limit on the size of the lookup table.
+  //  The actual size used is determined from useMinimalMemory or
+  //  useOptimalMemory, as returned from estinmateMemoryUsage().
+  //
+  //  The difference between 'minimal' and 'optimal' is one of speed; lookups
+  //  with 'minimal' memory will be slower than with 'optimal' memory;
+  //  however, it isn't known how significant this is.
+  //
+  //  The return value is the actual memory used, in GB, or 0.0 if loading
+  //  failed.  (I think)
   //
   double   load(merylFileReader *input_,
                 double           maxMemInGB_,
@@ -86,6 +87,24 @@ public:
   //  For testing the implementation.
   //
   bool     exists_test(kmer k);
+
+private:
+  //  Used internally for construction.  As tempting is it seems to call
+  //  initialize() or configure() directly, you can't.
+  //
+  void     initialize(merylFileReader *input_, kmvalu minValue_, kmvalu maxValue_);
+  void     configure(double  memInGB,
+                     double &memInGBmin,
+                     double &memInGBmax,
+                     bool    useMinimalMemory,
+                     bool    useOptimalMemory,
+                     bool    reportMemory,
+                     bool    reportSizes);
+  void     count(void);
+  double   allocate(void);
+  void     load(void);
+
+  kmvalu   value_value(kmvalu value);
 
 private:
   merylFileReader  *_input         = nullptr;

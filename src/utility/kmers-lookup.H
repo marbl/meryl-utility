@@ -127,172 +127,172 @@ private:
 
 
 inline
-  uint64
+uint64
 merylExactLookup::value_value(uint64 value) {
-    if (_valueBits == 0)               //  Return 'true' if no value
-      return(1);                       //  is stored.
+  if (_valueBits == 0)               //  Return 'true' if no value
+    return(1);                       //  is stored.
 
-    value &= buildLowBitMask<uint64>(_valueBits);
+  value &= buildLowBitMask<uint64>(_valueBits);
 
-    //if (value == 0)                    //  Return zero if the value
-    //  return(0);                       //  is actually zero.
+  //if (value == 0)                    //  Return zero if the value
+  //  return(0);                       //  is actually zero.
 
-    return(value + _valueOffset);      //  Otherwise, return the value.
-  };
+  return(value + _valueOffset);      //  Otherwise, return the value.
+};
 
 
 
-  //  Return true/false if the kmer exists/does not.
+//  Return true/false if the kmer exists/does not.
 inline
 bool
 merylExactLookup::exists(kmer k) {
-    kmdata  kmer   = (kmdata)k;
-    uint64  prefix = kmer >> _suffixBits;
-    kmdata  suffix = kmer  & _suffixMask;
+  kmdata  kmer   = (kmdata)k;
+  uint64  prefix = kmer >> _suffixBits;
+  kmdata  suffix = kmer  & _suffixMask;
 
-    uint64  bgn = _suffixBgn[prefix];
-    uint64  mid;
-    uint64  end = _suffixBgn[prefix + 1];
+  uint64  bgn = _suffixBgn[prefix];
+  uint64  mid;
+  uint64  end = _suffixBgn[prefix + 1];
 
-    kmdata  tag;
+  kmdata  tag;
 
-    //  Binary search for the matching tag.
+  //  Binary search for the matching tag.
 
-    while (bgn + 8 < end) {
-      mid = bgn + (end - bgn) / 2;
+  while (bgn + 8 < end) {
+    mid = bgn + (end - bgn) / 2;
 
-      tag = _sufData->get(mid);
+    tag = _sufData->get(mid);
 
-      if (tag == suffix)
-        return(true);
+    if (tag == suffix)
+      return(true);
 
-      if (suffix < tag)
-        end = mid;
+    if (suffix < tag)
+      end = mid;
 
-      else
-        bgn = mid + 1;
-    }
-
-    //  Switch to linear search when we're down to just a few candidates.
-
-    for (mid=bgn; mid < end; mid++) {
-      tag = _sufData->get(mid);
-
-      if (tag == suffix)
-        return(true);
-    }
-
-    return(false);
+    else
+      bgn = mid + 1;
   }
 
+  //  Switch to linear search when we're down to just a few candidates.
+
+  for (mid=bgn; mid < end; mid++) {
+    tag = _sufData->get(mid);
+
+    if (tag == suffix)
+      return(true);
+  }
+
+  return(false);
+}
 
 
-  //  Return true/false if the kmer exists/does not.
-  //  And populate 'value' with the value of the kmer.
+
+//  Return true/false if the kmer exists/does not.
+//  And populate 'value' with the value of the kmer.
 inline
-  bool
+bool
 merylExactLookup::exists(kmer k, uint64 &value) {
-    kmdata  kmer   = (kmdata)k;
-    uint64  prefix = kmer >> _suffixBits;
-    kmdata  suffix = kmer  & _suffixMask;
+  kmdata  kmer   = (kmdata)k;
+  uint64  prefix = kmer >> _suffixBits;
+  kmdata  suffix = kmer  & _suffixMask;
 
-    uint64  bgn = _suffixBgn[prefix];
-    uint64  mid;
-    uint64  end = _suffixBgn[prefix + 1];
+  uint64  bgn = _suffixBgn[prefix];
+  uint64  mid;
+  uint64  end = _suffixBgn[prefix + 1];
 
-    kmdata  tag;
+  kmdata  tag;
 
-    //  Binary search for the matching tag.
+  //  Binary search for the matching tag.
 
-    while (bgn + 8 < end) {
-      mid = bgn + (end - bgn) / 2;
+  while (bgn + 8 < end) {
+    mid = bgn + (end - bgn) / 2;
 
-      tag = _sufData->get(mid);
+    tag = _sufData->get(mid);
 
-      if (tag == suffix) {
-        if (_valueBits == 0)
-          value = 1;
-        else
-          value = _valData->get(mid);
-        return(true);
-      }
-
-      if (suffix < tag)
-        end = mid;
-
+    if (tag == suffix) {
+      if (_valueBits == 0)
+        value = 1;
       else
-        bgn = mid + 1;
+        value = _valData->get(mid);
+      return(true);
     }
 
-    //  Switch to linear search when we're down to just a few candidates.
+    if (suffix < tag)
+      end = mid;
 
-    for (mid=bgn; mid < end; mid++) {
-      tag = _sufData->get(mid);
-
-      if (tag == suffix) {
-        if (_valueBits == 0)
-          value = 1;
-        else
-          value = _valData->get(mid);
-        return(true);
-      }
-    }
-
-    value = 0;
-    return(false);
+    else
+      bgn = mid + 1;
   }
 
+  //  Switch to linear search when we're down to just a few candidates.
 
-  //  Returns the value of the kmer, '0' if it doesn't exist.
-inline
-  uint64
-  merylExactLookup::value(kmer k) {
-    kmdata  kmer   = (kmdata)k;
-    uint64  prefix = kmer >> _suffixBits;
-    kmdata  suffix = kmer  & _suffixMask;
+  for (mid=bgn; mid < end; mid++) {
+    tag = _sufData->get(mid);
 
-    uint64  bgn = _suffixBgn[prefix];
-    uint64  mid;
-    uint64  end = _suffixBgn[prefix + 1];
-
-    kmdata  tag;
-
-    //  Binary search for the matching tag.
-
-    while (bgn + 8 < end) {
-      mid = bgn + (end - bgn) / 2;
-
-      tag = _sufData->get(mid);
-
-      if (tag == suffix) {
-        if (_valueBits == 0)
-          return(1);
-        else
-          return(_valData->get(mid));
-      }
-
-      if (suffix < tag)
-        end = mid;
-
+    if (tag == suffix) {
+      if (_valueBits == 0)
+        value = 1;
       else
-        bgn = mid + 1;
+        value = _valData->get(mid);
+      return(true);
+    }
+  }
+
+  value = 0;
+  return(false);
+}
+
+
+//  Returns the value of the kmer, '0' if it doesn't exist.
+inline
+uint64
+merylExactLookup::value(kmer k) {
+  kmdata  kmer   = (kmdata)k;
+  uint64  prefix = kmer >> _suffixBits;
+  kmdata  suffix = kmer  & _suffixMask;
+
+  uint64  bgn = _suffixBgn[prefix];
+  uint64  mid;
+  uint64  end = _suffixBgn[prefix + 1];
+
+  kmdata  tag;
+
+  //  Binary search for the matching tag.
+
+  while (bgn + 8 < end) {
+    mid = bgn + (end - bgn) / 2;
+
+    tag = _sufData->get(mid);
+
+    if (tag == suffix) {
+      if (_valueBits == 0)
+        return(1);
+      else
+        return(_valData->get(mid));
     }
 
-    //  Switch to linear search when we're down to just a few candidates.
+    if (suffix < tag)
+      end = mid;
 
-    for (mid=bgn; mid < end; mid++) {
-      tag = _sufData->get(mid);
+    else
+      bgn = mid + 1;
+  }
 
-      if (tag == suffix) {
-        if (_valueBits == 0)
-          return(1);
-        else
-          return(_valData->get(mid));
-      }
+  //  Switch to linear search when we're down to just a few candidates.
+
+  for (mid=bgn; mid < end; mid++) {
+    tag = _sufData->get(mid);
+
+    if (tag == suffix) {
+      if (_valueBits == 0)
+        return(1);
+      else
+        return(_valData->get(mid));
     }
+  }
 
-    return(0);
-  };
+  return(0);
+};
 
 
 

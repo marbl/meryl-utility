@@ -18,11 +18,31 @@
  */
 
 #include "bits.H"
+#include "strings.H"
 #include "mt19937ar.H"
 
 char          b1[65];
 char          b2[65];
 char          b3[65];
+
+
+void
+testMasks(void) {
+  uint128  m128;
+  uint64   m64;
+  uint32   m32;
+  uint16   m16;
+  uint8    m8;
+
+  for (uint32 ii=0; ii<=128; ii++) {
+    fprintf(stderr, "%3d: %s %s  %s %s  %s %s  %s %s  %s %s\n", ii,
+            toHex(buildLowBitMask<uint128>(ii)), toHex(buildHighBitMask<uint128>(ii)),
+            toHex(buildLowBitMask<uint64> (ii)), toHex(buildHighBitMask<uint64> (ii)),
+            toHex(buildLowBitMask<uint32> (ii)), toHex(buildHighBitMask<uint32> (ii)),
+            toHex(buildLowBitMask<uint16> (ii)), toHex(buildHighBitMask<uint16> (ii)),
+            toHex(buildLowBitMask<uint8>  (ii)), toHex(buildHighBitMask<uint8>  (ii)));
+  }
+}
 
 
 void
@@ -118,7 +138,7 @@ testWordArray(uint64 wordSize) {
   wa->show();
 
   for (uint32 ii=0; ii<1000; ii++)
-    assert(wa->get(ii) == (ii & uint64MASK(wordSize)));
+    assert(wa->get(ii) == (ii & buildLowBitMask<uint64>(wordSize)));
 
   delete wa;
 }
@@ -272,7 +292,7 @@ testPrefixFree(uint32 type) {
     length     += width[ii];
     histo[width[ii]]++;
 
-    random[ii]  =  mt.mtRandom64() & uint64MASK(width[ii]);
+    random[ii]  =  mt.mtRandom64() & buildLowBitMask<uint64>(width[ii]);
 
     if (random[ii] == 0)
       ii--;
@@ -427,6 +447,10 @@ main(int argc, char **argv) {
   while (arg < argc) {
     if      (strcmp(argv[arg], "-h") == 0) {
       err++;
+    }
+
+    else if (strcmp(argv[arg], "-masks") == 0) {
+      testMasks();
     }
 
     else if (strcmp(argv[arg], "-logbasetwo") == 0) {

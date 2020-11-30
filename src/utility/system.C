@@ -129,7 +129,7 @@ getProcessSize(void) {
 uint64
 getProcessSizeLimit(void) {
   struct rlimit rl;
-  uint64        sz = ~uint64ZERO;
+  uint64        sz = uint64max;
 
   if (getrlimit(rl) == true)
     sz = rl.rlim_cur;

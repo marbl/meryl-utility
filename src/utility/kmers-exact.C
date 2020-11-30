@@ -189,8 +189,8 @@ merylExactLookup::configure(double  memInGB,
     _prefixBits  =          pbMin;
     _suffixBits  = _Kbits - pbMin;
 
-    _suffixMask  = uint64MASK(_suffixBits);
-    _dataMask    = uint64MASK(_valueBits);
+    _suffixMask  = buildLowBitMask<uint64>(_suffixBits);
+    _dataMask    = buildLowBitMask<uint64>(_valueBits);
 
     _nPrefix     = (uint64)1 << pbMin;
   }
@@ -201,8 +201,8 @@ merylExactLookup::configure(double  memInGB,
     _prefixBits  =          pbOpt;
     _suffixBits  = _Kbits - pbOpt;
 
-    _suffixMask  = uint64MASK(_suffixBits);
-    _dataMask    = uint64MASK(_valueBits);
+    _suffixMask  = buildLowBitMask<uint64>(_suffixBits);
+    _dataMask    = buildLowBitMask<uint64>(_valueBits);
 
     _nPrefix     = (uint64)1 << pbOpt;
   }
@@ -441,7 +441,7 @@ merylExactLookup::load(void) {
         prefix <<= _input->suffixSize();    //  kmerTiny::setPrefixSuffix().  From the kmer,
         prefix  |= block->suffixes()[ss];   //  generate the prefix we want to save it as.
 
-        suffix   = prefix & uint64MASK(_suffixBits);
+        suffix   = prefix & buildLowBitMask<uint64>(_suffixBits);
         prefix >>= _suffixBits;
 
         _sufData->set(_suffixBgn[prefix], suffix);
@@ -454,7 +454,7 @@ merylExactLookup::load(void) {
           if (value > _maxValue + 1 - _minValue)
             fprintf(stderr, "minValue " F_U64 " maxValue " F_U64 " value " F_U64 " bits " F_U32 "\n",
                     _minValue, _maxValue, value, _valueBits);
-          assert(value <= uint64MASK(_valueBits));
+          assert(value <= buildLowBitMask<uint64>(_valueBits));
 
           _valData->set(_suffixBgn[prefix], value);
         }

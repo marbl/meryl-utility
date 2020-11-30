@@ -58,6 +58,14 @@ displayWord(uint64 word, char *buffer=NULL) {
 };
 
 
+
+//  Generate a mask on the low bits (e.g., 0x000fffff) or the high bits
+//  (e.g., 0xfffff000).
+//
+template<typename uintType> uintType buildLowBitMask(uint32 numBits);
+template<typename uintType> uintType buildHighBitMask(uint32 numBits);
+
+
 //  Return bits in a word:
 //    Keeping the rightmost 64-n bits (mask out the leftmost  n bits)
 //    Keeping the leftmost  64-n bits (mask out the rigthmost n bits)
@@ -481,7 +489,7 @@ public:
 
     //  Finally, mask off the stuff we don't care about.
 
-    val  &= uint64MASK(_valueWidth);
+    val  &= buildLowBitMask<uint64>(_valueWidth);
 
     return(val);
   };
@@ -509,7 +517,7 @@ public:
 
     //  Mask the value, just in case.
 
-    value &= uint64MASK(_valueWidth);
+    value &= buildLowBitMask<uint64>(_valueWidth);
 
     //  Set the value in the segment.
 

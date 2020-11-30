@@ -78,16 +78,16 @@ public:
 
     //  Complement the bases
 
-    mer ^= uint128NUMBER(0xaaaaaaaaaaaaaaaallu, 0xaaaaaaaaaaaaaaaallu);
+    mer ^= build_uint128(0xaaaaaaaaaaaaaaaallu, 0xaaaaaaaaaaaaaaaallu);
 
     //  Reverse the mer
 
-    mer = ((mer >>  2) & uint128NUMBER(0x3333333333333333llu, 0x3333333333333333llu)) | ((mer <<  2) & uint128NUMBER(0xccccccccccccccccllu, 0xccccccccccccccccllu));
-    mer = ((mer >>  4) & uint128NUMBER(0x0f0f0f0f0f0f0f0fllu, 0x0f0f0f0f0f0f0f0fllu)) | ((mer <<  4) & uint128NUMBER(0xf0f0f0f0f0f0f0f0llu, 0xf0f0f0f0f0f0f0f0llu));
-    mer = ((mer >>  8) & uint128NUMBER(0x00ff00ff00ff00ffllu, 0x00ff00ff00ff00ffllu)) | ((mer <<  8) & uint128NUMBER(0xff00ff00ff00ff00llu, 0xff00ff00ff00ff00llu));
-    mer = ((mer >> 16) & uint128NUMBER(0x0000ffff0000ffffllu, 0x0000ffff0000ffffllu)) | ((mer << 16) & uint128NUMBER(0xffff0000ffff0000llu, 0xffff0000ffff0000llu));
-    mer = ((mer >> 32) & uint128NUMBER(0x00000000ffffffffllu, 0x00000000ffffffffllu)) | ((mer << 32) & uint128NUMBER(0xffffffff00000000llu, 0xffffffff00000000llu));
-    mer = ((mer >> 64) & uint128NUMBER(0x0000000000000000llu, 0xffffffffffffffffllu)) | ((mer << 64) & uint128NUMBER(0xffffffffffffffffllu, 0x0000000000000000llu));
+    mer = ((mer >>  2) & build_uint128(0x3333333333333333llu, 0x3333333333333333llu)) | ((mer <<  2) & build_uint128(0xccccccccccccccccllu, 0xccccccccccccccccllu));
+    mer = ((mer >>  4) & build_uint128(0x0f0f0f0f0f0f0f0fllu, 0x0f0f0f0f0f0f0f0fllu)) | ((mer <<  4) & build_uint128(0xf0f0f0f0f0f0f0f0llu, 0xf0f0f0f0f0f0f0f0llu));
+    mer = ((mer >>  8) & build_uint128(0x00ff00ff00ff00ffllu, 0x00ff00ff00ff00ffllu)) | ((mer <<  8) & build_uint128(0xff00ff00ff00ff00llu, 0xff00ff00ff00ff00llu));
+    mer = ((mer >> 16) & build_uint128(0x0000ffff0000ffffllu, 0x0000ffff0000ffffllu)) | ((mer << 16) & build_uint128(0xffff0000ffff0000llu, 0xffff0000ffff0000llu));
+    mer = ((mer >> 32) & build_uint128(0x00000000ffffffffllu, 0x00000000ffffffffllu)) | ((mer << 32) & build_uint128(0xffffffff00000000llu, 0xffffffff00000000llu));
+    mer = ((mer >> 64) & build_uint128(0x0000000000000000llu, 0xffffffffffffffffllu)) | ((mer << 64) & build_uint128(0xffffffffffffffffllu, 0x0000000000000000llu));
 
     //  Shift and mask out the bases not in the mer
 
@@ -138,7 +138,7 @@ public:
     kmdata  mask = _mer;
 
     mask >>= 1;
-    mask  &= uint128NUMBER(0x5555555555555555llu, 0x5555555555555555llu);
+    mask  &= build_uint128(0x5555555555555555llu, 0x5555555555555555llu);
 
     fmer ^= mask;      //  Convert from ACTG ordering to ACGT ordering.
     rmer ^= mask;

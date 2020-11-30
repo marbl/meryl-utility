@@ -132,7 +132,7 @@ merylExactLookup::value_value(uint64 value) {
     if (_valueBits == 0)               //  Return 'true' if no value
       return(1);                       //  is stored.
 
-    value &= uint64MASK(_valueBits);
+    value &= buildLowBitMask<uint64>(_valueBits);
 
     //if (value == 0)                    //  Return zero if the value
     //  return(0);                       //  is actually zero.

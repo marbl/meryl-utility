@@ -86,5 +86,6 @@ SUBMAKEFILES += tests/alignTest-ssw.mk \
                 tests/loggingTest.mk \
                 tests/parasailTest.mk \
                 tests/stddevTest.mk \
-                tests/systemTest.mk
+                tests/systemTest.mk \
+                tests/typesTest.mk
 endif

@@ -108,9 +108,9 @@ compressedFileReader::reopen(void) {
   if ((_file) && (_pipe ==  true))   pclose(_file);
   if ((_file) && (_pipe == false))   AS_UTL_closeFile(_file);
 
-  //  Blow up if the file doesn't exist, or we can't read it, or ...
+  //  Blow up if the file doesn't exist.
   if ((_type != cftSTDIN) && (fileExists(_filename) == false))
-    fprintf(stderr, "ERROR:  Failed to open input file '%s': %s\n", _filename, strerror(errno)), exit(1);
+    fprintf(stderr, "ERROR:  Failed to open input file '%s': %s\n", _filename, strerror(ENOENT)), exit(1);
 
   if (_type == cftGZ)
     pigz = pigzAvailable();

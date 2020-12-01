@@ -76,21 +76,24 @@ wordArray::set(uint64 eIdx, uint128 value) {
   uint64 seg =                eIdx / _valuesPerSegment;     //  Which segment are we in?
   uint64 pos = _valueWidth * (eIdx % _valuesPerSegment);    //  Which word in the segment?
 
-  uint64 wrd = pos / 128;   //  The word we start in.
-  uint64 bit = pos % 128;   //  Starting at this bit.
+  uint64 wrd = pos / 128;         //  The word we start in.
+  uint64 bit = pos % 128;         //  Starting at this bit.
 
-  if (eIdx >= _nextElement)
+  if (eIdx >= _nextElement)       //  Remember the max element that is set.
     _nextElement = eIdx+1;
+
+  //  Allocate more segment pointers and any missing segments.
+  //  The memset() isn't necessary, but can help finding errors, or could
+  //  initialize all entries to zero.
 
   if (seg >= _segmentsMax)
     resizeArray(_segments, _segmentsLen, _segmentsMax, seg + 16, resizeArray_copyData | resizeArray_clearNew);
 
-  while (_segmentsLen <= seg) {
+  for ( ; _segmentsLen <= seg; _segmentsLen++) {
     _segments[_segmentsLen] = new uint128 [_segmentSize / 128];
 
-    memset(_segments[_segmentsLen], 0xff, sizeof(uint64) * _segmentSize / 128);
-
-    _segmentsLen++;
+    //memset(_segments[_segmentsLen-1], 0xff, sizeof(uint128) * _segmentSize / 128);
+    //memset(_segments[_segmentsLen-1], 0x00, sizeof(uint128) * _segmentSize / 128);
   }
 
   //  Mask the value, just in case.
@@ -98,11 +101,11 @@ wordArray::set(uint64 eIdx, uint128 value) {
   value &= buildLowBitMask<uint128>(_valueWidth);
 
   //  Set the value in the segment.
-
+  //
   //          [--------------------]
   //                 [value]
   //           lSave           rSave
-  //
+
   if (bit + _valueWidth <= 128) {
     uint32   lSave = bit;
     uint32   rSave = 128 - _valueWidth - bit;
@@ -112,11 +115,13 @@ wordArray::set(uint64 eIdx, uint128 value) {
                            saveRightBits(_segments[seg][wrd], rSave));
   }
 
+  //  Or split the value across two segments.
+  //
   //            --lSave--               --rSave--
   //  [--word--][--first-word--][--second-word--][--word--]
   //                     [----value---=]
   //                      lSize  rSize
-  //
+
   else {
     uint32   lSave =       bit,   rSave = 128 - _valueWidth - bit;
     uint32   lSize = 128 - bit,   rSize = _valueWidth - (128 - bit);

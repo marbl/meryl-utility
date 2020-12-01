@@ -359,8 +359,6 @@ merylExactLookup::allocate(void) {
   uint64  arrayBlockMin;
   double  memInGBused = 0.0;
 
-  fprintf(stderr, "ALLOCATE %u %u\n", _suffixBits, _valueBits);
-
   if (_suffixBits > 0) {
     arraySize      = _nSuffix * _suffixBits;
     arrayBlockMin  = max(arraySize / 1024llu, 268435456llu);   //  In bits, so 32MB per block.
@@ -475,6 +473,8 @@ merylExactLookup::load(void) {
 #ifdef VERIFY_SUFFIX_END
   for (uint64 ii=1; ii<_nPrefix; ii++)
     assert(_suffixBgn[ii] == _suffixEnd[ii-1]);
+
+  fprintf(stderr, "_suffixEnd VERIFIED\n");
 
   delete [] _suffixEnd;
   _suffixEnd = NULL;

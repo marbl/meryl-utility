@@ -83,7 +83,7 @@ wordArray::allocate(uint64 nElements) {
 
 void
 wordArray::show(void) {
-  fprintf(stderr, "wordArray:   valueWidth  %2" F_U32P "\n", _valueWidth);
+  fprintf(stderr, "wordArray:   valueWidth  %2" F_U64P "\n", _valueWidth);
   fprintf(stderr, "wordArray:   segmentSize %8" F_U64P "   valuesPerSegment %8" F_U64P "\n", _segmentSize, _valuesPerSegment);
   fprintf(stderr, "\n");
 

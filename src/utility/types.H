@@ -313,6 +313,12 @@ template<typename numberType> char const *decodeRange(char const *range, numberT
 template<typename numberType> void        decodeRange(char const *range, vector<numberType> &bgn, vector<numberType> &end);
 template<typename numberType> void        decodeRange(char const *range, set<numberType> &values);
 
+//  Convert an unsigned integer representing bits or bytes to
+//  a floating point number representing GB or MB.
+
+inline double bitsToGB(uint64 bits)   { return(bits / 8 / 1024.0 / 1024.0 / 1024.0); }
+inline double bitsToMB(uint64 bits)   { return(bits / 8 / 1024.0 / 1024.0);          }
+
 //  Convert an unsigned integer to one with 3 significant digit number, and
 //  also return the correct SI base.
 

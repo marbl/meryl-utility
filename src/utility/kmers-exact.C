@@ -32,21 +32,6 @@ using namespace std;
 
 
 
-
-
-double
-bitsToGB(uint64 bits) {
-  return(bits / 8 / 1024.0 / 1024.0 / 1024.0);
-}
-
-double
-bitsToMB(uint64 bits) {
-  return(bits / 8 / 1024.0 / 1024.0);
-}
-
-
-
-
 //  Set some basic boring stuff.
 //
 void

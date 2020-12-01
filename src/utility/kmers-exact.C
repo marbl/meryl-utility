@@ -274,7 +274,7 @@ merylExactLookup::count(void) {
       block->decodeBlock();
 
       for (uint32 ss=0; ss<block->nKmers(); ss++) {
-        kmdata   sdata  = 0;
+        kmdata   kbits  = 0;
         kmdata   prefix = 0;
         kmvalu   value  = block->values()[ss];
 
@@ -290,11 +290,11 @@ merylExactLookup::count(void) {
 
         loaded++;
 
-        sdata   = block->prefix();         //  Reconstruct the kmer into sdata.  This is just
-        sdata <<= _input->suffixSize();    //  kmerTiny::setPrefixSuffix().  From the kmer,
-        sdata  |= block->suffixes()[ss];   //  generate the prefix we want to save it as.
+        kbits   = block->prefix();         //  Combine the file prefix and
+        kbits <<= _input->suffixSize();    //  suffix data to reconstruct
+        kbits  |= block->suffixes()[ss];   //  the kmer bits.
 
-        prefix  = sdata >> _suffixBits;
+        prefix = kbits >> _suffixBits;     //  Then extract the prefix
 
         assert(prefix < _nPrefix);
 

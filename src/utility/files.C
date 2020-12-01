@@ -188,7 +188,7 @@ readLine(char *&L, uint32 &Llen, uint32 &Lmax, FILE *F) {
 
   //  Trim trailing whitespace.
 
-  while ((Llen > 0) && (isspace(L[Llen-1])))
+  while ((Llen > 0) && (isWhiteSpace(L[Llen-1])))
     L[--Llen] = 0;
 
   return(true);
@@ -230,7 +230,7 @@ AS_UTL_readLine(char *&L, uint32 &Llen, uint32 &Lmax, FILE *F) {
 
   //  Trim trailing whitespace.
 
-  while ((Llen > 0) && (isspace(L[Llen-1])))
+  while ((Llen > 0) && (isWhiteSpace(L[Llen-1])))
     L[--Llen] = 0;
 
   return(true);

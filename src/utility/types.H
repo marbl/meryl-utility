@@ -226,6 +226,15 @@ inline bool    strtobool(char const *str)  {
 
 //  Test if a character or string is of the desired encoding.
 
+inline bool   isLetter(char c)     { return((('a' <= c) && (c <= 'z')) ||
+                                            (('A' <= c) && (c <= 'Z')));  }
+
+inline bool   isWhiteSpace(char c) { return((c == ' ')  || (c == '\n') ||
+                                            (c == '\t') || (c == '\r')); };
+
+inline bool   isComment(char c)    { return((c == '!') || (c == '#') || (c == 0));        };
+inline bool   isDelimiter(char c)  { return((c == ':') || (c == '=') || isWhiteSpace(c)); };
+
 inline bool   isBinDigit(char c)   { return((('0' <= c) && (c <= '1')));  }
 inline bool   isOctDigit(char c)   { return((('0' <= c) && (c <= '7')));  }
 inline bool   isDecDigit(char c)   { return((('0' <= c) && (c <= '9')));  }
@@ -239,6 +248,34 @@ bool          isDecNumber(char const *s, char dot='.');
 bool inline   isDecInteger(char const *s)   { return(isDecNumber(s,  0));  };
 bool inline   isDecFloat  (char const *s)   { return(isDecNumber(s, '.')); };
 bool          isHexNumber(char const *s);
+
+//  Disallow the usual character tests becuse of their goofy return values.
+
+#undef  isalnum
+#undef  isalpha
+#undef  iscntrl
+#undef  isdigit
+#undef  isgraph
+#undef  islower
+#undef  isprint
+#undef  ispunct
+#undef  isspace
+#undef  isupper
+#undef  isxdigit
+#undef  isnumber
+
+#define isalnum(x)   isalnum_not_allowed(x) 
+#define isalpha(x)   isalpha_not_allowed_use_isLetter(x)
+#define iscntrl(x)   iscntrl_not_allowed(x) 
+#define isdigit(x)   isdigit_not_allowed_use_isDecDigit(x)
+#define isgraph(x)   isgraph_not_allowed(x) 
+#define islower(x)   islower_not_allowed(x) 
+#define isprint(x)   isprint_not_allowed(x) 
+#define ispunct(x)   ispunct_not_allowed(x) 
+#define isspace(x)   isspace_not_allowed_use_isWhiteSpace(x)
+#define isupper(x)   isupper_not_allowed(x) 
+#define isxdigit(x)  isxdigit_not_allowed_use_isXXXDigit(x)
+#define isnumber(x)  isnumber_not_allowed_use_isDecNumber(x)
 
 //  Convert an ascii binary, octal, decimal or hexadecimal letter to an
 //  integer.  No type checking is performed; you've already called

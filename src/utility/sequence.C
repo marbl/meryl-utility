@@ -753,13 +753,6 @@ dnaSeqFile::removeIndex(void) {
 
 
 
-static
-bool
-isWhiteSpace(char x) {
-  return((x == '\n') || (x == '\r') || (x == '\t') || (x == ' '));
-}
-
-
 bool
 dnaSeqFile::loadFASTA(char  *&name, uint32 &nameMax,
                       char  *&seq,

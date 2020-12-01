@@ -43,7 +43,7 @@ strtoullll(char const *nptr, char **endptr) {
   if (isEmptyString(ptr))
     return(res);
 
-  while ((*ptr != 0) && (isspace(*ptr) == true))
+  while ((*ptr != 0) && (isWhiteSpace(*ptr) == true))
     ptr++;
 
   while ((*ptr != 0) && (isDecDigit(*ptr) == true)) {
@@ -67,7 +67,7 @@ strtollll(char const *nptr, char **endptr) {
   if (isEmptyString(ptr))
     return(res);
 
-  while ((*ptr != 0) && (isspace(*ptr) == true))
+  while ((*ptr != 0) && (isWhiteSpace(*ptr) == true))
     ptr++;
 
   switch (*ptr) {

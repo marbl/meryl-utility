@@ -20,6 +20,26 @@
 #include "strings.H"
 #include "arrays.H"
 
+////////////////////////////////////////////////////////////
+//
+//  Strip whitespace from the end of a line.
+//
+
+void
+chomp(char *S) {
+  char *t = S;
+
+  while (*t != 0)
+    t++;
+
+  t--;
+
+  while ((t >= S) && (isWhiteSpace(*t) == true))
+    *t-- = 0;
+}
+
+
+
 
 ////////////////////////////////////////////////////////////
 //
@@ -48,12 +68,12 @@ KeyAndValue::find(const char *line) {
 
   ptr = _line;
 
-  while (isspace(*ptr) == true)          //  Spaces before the key.
+  while (isWhiteSpace(*ptr) == true)          //  Spaces before the key.
     ptr++;
 
   if ((*ptr == 0) ||
-      (iscomment(*ptr) == true) ||
-      (isdelimiter(*ptr) == true))
+      (isComment(*ptr) == true) ||
+      (isDelimiter(*ptr) == true))
     return(false);
 
   _key = ptr;
@@ -73,14 +93,14 @@ KeyAndValue::find(const char *line) {
   while (1) {
     eol = ptr;
 
-    if ((lastspace == true) && (iscomment(*ptr) == true)) {
+    if ((lastspace == true) && (isComment(*ptr) == true)) {
       *ptr = 0;
       break;
     }
 
-    lastspace = isspace(*ptr);
+    lastspace = isWhiteSpace(*ptr);
 
-    if ((isdelimiter(*ptr) == true) && (equals == nullptr)) {
+    if ((isDelimiter(*ptr) == true) && (equals == nullptr)) {
       *ptr = ' ';
       equals = ptr;
     }
@@ -98,7 +118,7 @@ KeyAndValue::find(const char *line) {
 
   //  Cleanup 1:  Find the last letter in the key make the key stop there.
 
-  while (isspace(*equals) == true)
+  while (isWhiteSpace(*equals) == true)
     equals--;
 
   equals++;      //  Move from the last letter of the key.
@@ -108,7 +128,7 @@ KeyAndValue::find(const char *line) {
   //  Cleanup 2: Find the first letter of the value.
   //  If we're at eol now, return true with an empty value string.
 
-  while (isspace(*equals) == true)
+  while (isWhiteSpace(*equals) == true)
     equals++;
 
   _val = equals;
@@ -123,7 +143,7 @@ KeyAndValue::find(const char *line) {
 
   eol--;
 
-  while (isspace(*eol) == true) {
+  while (isWhiteSpace(*eol) == true) {
     *eol = 0;
     eol--;
   }

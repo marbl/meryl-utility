@@ -28,36 +28,11 @@
 using namespace std;
 
 
-//  Remove whitespace from the end of a string.
-inline
-void
-chomp(char *S) {
-  char *t = S;
+//  Some string cleanup functions.
+//
 
-  while (*t != 0)
-    t++;
+void   chomp(char *S);    //  Remove whitespace from the end of a line.
 
-  t--;
-
-  while ((t >= S) && (isspace(*t) == true))
-    *t-- = 0;
-}
-
-//  Advance the string pointer to the next non-space character.
-inline
-void
-munch(char *&S) {
-  while ((*S != 0) && (isspace(*S) == true))
-    S++;
-}
-
-//  Advance the string pointer to the next space character.
-inline
-void
-crunch(char *&S) {
-  while ((*S != 0) && (isspace(*S) == false))
-    S++;
-}
 
 //  Basic string functions.
 
@@ -83,28 +58,14 @@ public:
   KeyAndValue(const char *line = nullptr)   {  find(line);       };
   ~KeyAndValue()                            {  delete [] _line;  };
 
+public:
   bool     find(const char *line);
 
+public:
   char    *key(void)           { return(_key); };
   char    *value(void)         { return(_val); };
 
-#if 0
-  bool     value_bool(void)    { return(strtobool(_val)); };
-
-  int32    value_int32(void)   { return(strtoint32(_val)); };
-  int64    value_int64(void)   { return(strtoint64(_val)); };
-
-  uint32   value_uint32(void)  { return(strtouint32(_val)); };
-  uint64   value_uint64(void)  { return(strtouint64(_val)); };
-
-  float    value_float(void)   { return(strtofloat (_val)); };
-  double   value_double(void)  { return(strtodouble(_val)); };
-#endif
-
-public:
-  bool    iscomment(char c)    { return((c == '!') || (c == '#') || (c == 0)); };
-  bool    isdelimiter(char c)  { return((c == ':') || (c == '=') || isspace(c)); };
-
+private:
   uint32  _lineMax = 0;
   uint32  _lineLen = 0;
   char   *_line    = nullptr;

@@ -540,10 +540,16 @@ merylExactLookup::load(merylFileReader *input_,
 
 bool
 merylExactLookup::exists_test(kmer k) {
-
+  char    kmerString[65];
   kmdata  kmer   = (kmdata)k;
   kmdata  prefix = kmer >> _suffixBits;
   kmdata  suffix = kmer  & _suffixMask;
+
+  fprintf(stderr, "\n");
+  fprintf(stderr, "kmer        %s  %s\n", toHex(kmer, 2 * k.merSize()), k.toString(kmerString));
+  fprintf(stderr, "suffixBits  %s  %3u bits\n", toHex(_suffixMask, _suffixBits), _suffixBits);
+  fprintf(stderr, "prefix      %s  %3u bits\n", toHex(prefix, 2 * k.merSize() - _suffixBits), 2 * k.merSize() - _suffixBits);
+  fprintf(stderr, "suffix      %s\n", toHex(suffix, _suffixBits));
 
   uint64  bgn = _suffixBgn[prefix];
   uint64  mid;
@@ -552,6 +558,8 @@ merylExactLookup::exists_test(kmer k) {
   kmdata  tag;
 
   //  Binary search for the matching tag.
+
+  fprintf(stderr, "BINARY SEARCH the bucket %lu-%lu for suffix %s.\n", bgn, end, toHex(suffix));
 
   while (bgn + 8 < end) {
     mid = bgn + (end - bgn) / 2;
@@ -589,6 +597,8 @@ merylExactLookup::exists_test(kmer k) {
   bgn = _suffixBgn[prefix];
   end = _suffixBgn[prefix + 1];
 
+  fprintf(stderr, "BINARY SEARCH the bucket %lu-%lu for suffix %s.\n", bgn, end, toHex(suffix));
+
   while (bgn + 8 < end) {
     mid = bgn + (end - bgn) / 2;
 
@@ -607,15 +617,39 @@ merylExactLookup::exists_test(kmer k) {
       bgn = mid + 1;
   }
 
+  //  Exhaustively search the bucket.
+
+  fprintf(stderr, "LINEAR SEARCH the bucket %lu-%lu for suffix %s.\n", bgn, end, toHex(suffix));
+
   for (mid=bgn; mid < end; mid++) {
     tag = _sufData->get(mid);
 
-    fprintf(stderr, "ITER bgn %8lu %8lu %8lu end -- dat %s =?= %s suffix\n",
-            bgn, mid, end, toHex(tag), toHex(suffix));
+    fprintf(stderr, "ITER bgn %8lu %8lu %8lu end -- dat %s\n",
+            bgn, mid, end, toHex(tag));
 
     if (tag == suffix)
       return(true);
   }
+
+  //  Exhaustively search all buckets.
+
+  bgn = _suffixBgn[0];
+  end = _suffixBgn[_nPrefix];
+
+  fprintf(stderr, "LINEAR SEARCH the entire table %lu-%lu for suffix %s.\n", bgn, end, toHex(suffix));
+
+  for (mid=bgn; mid < end; mid++) {
+    tag = _sufData->get(mid);
+
+    fprintf(stderr, "ITER bgn %8lu %8lu %8lu end -- dat %s\n",
+            bgn, mid, end, toHex(tag));
+
+    if (tag == suffix)
+      return(true);
+  }
+
+
+
 
   assert(0);
 };

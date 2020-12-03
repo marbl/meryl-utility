@@ -25,6 +25,7 @@
 #include "files.H"
 
 #include <algorithm>
+#include <atomic>
 
 
 //  Writing in the middle of data is toublesome.
@@ -390,48 +391,56 @@ private:
 
 ////////////////////////////////////////
 //
-//  wordArray
+//  wordArray - An array that efficiently stores non-machine-word size
+//  integer words by packing the bits into machine-size words.  The array is
+//  variable length but not sparse - accessing element 1,000,000 will
+//  allocate elements 0 through 999,999.
 //
-//  An array that efficiently stores non-machine-word size integer words by
-//  packing the bits into machine-size words.
+//  The size, in bits, of each element is set at construction time.  All
+//  elements must be the same size.
 //
-//  The array is variable length, but not sparse.  Accessing element
-//  1,000,000 will allocate elements 0 through 999,999.
+//  The elements are stored in a set of fixed-size blocks.  The block size
+//  can also be set at construction time.  Note that this is specified IN
+//  BITS.  The default size is 64 KB per block.  Decrease this if you know
+//  you only need a few KB to store all values, or if you are storing several
+//  GB of data.  There is no real performance loss/gain; it just adjusts the
+//  number of blocks allocated.  There might be a slight degradation in
+//  performance of the memory management system if millions of blocks are
+//  allocated.
 //
-//  No array operator can be provided since we cannot return a reference to
-//  values across machine words, let alone a reference to a value inside a
-//  machine word.
-//
-//  The constructor needs to know the size of the words being stored,
-//  and how many bits to store in each block.
-//
-//
-//  
 class wordArray {
 public:
-  wordArray(uint32 wordWidth, uint32 segmentSize = 65536 * 8);
+  wordArray(uint32 valueWidth, uint64 segmentsSizeInBits = 64 * 1024);
   ~wordArray();
 
   void     clear(void);                   //  Reset the array to zero, doesn't deallocate space.
-  void     allocate(uint64 nElements);    //  Allocate space for nElements.
+
+  void     allocate(uint64 nElements);    //  Pre-allocate space for nElements.
 
   uint128  get(uint64 eIdx);              //  Get the value of element eIdx.
-  void     set(uint64 eIdx,uint128 v);    //  Set the value of element eIdx to v.
+  void     set(uint64 eIdx, uint128 v);   //  Set the value of element eIdx to v.
 
 public:
-  void     show(void);                    //  Dump the wordArray to the screen.
+  void     show(void);                    //  Dump the wordArray to the screen; debugging.
 
 private:
-  uint64    _valueWidth       = 0;         //  Width of the values stored.
-  uint64    _segmentSize      = 0;         //  Size, in bits, of each block of data.
+  uint64              _valueWidth       = 0;         //  Width of the values stored.
+  uint64              _segmentSize      = 0;         //  Size, in bits, of each block of data.
 
-  uint64    _valuesPerSegment = 0;         //  Number of values in each block.
+  uint64              _valuesPerSegment = 0;         //  Number of values in each block.
 
-  uint64    _nextElement      = 0;         //  AKA, the first invalid element
+  uint64              _wordsPerSegment  = 0;         //  Number of 128-bit words in each segment
+  uint64              _wordsPerLock     = 0;         //  How many words are covered by each lock.
+  uint64              _locksPerSegment  = 0;         //  Number of locks per segment
 
-  uint64    _segmentsLen      = 0;         //  Number of blocks in use.
-  uint64    _segmentsMax      = 0;         //  Number of block pointers allocated.
-  uint128 **_segments         = nullptr;   //  List of blocks allocated.
+  uint64              _numValues        = 0;         //  Number of values stored in the array.
+  std::atomic_flag    _numValuesLock;                //  Lock on the above.
+
+  uint64              _segmentsLen      = 0;         //  Number of blocks in use.
+  uint64              _segmentsMax      = 0;         //  Number of block pointers allocated.
+  uint128           **_segments         = nullptr;   //  List of blocks allocated.
+
+  std::atomic_flag  **_segLocks         = nullptr;   //  Locks on pieces of the segments.
 };
 
 

@@ -34,25 +34,23 @@ wordArray::get(uint64 eIdx) {
 
   uint128 val = 0;
 
-  assert(eIdx < _nextElement);
+  assert(eIdx < _numValues);
 
   //  If the value is all in one word, just shift that word to the right to
-  //  put the proper bits in the proper position.  We'll clean up the extra
-  //  bits in just a moment.
+  //  put the proper bits in the proper position.
+  //
+  //  Otherwise, the value spans two words.
+  //   - Shift the first word left to place the right-most bits at the left end of the return value.
+  //   - Shift the second word right so the left-most bits are at the right end of the return value.
+  //
+  //                       ssssssssssss <- second shift amount
+  //  [--first-word--][--second-word--]
+  //             [--value--]
+  //                   fffff <- first shift amount
 
   if (bit + _valueWidth <= 128) {
-    val   = _segments[seg][wrd] >> (128 - _valueWidth - bit);
+    val = _segments[seg][wrd] >> (128 - _valueWidth - bit);
   }
-
-  //  Otherwise, the value spans two words.  First, shift the first word so
-  //  the end of it is at the start of the value.  Then shift the second
-  //  word to the start of it is at the end of the value.
-  //
-  //                                 ssssssssssssssssssssss <- second shift
-  //  [--word--][--first-word--][--second-word--][--word--]
-  //                      [--value--]
-  //                            fffff <- first shift
-  //
   else {
     uint32  fShift = _valueWidth - (128 - bit);
     uint32  sShift = 128 - fShift;
@@ -79,32 +77,58 @@ wordArray::set(uint64 eIdx, uint128 value) {
   uint64 wrd = pos / 128;         //  The word we start in.
   uint64 bit = pos % 128;         //  Starting at this bit.
 
-  if (eIdx >= _nextElement)       //  Remember the max element that is set.
-    _nextElement = eIdx+1;
-
   //  Allocate more segment pointers and any missing segments.
-  //  The memset() isn't necessary, but can help finding errors, or could
-  //  initialize all entries to zero.
 
-  if (seg >= _segmentsMax)
-    resizeArray(_segments, _segmentsLen, _segmentsMax, seg + 16, resizeArray_copyData | resizeArray_clearNew);
-
-  for ( ; _segmentsLen <= seg; _segmentsLen++) {
-    _segments[_segmentsLen] = new uint128 [_segmentSize / 128];
-
-    //memset(_segments[_segmentsLen-1], 0xff, sizeof(uint128) * _segmentSize / 128);
-    //memset(_segments[_segmentsLen-1], 0x00, sizeof(uint128) * _segmentSize / 128);
-  }
+  if (seg >= _segmentsLen)
+    allocate(eIdx);
 
   //  Mask the value, just in case.
 
   value &= buildLowBitMask<uint128>(_valueWidth);
 
-  //  Set the value in the segment.
+  //  Grab the locks for the two words we're going to be accessing.
+
+  uint64  lockW1 = (wrd + 0) / _wordsPerLock;
+  uint64  lockW2 = (wrd + 1) / _wordsPerLock;
+
+  if (lockW1 == lockW2) {
+    while (_segLocks[seg][lockW1].test_and_set(std::memory_order_relaxed) == true)
+      ;
+  }
+  else {
+    while (_segLocks[seg][lockW1].test_and_set(std::memory_order_relaxed) == true)
+      ;
+    while (_segLocks[seg][lockW2].test_and_set(std::memory_order_relaxed) == true)
+      ;
+  }
+
+  //  Remember the largest element set.  Overly complicated to lock only when
+  //  changing.  This is only used to fail if get() accesses something out of
+  //  bounds, and it isn't very good since accessing something not set in the
+  //  middle of the data isn't caught.  (it's also used for debug)
+
+  if (eIdx >= _numValues) {
+    while (_numValuesLock.test_and_set(std::memory_order_relaxed) == true)
+      ;
+
+    if (eIdx >= _numValues)
+      _numValues = eIdx+1;
+
+    _numValuesLock.clear();
+  }
+
+  //  Set the value in one word....
   //
   //          [--------------------]
   //                 [value]
   //           lSave           rSave
+  //
+  //  Or split the value across two words.
+  //
+  //            --lSave--               --rSave--
+  //  [--word--][--first-word--][--second-word--][--word--]
+  //                     [----value---=]
+  //                      lSize  rSize
 
   if (bit + _valueWidth <= 128) {
     uint32   lSave = bit;
@@ -115,19 +139,22 @@ wordArray::set(uint64 eIdx, uint128 value) {
                            saveRightBits(_segments[seg][wrd], rSave));
   }
 
-  //  Or split the value across two segments.
-  //
-  //            --lSave--               --rSave--
-  //  [--word--][--first-word--][--second-word--][--word--]
-  //                     [----value---=]
-  //                      lSize  rSize
-
   else {
     uint32   lSave =       bit,   rSave = 128 - _valueWidth - bit;
     uint32   lSize = 128 - bit,   rSize = _valueWidth - (128 - bit);
 
     _segments[seg][wrd+0] = saveLeftBits(_segments[seg][wrd+0], lSave) | (value >> rSize);
     _segments[seg][wrd+1] = (value << rSave) | saveRightBits(_segments[seg][wrd+1], rSave);
+  }
+
+  //  Release the locks.
+
+  if (lockW1 == lockW2) {
+    _segLocks[seg][lockW1].clear();
+  }
+  else {
+    _segLocks[seg][lockW2].clear();
+    _segLocks[seg][lockW1].clear();
   }
 }
 

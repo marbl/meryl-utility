@@ -20,38 +20,57 @@
 #include "bits.H"
 
 
+//
+//  At the default segmentSize of 64 KB = 524288 bits, we'll allocate 4096
+//  128-bit words per segment.  With _wordsPerLock = 64, we'll then have
+//  4096 / 64 = 64+1 locks per segment.
+//
+//  Note that 'values' refers to the user-supplied data of some small size,
+//  while 'words' are the 128-bit machine words used to store the data.
+//
 
-wordArray::wordArray(uint32 wordWidth, uint32 segmentSize) {
+wordArray::wordArray(uint32 valueWidth, uint64 segmentSizeInBits) {
 
-  _valueWidth       = (uint64)wordWidth;      //  In bits.
-  _segmentSize      = (uint64)segmentSize;    //  In bits.
+  _valueWidth       = valueWidth;          //  In bits.
+  _segmentSize      = segmentSizeInBits;   //  In bits.
 
   _valuesPerSegment = _segmentSize / _valueWidth;
 
-  _nextElement      = 0;
+  _wordsPerSegment  = _segmentSize / 128;
+  _wordsPerLock     = 64;
+  _locksPerSegment  = _segmentSize / 128 / _wordsPerLock + 1;
+
+  _numValues        = 0;
+  _numValuesLock.clear();
 
   _segmentsLen      = 0;
   _segmentsMax      = 16;
-  _segments         = new uint128 * [_segmentsMax];
+  _segments         = new uint128 *          [_segmentsMax];
+  _segLocks         = new std::atomic_flag * [_segmentsMax];
 
-  for (uint32 ss=0; ss<_segmentsMax; ss++)
+  for (uint32 ss=0; ss<_segmentsMax; ss++) {
     _segments[ss] = nullptr;
+    _segLocks[ss] = nullptr;
+  }
 }
 
 
 
 wordArray::~wordArray() {
-  for (uint32 i=0; i<_segmentsLen; i++)
+  for (uint32 i=0; i<_segmentsLen; i++) {
     delete [] _segments[i];
+    delete [] _segLocks[i];
+  }
 
   delete [] _segments;
+  delete [] _segLocks;
 }
 
 
 
 void
 wordArray::clear(void) {
-  _nextElement = 0;
+  _numValues   = 0;
   _segmentsLen = 0;
 }
 
@@ -59,53 +78,65 @@ wordArray::clear(void) {
 
 void
 wordArray::allocate(uint64 nElements) {
-  uint64 nSegs = nElements / _valuesPerSegment + 1;
+  uint64 segmentsNeeded = nElements / _valuesPerSegment + 1;
 
-  //fprintf(stderr, "wordArray::allocate()-- allocating space for " F_U64 " elements, in " F_U64 " segments.\n",
-  //        nElements, nSegs);
+#pragma omp critical (wordArrayAllocate)
+  {
 
-  assert(_segmentsLen == 0);
+  if (segmentsNeeded >= _segmentsMax)
+    resizeArrayPair(_segments,
+                    _segLocks,
+                    _segmentsLen, _segmentsMax, segmentsNeeded,
+                    resizeArray_copyData | resizeArray_clearNew);
 
-  resizeArray(_segments, _segmentsLen, _segmentsMax, nSegs, resizeArray_copyData | resizeArray_clearNew);
+  for (uint32 seg=_segmentsLen; seg<segmentsNeeded; seg++) {
+    if (_segments[seg] == nullptr) {
+      _segments[seg] = new uint128          [ _wordsPerSegment ];
+      _segLocks[seg] = new std::atomic_flag [ _locksPerSegment ];
 
-  for (uint32 seg=0; seg<nSegs; seg++)
-    if (_segments[seg] == nullptr)
-      _segments[seg] = new uint128 [_segmentSize / 128];
+      //  For debug and test, set all bits in the allocated space.
+      //memset(_segments[seg], 0xff, sizeof(uint128) * _segmentSize / 128);
 
-  //  For debug and test, set all bits in the allocated space.
-  //for (uint32 seg=0; seg<nSegs; seg++)
-  //  memset(_segments[seg], 0xff, sizeof(uint128) * _segmentSize / 128);
+      //  Always reset the locks to the unlocked state.
+      for (uint32 ll=0; ll<_locksPerSegment; ll++)
+        _segLocks[seg][ll].clear();
+    }
+  }
 
-  _segmentsLen = nSegs;
+  _segmentsLen = segmentsNeeded;
+
+  }  //  end critical
 }
 
 
 
 void
 wordArray::show(void) {
-  fprintf(stderr, "wordArray:   valueWidth  %2" F_U64P "\n", _valueWidth);
-  fprintf(stderr, "wordArray:   segmentSize %8" F_U64P "   valuesPerSegment %8" F_U64P "\n", _segmentSize, _valuesPerSegment);
+  uint64  lastBit = _numValues * _valueWidth;
+
+  fprintf(stderr, "wordArray:\n");
+  fprintf(stderr, "  numValues        %10lu values\n", _numValues);
+  fprintf(stderr, "  valueWidth       %10lu bits\n",   _valueWidth);
+  fprintf(stderr, "  segmentSize      %10lu bits\n",   _segmentSize);
+  fprintf(stderr, "  valuesPerSegment %10lu values\n", _valuesPerSegment);
   fprintf(stderr, "\n");
 
-  uint32  bit  = 128;
-  uint32  word = 0;
-  char    bits[65];
+  //  For each segment, dump full words, until we hit the end of data.
 
-  for (uint32 ss=0; ss<_segmentsLen; ss++) {
-    fprintf(stderr, "Segment %u:\n", ss);
+  for (uint64 ss=0; ss<_segmentsLen; ss++) {
+    fprintf(stderr, "Segment %lu:\n", ss);
 
-    for(uint32 wrd=0, bit=0; bit<_valuesPerSegment * _valueWidth; bit++) {
-      if ((bit % 128) == 0) {
-        displayWord(_segments[ss][wrd++], bits);
-      }
+    uint64 bitPos = ss * _valuesPerSegment * _valueWidth;
 
-      if ((bit % _valueWidth) == 0)
-        fprintf(stderr, "word %2u: ", wrd);
+    for (uint64 ww=0; (ww < _wordsPerSegment) && (bitPos < lastBit); ww += 4) {
+      fprintf(stderr, "%5lu: %s %s %s %s\n",
+              ww,
+              (bitPos + 128 * 0 < lastBit) ? toHex(_segments[ss][ww+0]) : "",
+              (bitPos + 128 * 1 < lastBit) ? toHex(_segments[ss][ww+1]) : "",
+              (bitPos + 128 * 2 < lastBit) ? toHex(_segments[ss][ww+2]) : "",
+              (bitPos + 128 * 3 < lastBit) ? toHex(_segments[ss][ww+3]) : "");
 
-      fprintf(stderr, "%c", bits[bit % 128]);
-
-      if ((bit % _valueWidth) == _valueWidth - 1)
-        fprintf(stderr, "\n");
+      bitPos += 128 * 4;
     }
   }
 

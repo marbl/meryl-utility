@@ -403,7 +403,7 @@ merylExactLookup::load(void) {
   uint32   nf = _input->numFiles();
 
   //  Disabled to prevent collisions in wordArray.
-  //#pragma omp parallel for schedule(dynamic, 1)
+#pragma omp parallel for schedule(dynamic, 1)
   for (uint32 ff=0; ff<nf; ff++) {
     FILE                  *blockFile = _input->blockFile(ff);
     merylFileBlockReader  *block     = new merylFileBlockReader;

@@ -242,12 +242,12 @@ inline bool   isHexDigit(char c)   { return((('0' <= c) && (c <= '9')) ||
                                             (('a' <= c) && (c <= 'f')) ||
                                             (('A' <= c) && (c <= 'F')));  }
 
-bool          isBinNumber(char const *s);
-bool          isOctNumber(char const *s);
-bool          isDecNumber(char const *s, char dot='.');
+bool          isBinNumber (char const *s);
+bool          isOctNumber (char const *s);
+bool          isDecNumber (char const *s, char dot='.');
 bool inline   isDecInteger(char const *s)   { return(isDecNumber(s,  0));  };
 bool inline   isDecFloat  (char const *s)   { return(isDecNumber(s, '.')); };
-bool          isHexNumber(char const *s);
+bool          isHexNumber (char const *s);
 
 //  Disallow the usual character tests becuse of their goofy return values.
 

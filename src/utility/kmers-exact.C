@@ -22,8 +22,6 @@
 #include <vector>
 #include <algorithm>
 
-using namespace std;
-
 
 //  If set, allocate another (large) array to verify that there are no holes in the
 //  data array.  Holes would lead to false positives.
@@ -361,7 +359,7 @@ merylExactLookup::allocate(void) {
 
   if (_suffixBits > 0) {
     arraySize      = _nSuffix * _suffixBits;
-    arrayBlockMin  = max(arraySize / 1024llu, 268435456llu);   //  In bits, so 32MB per block.
+    arrayBlockMin  = std::max(arraySize / 1024llu, 268435456llu);   //  In bits, so 32MB per block.
     memInGBused   += bitsToGB(arraySize);
 
     if (_verbose)
@@ -376,7 +374,7 @@ merylExactLookup::allocate(void) {
 
   if (_valueBits > 0) {
     arraySize     = _nSuffix * _valueBits;
-    arrayBlockMin = max(arraySize / 1024llu, 268435456llu);   //  In bits, so 32MB per block.
+    arrayBlockMin = std::max(arraySize / 1024llu, 268435456llu);   //  In bits, so 32MB per block.
     memInGBused   += bitsToGB(arraySize);
 
     if (_verbose)

@@ -26,9 +26,6 @@
 #include <vector>
 #include <algorithm>
 
-using namespace std;
-
-
 
 //  Online mean and std.dev calculation.
 //  B. P. Welford, Technometrics, Vol 4, No 3, Aug 1962 pp 419-420.
@@ -185,7 +182,7 @@ computeStdDev(TT *dist, uint64 distLen, double &mean, double &stddev, bool isSor
 
 template<typename TT>
 void
-computeStdDev(vector<TT> dist, double &mean, double &stddev, bool isSorted=false) {
+computeStdDev(std::vector<TT> dist, double &mean, double &stddev, bool isSorted=false) {
   computeStdDev(dist.data(), dist.size(), mean, stddev, isSorted);
 }
 
@@ -235,7 +232,7 @@ computeMode(TT *dist, uint64 distLen, TT &mode, bool isSorted=false) {
 
 template<typename TT>
 void
-computeMode(vector<TT> dist, TT &mode, bool isSorted=false) {
+computeMode(std::vector<TT> dist, TT &mode, bool isSorted=false) {
   computeMode(dist.data(), dist.size(), mode, isSorted);
 }
 
@@ -260,7 +257,7 @@ computeMedian(TT *dist, uint64 distLen, TT &median, bool isSorted=false) {
 
 template<typename TT>
 void
-computeMedian(vector<TT> dist, TT &median, bool isSorted=false) {
+computeMedian(std::vector<TT> dist, TT &median, bool isSorted=false) {
   computeMedian(dist.data(), dist.size(), median, isSorted);
 }
 
@@ -281,7 +278,7 @@ computeMedianAbsoluteDeviation(TT *dist, uint64 distLen, TT &median, TT &mad, bo
 
   computeMedian(dist, distLen, median, true);
 
-  vector<TT>  m;
+  std::vector<TT>  m;
 
   for (uint64 ii=0; ii<distLen; ii++) {
     if (dist[ii] < median)
@@ -297,7 +294,7 @@ computeMedianAbsoluteDeviation(TT *dist, uint64 distLen, TT &median, TT &mad, bo
 
 template<typename TT>
 void
-computeMedianAbsoluteDeviation(vector<TT> dist, TT &median, TT &mad, bool isSorted=false) {
+computeMedianAbsoluteDeviation(std::vector<TT> dist, TT &median, TT &mad, bool isSorted=false) {
   computeMedianAbsoluteDeviation(dist.data(), dist.size(), median, mad, isSorted);
 }
 
@@ -354,18 +351,6 @@ public:
 
   uint64             median(void)           { finalizeData(); return(_median);   };
   uint64             mad(void)              { finalizeData(); return(_mad);      };
-
-#if 0
-  vector<uint64>    &histogram(void) {    //  Returns pointer to private histogram data
-    finalizeData();
-    return(_histogram);
-  };
-
-  vector<uint64>    &Nstatistics(void) {  //  Returns pointer to private N data
-    finalizeData();
-    return(_Nstatistics);
-  };
-#endif
 
   void               clearStatistics(void) {
     _numObjs  = 0;

@@ -124,8 +124,8 @@ intervals<iNum>::squash(iNum minOverlap) {
 
     if ((_list[intoI]._end >= _list[fromI]._end) ||
         (_list[intoI]._end >= _list[fromI]._bgn + minOverlap)) {
-      _list[intoI]._end  = max(_list[fromI]._end, _list[intoI]._end);
-      _list[intoI]._num +=     _list[fromI]._num;
+      _list[intoI]._end  = std::max(_list[fromI]._end, _list[intoI]._end);
+      _list[intoI]._num +=          _list[fromI]._num;
     }
 
     //  Otherwise, move to the next intoI, copy the current fromI to it, and
@@ -250,8 +250,8 @@ intervals<iNum>::setToInversion1(iNum bgn, iNum end,
       _list[_listLen++] = { bgn, A._list[0]._bgn, 1 };
 
     for (uint32 ii=1; ii<A._listLen; ii++) {
-      iNum  nb = max(bgn, A._list[ii-1]._end);
-      iNum  ne = min(end, A._list[ii  ]._bgn);
+      iNum  nb = std::max(bgn, A._list[ii-1]._end);
+      iNum  ne = std::min(end, A._list[ii  ]._bgn);
 
       if (nb < ne)
         _list[_listLen++] = { nb, ne, 1 };

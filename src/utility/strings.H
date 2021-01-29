@@ -25,8 +25,6 @@
 #include <set>
 #include <vector>
 
-using namespace std;
-
 
 //  Some string cleanup functions.
 //
@@ -125,7 +123,7 @@ public:
       return(nullptr);
 
     for (uint32 ii=1; ii<_wordsLen; ii++)   //  Shift all words down one place, moving
-      swap(_words[ii-1], _words[ii]);       //  the word to shift off to the end.
+      std::swap(_words[ii-1], _words[ii]);  //  the word to shift off to the end.
 
     return(_words[--_wordsLen]);            //  Return the word we shifted out.
   };

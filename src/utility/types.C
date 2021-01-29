@@ -188,7 +188,7 @@ decodeRange(char const *range, numberType &bgn, numberType &end) {
 
 template<typename numberType>
 void
-decodeRange(char const *range, vector<numberType> &bgn, vector<numberType> &end) {
+decodeRange(char const *range, std::vector<numberType> &bgn, std::vector<numberType> &end) {
   char const  *ap = range;
   numberType   av = 0;
   numberType   bv = 0;
@@ -204,7 +204,7 @@ decodeRange(char const *range, vector<numberType> &bgn, vector<numberType> &end)
 
 template<typename numberType>
 void
-decodeRange(char const *range, set<numberType> &values) {
+decodeRange(char const *range, std::set<numberType> &values) {
   char const  *ap = range;
   numberType   av = 0;
   numberType   bv = 0;
@@ -230,29 +230,29 @@ template  char const *decodeRange<uint8>  (char const *range, uint8   &bgn, uint
 template  char const *decodeRange <int8>  (char const *range,  int8   &bgn,  int8   &end);
 template  char const *decodeRange<double> (char const *range, double  &bgn, double  &end);
 
-template  void  decodeRange<uint128>(char const *range, vector<uint128> &bgn, vector<uint128> &end);
-template  void  decodeRange <int128>(char const *range, vector <int128> &bgn, vector <int128> &end);
-template  void  decodeRange<uint64> (char const *range, vector<uint64>  &bgn, vector<uint64>  &end);
-template  void  decodeRange <int64> (char const *range, vector <int64>  &bgn, vector <int64>  &end);
-template  void  decodeRange<uint32> (char const *range, vector<uint32>  &bgn, vector<uint32>  &end);
-template  void  decodeRange <int32> (char const *range, vector <int32>  &bgn, vector <int32>  &end);
-template  void  decodeRange<uint16> (char const *range, vector<uint16>  &bgn, vector<uint16>  &end);
-template  void  decodeRange <int16> (char const *range, vector <int16>  &bgn, vector <int16>  &end);
-template  void  decodeRange<uint8>  (char const *range, vector<uint8>   &bgn, vector<uint8>   &end);
-template  void  decodeRange <int8>  (char const *range, vector <int8>   &bgn, vector <int8>   &end);
-template  void  decodeRange <double>(char const *range, vector <double> &bgn, vector <double> &end);
+template  void  decodeRange<uint128>(char const *range, std::vector<uint128> &bgn, std::vector<uint128> &end);
+template  void  decodeRange <int128>(char const *range, std::vector <int128> &bgn, std::vector <int128> &end);
+template  void  decodeRange<uint64> (char const *range, std::vector<uint64>  &bgn, std::vector<uint64>  &end);
+template  void  decodeRange <int64> (char const *range, std::vector <int64>  &bgn, std::vector <int64>  &end);
+template  void  decodeRange<uint32> (char const *range, std::vector<uint32>  &bgn, std::vector<uint32>  &end);
+template  void  decodeRange <int32> (char const *range, std::vector <int32>  &bgn, std::vector <int32>  &end);
+template  void  decodeRange<uint16> (char const *range, std::vector<uint16>  &bgn, std::vector<uint16>  &end);
+template  void  decodeRange <int16> (char const *range, std::vector <int16>  &bgn, std::vector <int16>  &end);
+template  void  decodeRange<uint8>  (char const *range, std::vector<uint8>   &bgn, std::vector<uint8>   &end);
+template  void  decodeRange <int8>  (char const *range, std::vector <int8>   &bgn, std::vector <int8>   &end);
+template  void  decodeRange <double>(char const *range, std::vector <double> &bgn, std::vector <double> &end);
 
-template  void  decodeRange<uint128>(char const *range, set<uint128> &values);
-template  void  decodeRange <int128>(char const *range, set <int128> &values);
-template  void  decodeRange<uint64> (char const *range, set<uint64>  &values);
-template  void  decodeRange <int64> (char const *range, set <int64>  &values);
-template  void  decodeRange<uint32> (char const *range, set<uint32>  &values);
-template  void  decodeRange <int32> (char const *range, set <int32>  &values);
-template  void  decodeRange<uint16> (char const *range, set<uint16>  &values);
-template  void  decodeRange <int16> (char const *range, set <int16>  &values);
-template  void  decodeRange<uint8>  (char const *range, set<uint8>   &values);
-template  void  decodeRange <int8>  (char const *range, set <int8>   &values);
-template  void  decodeRange <double>(char const *range, set <double> &values);
+template  void  decodeRange<uint128>(char const *range, std::set<uint128> &values);
+template  void  decodeRange <int128>(char const *range, std::set <int128> &values);
+template  void  decodeRange<uint64> (char const *range, std::set<uint64>  &values);
+template  void  decodeRange <int64> (char const *range, std::set <int64>  &values);
+template  void  decodeRange<uint32> (char const *range, std::set<uint32>  &values);
+template  void  decodeRange <int32> (char const *range, std::set <int32>  &values);
+template  void  decodeRange<uint16> (char const *range, std::set<uint16>  &values);
+template  void  decodeRange <int16> (char const *range, std::set <int16>  &values);
+template  void  decodeRange<uint8>  (char const *range, std::set<uint8>   &values);
+template  void  decodeRange <int8>  (char const *range, std::set <int8>   &values);
+template  void  decodeRange <double>(char const *range, std::set <double> &values);
 
 
 

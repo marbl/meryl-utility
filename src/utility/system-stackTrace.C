@@ -161,10 +161,6 @@ AS_UTL_catchCrash(int sig_num, siginfo_t *UNUSED(info), void *UNUSED(ctx)) {
 
 #include "backward.hpp"
 
-//namespace backward {
-//backward::SignalHandling sh;
-//} // namespace backward
-
 void
 AS_UTL_catchCrash(int sig_num, siginfo_t *UNUSED(info), void *UNUSED(ctx)) {
 
@@ -215,17 +211,6 @@ AS_UTL_catchCrash(int sig_num, siginfo_t *UNUSED(info), void *UNUSED(ctx)) {
     }
 
   }
-
-#if 0
-  backward::Printer p;
-
-  p.snippet = true;
-  p.object  = true;
-  p.color   = false;
-  p.address = true;
-
-  p.print(st);
-#endif
 
   //  Pass the signal through, only so a core file can get generated.
 

@@ -70,13 +70,9 @@
 #include <set>
 #include <vector>
 
-using namespace std;
-
-
 #if defined(_FILE_OFFSET_BITS) && (_FILE_OFFSET_BITS == 32)
 #error I do not support 32-bit off_t.
 #endif
-
 
 //  Make the basic int types a bit more friendly.
 
@@ -319,8 +315,8 @@ integerToLetter(uint32 i) {
 //  converted.
 
 template<typename numberType> char const *decodeRange(char const *range, numberType &bgn, numberType &end);
-template<typename numberType> void        decodeRange(char const *range, vector<numberType> &bgn, vector<numberType> &end);
-template<typename numberType> void        decodeRange(char const *range, set<numberType> &values);
+template<typename numberType> void        decodeRange(char const *range, std::vector<numberType> &bgn, std::vector<numberType> &end);
+template<typename numberType> void        decodeRange(char const *range, std::set<numberType> &values);
 
 //  Convert an unsigned integer representing bits or bytes to
 //  a floating point number representing GB or MB.

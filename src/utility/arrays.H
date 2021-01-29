@@ -21,10 +21,8 @@
 #define ARRAYS_H
 
 #include "types.H"
-
 #include <algorithm>
 
-using namespace std;
 
 enum class _raAct {
   doNothing        = 0x00,
@@ -134,8 +132,8 @@ template<typename TT, typename LL>
 void
 setArraySize(TT*& array, uint64 arrayLen, LL &arrayMax, uint64 newMax, _raAct op=_raAct::copyData) {
 
-  arrayMax =     newMax;
-  arrayLen = min(newMax, arrayLen);
+  arrayMax =          newMax;
+  arrayLen = std::min(newMax, arrayLen);
 
   TT *copy = new TT [arrayMax];
 

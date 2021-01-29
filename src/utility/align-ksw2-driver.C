@@ -260,7 +260,7 @@ ksw2Lib::analyzeAlignment(void) {
 
   //  Compute the same erate as overlapper does.
 
-  _erate = (double)(_aMis + _aGap) / min((_endA - _bgnA), (_endB - _bgnB));
+  _erate = (double)(_aMis + _aGap) / std::min((_endA - _bgnA), (_endB - _bgnB));
 
   //  Allocate stuff for building a map between the A and B sequences and the
   //  cigar string.

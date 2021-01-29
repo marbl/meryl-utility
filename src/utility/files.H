@@ -21,10 +21,7 @@
 #define FILES_H
 
 #include "types.H"
-
 #include <vector>
-
-using namespace std;
 
 
 //  Provides a safe and reliable mechanism for reading / writing
@@ -75,7 +72,7 @@ void    AS_UTL_fseek(FILE *stream, off_t offset, int whence);
 char const *findSharedFile(char const *relpath, char const *filename);
 
 //  Read a file-of-files into a vector
-void    AS_UTL_loadFileList(char const *fileName, vector<char const *> &FILE);
+void    AS_UTL_loadFileList(char const *fileName, std::vector<char const *> &FILE);
 
 FILE   *AS_UTL_openInputFile (char const *prefix, char separator='.', char const *suffix=NULL, bool doOpen=true);
 FILE   *AS_UTL_openOutputFile(char const *prefix, char separator='.', char const *suffix=NULL, bool doOpen=true);

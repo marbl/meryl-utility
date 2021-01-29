@@ -69,7 +69,7 @@ writeToFile(void const  *objects,
   //  writing 16 GB of data at once; it seems to truncate to 32-bit somewhere.
 
   while (nWritten < nObjects) {
-    uint64  toWrite = min(blockSize, nObjects - nWritten);
+    uint64  toWrite = std::min(blockSize, nObjects - nWritten);
 
     errno = 0;
     uint64 written = fwrite(((char *)objects) + nWritten * objectSize, objectSize, toWrite, file);
@@ -102,7 +102,7 @@ loadFromFile(void        *objects,
   //  we still read in 32 MB chunks.
 
   while (nLoaded < nObjects) {
-    uint64  toLoad = min(blockSize, nObjects - nLoaded);
+    uint64  toLoad = std::min(blockSize, nObjects - nLoaded);
 
     errno = 0;
     uint64 loaded = fread(((char *)objects) + nLoaded * objectSize, objectSize, toLoad, file);
@@ -715,7 +715,7 @@ findSharedFile(char const *relpath, char const *filename) {
 
 
 void
-AS_UTL_loadFileList(char const *fileName, vector<char const *> &fileList) {
+AS_UTL_loadFileList(char const *fileName, std::vector<char const *> &fileList) {
 
   FILE *F = AS_UTL_openInputFile(fileName);
 

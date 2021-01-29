@@ -392,7 +392,7 @@ readBuffer::readIFFchunk(char*name, uint8 *&data, uint32 &dataLen, uint32 &dataM
 
   //  Allocate space for the data.
 
-  resizeArray(data, 0, dataMax, dataLen, resizeArray_doNothing);
+  resizeArray(data, 0, dataMax, dataLen);
 
   //  Copy the data to 'data'.
 

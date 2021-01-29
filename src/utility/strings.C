@@ -177,8 +177,8 @@ splitToWords::split(const char *line, splitType type) {
     if (isSeparator(line[_charsLen++], type))
       _wordsLen++;
 
-  resizeArray(_words, 0, _wordsMax, _wordsLen + 1, resizeArray_doNothing);
-  resizeArray(_chars, 0, _charsMax, _charsLen + 1, resizeArray_doNothing);
+  resizeArray(_words, 0, _wordsMax, _wordsLen + 1);
+  resizeArray(_chars, 0, _charsMax, _charsLen + 1);
 
   //  Clear all the words pointers, and copy the input line to our storage.
   //  This greatly simplifies the loop, as we don't need to worry about

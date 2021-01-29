@@ -284,7 +284,7 @@ merylBlockWriter::mergeBatches(uint32 oi) {
 
     //  Setup the merge.
 
-    resizeArrayPair(suffixes, values, 0, nKmersMax, totnKmers, resizeArray_doNothing);
+    resizeArrayPair(suffixes, values, 0, nKmersMax, totnKmers);
 
     //  Merge!  We don't know the number of different kmers in the input, and are forced
     //  to loop infinitely.

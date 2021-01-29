@@ -205,7 +205,7 @@ AS_UTL_readLine(char *&L, uint32 &Llen, uint32 &Lmax, FILE *F) {
     return(false);
 
   if ((L == NULL) || (Lmax == 0))
-    allocateArray(L, Lmax = 1024, resizeArray_clearNew);
+    allocateArray(L, Lmax, 1024);
 
   Llen = 0;
 
@@ -217,7 +217,7 @@ AS_UTL_readLine(char *&L, uint32 &Llen, uint32 &Lmax, FILE *F) {
 
   while ((feof(F) == false) && (ch != '\n')) {
     if (Llen + 1 >= Lmax)
-      resizeArray(L, Llen, Lmax, Lmax + growth, resizeArray_copyData | resizeArray_clearNew);  //  Grow the array.
+      resizeArray(L, Llen, Lmax, Lmax + growth, _raAct::copyData | _raAct::clearNew);  //  Grow the array.
 
     L[Llen++] = ch;
 

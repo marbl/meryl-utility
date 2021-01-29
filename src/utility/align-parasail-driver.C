@@ -143,7 +143,7 @@ parasailLib::align(char const *seqA_, uint32 seqlenA_, int32 bgnA_, int32 endA_,
   uint32  pcPos = 0;   //  Parasail Cigar position
   uint32  pcLen = cigar->len;
 
-  resizeArrayPair(_cigarCode, _cigarValu, _cigarLen, _cigarMax, (uint32)(cigar->len + 1), resizeArray_doNothing);
+  resizeArrayPair(_cigarCode, _cigarValu, 0, _cigarMax, cigar->len + 1);
 
   //  If the alignment begins with a gap, remove it and adjust the positions.
 
@@ -347,8 +347,8 @@ parasailLib::analyzeAlignment(void) {
   //  Allocate stuff for building a map between the A and B sequences and the
   //  cigar string.
 
-  resizeArrayPair(_cigarMapBgn, _cigarMapEnd, 0, _cigarMapMax, _cigarLen, resizeArray_doNothing);
-  resizeArray    (_aMap,                      0, _aMapMax,     _aLen,     resizeArray_doNothing);
+  resizeArrayPair(_cigarMapBgn, _cigarMapEnd, 0, _cigarMapMax, _cigarLen);
+  resizeArray    (_aMap,                      0, _aMapMax,     _aLen);
 
   uint32       apos = _bgnA;
   uint32       bpos = _bgnB;

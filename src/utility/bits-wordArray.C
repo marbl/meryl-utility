@@ -87,7 +87,7 @@ wordArray::allocate(uint64 nElements) {
     resizeArrayPair(_segments,
                     _segLocks,
                     _segmentsLen, _segmentsMax, segmentsNeeded,
-                    resizeArray_copyData | resizeArray_clearNew);
+                    _raAct::copyData | _raAct::clearNew);
 
   for (uint32 seg=_segmentsLen; seg<segmentsNeeded; seg++) {
     if (_segments[seg] == nullptr) {

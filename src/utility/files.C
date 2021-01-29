@@ -156,7 +156,7 @@ readLine(char *&L, uint32 &Llen, uint32 &Lmax, FILE *F) {
     return(false);
 
   if ((L == NULL) || (Lmax == 0))
-    allocateArray(L, Lmax = 4, resizeArray_clearNew);
+    allocateArray(L, Lmax, 4, resizeArray_clearNew);
 
   L[Lmax-2] = 0;
   L[Lmax-1] = 0;

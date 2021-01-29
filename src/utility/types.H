@@ -291,6 +291,15 @@ inline uint8  asciiOctToInteger(char d)   { return(d - '0'); }
 inline uint8  asciiDecToInteger(char d)   { return(d - '0'); }
 inline uint8  asciiHexToInteger(char d)   { return(((uint8)d & 0xf) + ((uint8)d >> 6) + (((uint8)d >> 6) << 3)); }
 
+//  Convert an integer to a printable letter.  If it's not a printable
+//  letter, returns '.'.
+
+inline
+char
+integerToLetter(uint32 i) {
+  return(((' ' <= i) && (i <= '~')) ? i : '.');
+}
+
 //  Convert a string representing a set of numbers to
 //   - the first and last values (for form '#' or '#-#')
 //   - a vector of the low and high values

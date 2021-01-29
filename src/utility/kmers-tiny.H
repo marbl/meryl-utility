@@ -70,6 +70,15 @@ public:
   //  to make space for the new base.  Unlike the 'standard' two-bit encoding,
   //  these encode bases as A=00, C=01, G=11, T=10.
   //
+  //       +---------+-- upper/lower case bit
+  //       |         |
+  //    A 1000001 a 1100001 == 00
+  //    C 1000011 c 1100011 == 01
+  //    G 1000111 g 1100111 == 11
+  //    T 1010100 t 1110100 == 10
+  //                    ||
+  //                    ++-- bits used for 2-bit encoding
+  //
   void        addR(kmdata base)       { _mer  = (((_mer << 2) & _fullMask) | (((base >> 1) & 0x03llu)          )              );  };
   void        addL(kmdata base)       { _mer  = (((_mer >> 2) & _leftMask) | (((base >> 1) & 0x03llu) ^ 0x02llu) << _leftShift);  };
 

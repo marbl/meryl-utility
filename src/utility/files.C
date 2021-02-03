@@ -964,15 +964,15 @@ AS_UTL_writeFastQ(FILE *f,
 //    seq is FASTA and not want FASTQ output
 //
 void
-outputSequence(FILE  *OUT,
-               char  *outputName,
-               char  *outputBases,
-               uint8 *outputQuals,  uint32  outputBasesLen,
-               bool   isFASTA,
-               bool   isFASTQ,
-               bool   outputFASTA,
-               bool   outputFASTQ,
-               uint8  QV) {
+outputSequence(FILE        *OUT,
+               char  const *outputName,
+               char  const *outputBases,
+               uint8 const *outputQuals,  uint32  outputBasesLen,
+               bool         isFASTA,
+               bool         isFASTQ,
+               bool         outputFASTA,
+               bool         outputFASTQ,
+               uint8        QV) {
 
   if      ((isFASTQ == true) && (outputFASTA == false))
     AS_UTL_writeFastQ(OUT,
@@ -980,12 +980,16 @@ outputSequence(FILE  *OUT,
                       outputQuals, outputBasesLen, "@%s\n", outputName);
 
   else if ((isFASTA == true) && (outputFASTQ == true)) {
+    uint8 *qvs = new uint8 [outputBasesLen];
+
     for (uint32 ii=0; ii<outputBasesLen; ii++)
-      outputQuals[ii] = QV;
+      qvs[ii] = QV;
 
     AS_UTL_writeFastQ(OUT,
                       outputBases, outputBasesLen,
-                      outputQuals, outputBasesLen, "@%s\n", outputName);
+                      qvs,         outputBasesLen, "@%s\n", outputName);
+
+    delete [] qvs;
   }
 
   else

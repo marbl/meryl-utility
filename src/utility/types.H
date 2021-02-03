@@ -222,6 +222,10 @@ inline bool    strtobool(char const *str)  {
 
 //  Test if a character or string is of the desired encoding.
 
+inline bool   isNUL(char c)        { return(c == 0); }
+
+inline bool   isVisible(char c)    { return(('!' <= c) && (c <= '~')); }
+
 inline bool   isLetter(char c)     { return((('a' <= c) && (c <= 'z')) ||
                                             (('A' <= c) && (c <= 'Z')));  }
 

@@ -89,6 +89,7 @@ SUBMAKEFILES += tests/alignTest-ssw.mk \
                 tests/magicNumber.mk \
                 tests/parasailTest.mk \
                 tests/readLines.mk \
+                tests/sequenceTest.mk \
                 tests/stddevTest.mk \
                 tests/systemTest.mk \
                 tests/typesTest.mk

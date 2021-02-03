@@ -83,6 +83,10 @@ decode2bitBase(uint8 base) {
 
 //  A sequence loaded from disk.
 //
+//  ident() returns the first word of the sequence header line, while
+//  flags() returns the rest of the line, or an empty line if there
+//  is no more line.
+//
 //  If quality values are not available (e.g., FASTA) then
 //  all values are set to zero.
 //
@@ -96,9 +100,10 @@ public:
   dnaSeq();
   ~dnaSeq();
 
-  char             *name(void)         { return(_name);   };
-  char             *bases(void)        { return(_seq);    };
-  uint8            *quals(void)        { return(_qlt);    };
+  char  const      *ident(void)        { return(_ident);  };
+  char  const      *flags(void)        { return(_flags);  };
+  char  const      *bases(void)        { return(_seq);    };
+  uint8 const      *quals(void)        { return(_qlt);    };
 
   uint64            length(void)       { return(_seqLen); };
 
@@ -113,8 +118,14 @@ public:
   bool              wasReSync(void)    { return((_error & 0x02) == 0x02); };
 
 private:
+  void              findNameAndFlags(void);
+
+private:
   char             *_name    = nullptr;
   uint32            _nameMax = 0;
+
+  char             *_ident   = nullptr;
+  char             *_flags   = nullptr;
 
   char             *_seq     = nullptr;
   uint8            *_qlt     = nullptr;
@@ -199,9 +210,13 @@ public:
                       uint8  *&qlt,  uint64 &seqMax, uint64 &seqLen, uint32 &errorCode);
 
   bool   loadSequence(dnaSeq &seq) {
-    return(loadSequence(seq._name, seq._nameMax,
-                        seq._seq,
-                        seq._qlt,  seq._seqMax, seq._seqLen, seq._error));
+    bool result = loadSequence(seq._name, seq._nameMax,
+                               seq._seq,
+                               seq._qlt,  seq._seqMax, seq._seqLen, seq._error);
+    if (result)
+      seq.findNameAndFlags();
+
+    return(result);
   };
 
 public:

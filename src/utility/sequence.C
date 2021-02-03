@@ -515,6 +515,32 @@ dnaSeq::copy(char  *bout,
 }
 
 
+void
+dnaSeq::findNameAndFlags(void) {
+  uint32 ii=0;
+
+  while (isWhiteSpace(_name[ii]) == true)   //  Skip white space before the name.
+    ii++;                                   //  Why do you torture us?
+
+  _ident = _name + ii;                      //  At the start of the name.
+
+  while (isVisible(_name[ii]) == true)      //  Skip over the name.
+    ii++;
+
+  if (isNUL(_name[ii]) == true) {           //  If at the end of the string,
+    _flags = _name + ii;                    //  there are no flags,
+    return;                                 //  so just return.
+  }
+
+  _name[ii++] = 0;                          //  Terminate the name, move ahead.
+
+  while (isWhiteSpace(_name[ii]) == true)   //  Otherwise, skip whitespace
+    ii++;                                   //  to get to the flags.
+
+  _flags = _name + ii;                      //  Flags are here or NUL.
+}
+
+
 
 ////////////////////////////////////////
 //  dnaSeqFile functions
@@ -717,11 +743,11 @@ dnaSeqFile::generateIndex(void) {
 
   while (loadSequence(seq) == true) {
     if (seq.wasError()) {
-      fprintf(stderr, "WARNING: error reading sequence at/before '%s'\n", seq.name());
+      fprintf(stderr, "WARNING: error reading sequence at/before '%s'\n", seq.ident());
     }
 
     if (seq.wasReSync()) {
-      fprintf(stderr, "WARNING: lost sync reading before sequence '%s'\n", seq.name());
+      fprintf(stderr, "WARNING: lost sync reading before sequence '%s'\n", seq.ident());
     }
 
     _index[_indexLen]._sequenceLength = seq.length();

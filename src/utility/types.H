@@ -264,18 +264,18 @@ bool          isHexNumber (char const *s);
 #undef  isxdigit
 #undef  isnumber
 
-#define isalnum(x)   isalnum_not_allowed(x) 
-#define isalpha(x)   isalpha_not_allowed_use_isLetter(x)
-#define iscntrl(x)   iscntrl_not_allowed(x) 
-#define isdigit(x)   isdigit_not_allowed_use_isDecDigit(x)
-#define isgraph(x)   isgraph_not_allowed(x) 
-#define islower(x)   islower_not_allowed(x) 
-#define isprint(x)   isprint_not_allowed(x) 
-#define ispunct(x)   ispunct_not_allowed(x) 
-#define isspace(x)   isspace_not_allowed_use_isWhiteSpace(x)
-#define isupper(x)   isupper_not_allowed(x) 
-#define isxdigit(x)  isxdigit_not_allowed_use_isXXXDigit(x)
-#define isnumber(x)  isnumber_not_allowed_use_isDecNumber(x)
+int inline isalnum (char c) = delete;
+int inline isalpha (char c) = delete;
+int inline iscntrl (char c) = delete;
+int inline isdigit (char c) = delete;
+int inline isgraph (char c) = delete;
+int inline islower (char c) = delete;
+int inline isprint (char c) = delete;
+int inline ispunct (char c) = delete;
+int inline isspace (char c) = delete;
+int inline isupper (char c) = delete;
+int inline isxdigit(char c) = delete;
+int inline isnumber(char c) = delete;
 
 //  Convert an ascii binary, octal, decimal or hexadecimal letter to an
 //  integer.  No type checking is performed; you've already called

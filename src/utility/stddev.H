@@ -135,7 +135,7 @@ computeStdDev(TT *dist, uint64 distLen, double &mean, double &stddev, bool isSor
   //  Sort the values.  Lets us approximate the stddev for filtering out outliers.
 
   if (isSorted == false)
-    sort(dist, dist + distLen);
+    std::sort(dist, dist + distLen);
 
   //  Approximate the stddev to filter out outliers.  This is done by assuming we're normally
   //  distributed, finding the values that would represent 1 standard deviation (about 68.27% of the
@@ -200,7 +200,7 @@ computeMode(TT *dist, uint64 distLen, TT &mode, bool isSorted=false) {
     return;
 
   if (isSorted == false)
-    sort(dist, dist + distLen);
+    std::sort(dist, dist + distLen);
 
   uint32  modeCnt = 0;
   TT      modeVal = 0;
@@ -247,7 +247,7 @@ computeMedian(TT *dist, uint64 distLen, TT &median, bool isSorted=false) {
     return;
 
   if (isSorted == false)
-    sort(dist, dist + distLen);
+    std::sort(dist, dist + distLen);
 
   if (distLen % 2 == 0)
      median = (dist[distLen / 2 - 1] + dist[distLen / 2]) / 2;
@@ -274,7 +274,7 @@ computeMedianAbsoluteDeviation(TT *dist, uint64 distLen, TT &median, TT &mad, bo
     return;
 
   if (isSorted == false)
-    sort(dist, dist + distLen);
+    std::sort(dist, dist + distLen);
 
   computeMedian(dist, distLen, median, true);
 
@@ -287,7 +287,7 @@ computeMedianAbsoluteDeviation(TT *dist, uint64 distLen, TT &median, TT &mad, bo
       m.push_back(dist[ii] - median);
   }
 
-  sort(m.begin(), m.end());
+  std::sort(m.begin(), m.end());
 
   mad = m[ m.size()/2 ];
 };

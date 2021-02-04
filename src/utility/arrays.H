@@ -68,7 +68,8 @@ operator&(_raAct a, _raAct b) {
 }
 
 
-
+//  Allocate an array of size 'allocSize', and set 'arrayMax' to that value.
+//  By default. clear the array.
 template<typename TT, typename LL>
 void
 allocateArray(TT*& array, LL &arrayMax, uint64 allocSize, _raAct op=_raAct::clearNew) {
@@ -77,12 +78,28 @@ allocateArray(TT*& array, LL &arrayMax, uint64 allocSize, _raAct op=_raAct::clea
     delete [] array;
 
   arrayMax = allocSize;
-  array    = new TT [arrayMax];
+  array    = new TT [allocSize];
 
   assert(arrayMax == allocSize);   //  Make sure we don't truncate the value!
 
   if (op == _raAct::clearNew)
-    memset(array, 0, sizeof(TT) * arrayMax);
+    memset(array, 0, sizeof(TT) * allocSize);
+}
+
+
+//  Allocate an array of size 'allocSize'.
+//  By default, clear the array.
+template<typename TT>
+void
+allocateArray(TT*& array, uint64 allocSize, _raAct op=_raAct::clearNew) {
+
+  if (array != NULL)
+    delete [] array;
+
+  array    = new TT [allocSize];
+
+  if (op == _raAct::clearNew)
+    memset(array, 0, sizeof(TT) * allocSize);
 }
 
 

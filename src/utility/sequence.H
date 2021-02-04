@@ -81,19 +81,25 @@ decode2bitBase(uint8 base) {
 
 
 
-//  A sequence loaded from disk.
+//  A sequence loaded from disk.  It should be treated as a read-only object.
 //
-//  ident() returns the first word of the sequence header line, while
-//  flags() returns the rest of the line, or an empty line if there
-//  is no more line.
+//  ident() returns the first word of the sequence header line, while flags()
+//  returns the rest of the line, or an empty line if there is no more line.
 //
-//  If quality values are not available (e.g., FASTA) then
-//  all values are set to zero.
+//  It isn't possible to modify ident() and flags().  They're pointers
+//  into the same memory, and that isn't exposed.
+//
+//  bases() and quals() could support modifications, as long as the length of
+//  the string doesn't change.  Only canu needed to do that and it was worked
+//  around.
+//
+//  If quality values are not available (e.g., FASTA) then all values are set
+//  to zero.
 //
 //  The copy functions will copy bases (and qualities) from bgn to end, but
-//  not including the base at end -- that is, normal C-style semantics.
-//  The output will be NUL-terminated, unless explicitly told not to.
-//  Returns false if bgn or end are out of range or inconsistent.
+//  not including the base at end -- that is, normal C-style semantics.  The
+//  output will be NUL-terminated, unless explicitly told not to.  Returns
+//  false if bgn or end are out of range or inconsistent.
 //
 class dnaSeq {
 public:

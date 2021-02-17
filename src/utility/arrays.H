@@ -175,28 +175,45 @@ setArraySize(TT*& array, uint64 arrayLen, LL &arrayMax, uint64 newMax, _raAct op
 //  Ensure that there is enough space to hold one more element in the array.
 //  Increase the array by 'moreSpace' if needed.
 //
+//  With the array used as a stack, a call of
+//    increaseArray(arr, arrLen, arrMax, 32)
+//  will allocate 32 more elements if arrLen == arrMax, and do nothing
+//  otherwise.  After the call, array element arr[arrLen] is guaranteed to
+//  exist.  If arrLen > arrMax, see below.
+//
+//  With the array used for random access, a call of
+//    increaseArray(arr, idx, arrMax, 32)
+//  will do nothing if idx < arrMax, and resize the array to have idx+32
+//  elements otherwise.
+//  
+//  In both cases, if 'moreSpace' is 0, it is reset to 1.
+//
+//  If the array is reallocated, the contents of the entire array are copied
+//  to the new space.  New elements are NOT cleared to zero; override op as
+//  desired.
+//
 template<typename TT, typename LL>
 void
-increaseArray(TT*& array, uint64 arrayLen, LL &arrayMax, uint64 moreSpace) {
-  uint64  newMax = arrayMax + ((moreSpace == 0) ? 1 : moreSpace);
+increaseArray(TT*& array, uint64 idx, LL &arrayMax, uint64 moreSpace, _raAct op=_raAct::copyData) {
+  uint64  newMax = idx + ((moreSpace == 0) ? 1 : moreSpace);
 
-  if (arrayLen < arrayMax)
+  if (idx < arrayMax)
     return;
 
-  setArraySize(array, arrayLen, arrayMax, newMax, _raAct::copyData);
+  setArraySize(array, arrayMax, arrayMax, newMax, op);
 }
 
 
 template<typename T1, typename T2, typename LL>
 void
-increaseArrayPair(T1*& array1, T2*& array2, uint64 arrayLen, LL &arrayMax, uint64 moreSpace) {
-  uint64  newMax = arrayMax + ((moreSpace == 0) ? 1 : moreSpace);
+increaseArrayPair(T1*& array1, T2*& array2, uint64 idx, LL &arrayMax, uint64 moreSpace, _raAct op=_raAct::copyData) {
+  uint64  newMax = idx + ((moreSpace == 0) ? 1 : moreSpace);
 
-  if (arrayLen < arrayMax)
+  if (idx < arrayMax)
     return;
 
-  setArraySize(array1, arrayLen, arrayMax, newMax, _raAct::copyData);
-  setArraySize(array2, arrayLen, arrayMax, newMax, _raAct::copyData);
+  setArraySize(array1, arrayMax, arrayMax, newMax, op);
+  setArraySize(array2, arrayMax, arrayMax, newMax, op);
 }
 
 

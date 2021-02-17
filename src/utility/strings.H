@@ -77,13 +77,14 @@ private:
 
 enum splitType {
   splitWords  = 0,
-  splitPaths  = 1
+  splitPaths  = 1,
+  splitLetter = 2
 };
 
 class splitToWords {
 public:
-  splitToWords(const char *string=nullptr, splitType type=splitWords) {
-    split(string, type);
+  splitToWords(const char *string=nullptr, splitType type=splitWords, char sep=0) {
+    split(string, type, sep);
   };
 
   ~splitToWords() {
@@ -91,7 +92,7 @@ public:
     delete [] _words;
   } ;
 
-  void    split(const char *line, splitType type=splitWords);
+  void    split(const char *line, splitType type=splitWords, char sep=0);
 
 private:
   bool   isPath(char c) {
@@ -105,9 +106,10 @@ private:
            (c == '\r'));
   };
 
-  bool   isSeparator(char c, splitType type) {
-    return(((type == splitWords) && (isSpace(c))) ||
-           ((type == splitPaths) && (isPath(c))));
+  bool   isSeparator(char c, splitType type, char sep) {
+    return(((type == splitWords)  && (isSpace(c))) ||
+           ((type == splitPaths)  && (isPath (c))) ||
+           ((type == splitLetter) && (sep  == c)));
   };
 
 public:

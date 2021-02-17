@@ -159,7 +159,7 @@ KeyAndValue::find(const char *line) {
 //  components.
 
 void
-splitToWords::split(const char *line, splitType type) {
+splitToWords::split(const char *line, splitType type, char sep) {
 
   //  Initialize to no words and no characters.
   //  Then return if the input line is empty.
@@ -174,7 +174,7 @@ splitToWords::split(const char *line, splitType type) {
   //  sure there is space for us to store them.
 
   while (line[_charsLen] != 0)
-    if (isSeparator(line[_charsLen++], type))
+    if (isSeparator(line[_charsLen++], type, sep))
       _wordsLen++;
 
   resizeArray(_words, 0, _wordsMax, _wordsLen + 1);
@@ -193,14 +193,14 @@ splitToWords::split(const char *line, splitType type) {
   _wordsLen = 0;
 
   for (uint32 st=1, ii=0; ii < _charsLen; ii++) {
-    if (isSeparator(line[ii], type)) {      //  If the character is a word
-      _chars[ii] = 0;                       //  separator, convert to NUL,
-      st         = true;                    //  and flag the next character
-    }                                       //  as the start of a new word.
+    if (isSeparator(line[ii], type, sep)) {   //  If the character is a word
+      _chars[ii] = 0;                         //  separator, convert to NUL,
+      st         = true;                      //  and flag the next character
+    }                                         //  as the start of a new word.
 
-    else if (st) {                          //  Otherwise, if this is the
-      _words[_wordsLen++] = _chars + ii;    //  start of a word, make
-      st                  = false;          //  a new word.
+    else if (st) {                            //  Otherwise, if this is the
+      _words[_wordsLen++] = _chars + ii;      //  start of a word, make
+      st                  = false;            //  a new word.
     }
   }
 }

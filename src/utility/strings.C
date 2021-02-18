@@ -204,3 +204,26 @@ splitToWords::split(const char *line, splitType type, char sep) {
     }
   }
 }
+
+
+void
+splitToWords::clear(void) {
+  _wordsLen = 0;
+  _charsLen = 0;
+}
+
+
+void
+splitToWords::erase(void) {
+
+  delete [] _words;
+  delete [] _chars;
+
+  _wordsLen = 0;
+  _wordsMax = 0;
+  _words    = nullptr;
+
+  _charsLen = 0;
+  _charsMax = 0;
+  _chars    = nullptr;
+}

@@ -88,11 +88,12 @@ public:
   };
 
   ~splitToWords() {
-    delete [] _chars;
-    delete [] _words;
-  } ;
+    erase();
+  };
 
   void    split(const char *line, splitType type=splitWords, char sep=0);
+  void    clear(void);   //  Remove the words, but leave memory intact.
+  void    erase(void);   //  Remove words and free memory.
 
 private:
   bool   isPath(char c) {

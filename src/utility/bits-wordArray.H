@@ -34,6 +34,8 @@ wordArray::get(uint64 eIdx) {
 
   uint128 val = 0;
 
+  if (eIdx >= _numValues)
+    fprintf(stderr, "wordArray::get()-- eIdx %lu >= _numValues %lu\n", eIdx, _numValues);
   assert(eIdx < _numValues);
 
   //  If the value is all in one word, just shift that word to the right to
@@ -61,11 +63,59 @@ wordArray::get(uint64 eIdx) {
 
   //  Finally, mask off the stuff we don't care about.
 
-  val &= buildLowBitMask<uint128>(_valueWidth);
+  val &= _valueMask;
 
   return(val);
 }
 
+
+
+inline
+void
+wordArray::setLock(uint64 seg, uint64 lockW1, uint64 lockW2) {
+
+  if (lockW1 == lockW2) {
+    while (_segLocks[seg][lockW1].test_and_set(std::memory_order_relaxed) == true)
+      ;
+  }
+
+  else {
+    while (_segLocks[seg][lockW1].test_and_set(std::memory_order_relaxed) == true)
+      ;
+    while (_segLocks[seg][lockW2].test_and_set(std::memory_order_relaxed) == true)
+      ;
+  }
+}
+
+
+
+inline
+void
+wordArray::relLock(uint64 seg, uint64 lockW1, uint64 lockW2) {
+
+  if (lockW1 == lockW2) {
+    _segLocks[seg][lockW1].clear();
+  }
+  else {
+    _segLocks[seg][lockW2].clear();
+    _segLocks[seg][lockW1].clear();
+  }
+}
+
+
+
+inline
+void
+wordArray::setNval(uint32 eIdx) {
+
+  while (_numValuesLock.test_and_set(std::memory_order_relaxed) == true)
+    ;
+
+  if (eIdx >= _numValues)
+    _numValues = eIdx + 1;
+
+  _numValuesLock.clear();
+}
 
 
 inline
@@ -77,6 +127,9 @@ wordArray::set(uint64 eIdx, uint128 value) {
   uint64 wrd = pos / 128;         //  The word we start in.
   uint64 bit = pos % 128;         //  Starting at this bit.
 
+  uint64 lockW1 = 0;   //  Address of locks, computed inline with the
+  uint64 lockW2 = 0;   //  setLock() function call below.
+
   //  Allocate more segment pointers and any missing segments.
 
   if (seg >= _segmentsLen)
@@ -84,38 +137,24 @@ wordArray::set(uint64 eIdx, uint128 value) {
 
   //  Mask the value, just in case.
 
-  value &= buildLowBitMask<uint128>(_valueWidth);
+  value &= _valueMask;
 
   //  Grab the locks for the two words we're going to be accessing.
 
-  uint64  lockW1 = (wrd + 0) / _wordsPerLock;
-  uint64  lockW2 = (wrd + 1) / _wordsPerLock;
+  if (_wordsPerLock > 0)
+    setLock(seg,
+            lockW1 = (wrd + 0) / _wordsPerLock,
+            lockW2 = (wrd + 1) / _wordsPerLock);
 
-  if (lockW1 == lockW2) {
-    while (_segLocks[seg][lockW1].test_and_set(std::memory_order_relaxed) == true)
-      ;
-  }
-  else {
-    while (_segLocks[seg][lockW1].test_and_set(std::memory_order_relaxed) == true)
-      ;
-    while (_segLocks[seg][lockW2].test_and_set(std::memory_order_relaxed) == true)
-      ;
-  }
+  //  Remember the largest element set.  Used for:
+  //   - failing if get() accesses something out of bounds....but doesn't
+  //     catch if we access something unset in the middle.
+  //   - debug usage in show()
 
-  //  Remember the largest element set.  Overly complicated to lock only when
-  //  changing.  This is only used to fail if get() accesses something out of
-  //  bounds, and it isn't very good since accessing something not set in the
-  //  middle of the data isn't caught.  (it's also used for debug)
-
-  if (eIdx >= _numValues) {
-    while (_numValuesLock.test_and_set(std::memory_order_relaxed) == true)
-      ;
-
-    if (eIdx >= _numValues)
-      _numValues = eIdx+1;
-
-    _numValuesLock.clear();
-  }
+  if (_wordsPerLock > 0)
+    setNval(eIdx);
+  else if (eIdx >= _numValues)
+    _numValues = eIdx+1;
 
   //  Set the value in one word....
   //
@@ -149,12 +188,7 @@ wordArray::set(uint64 eIdx, uint128 value) {
 
   //  Release the locks.
 
-  if (lockW1 == lockW2) {
-    _segLocks[seg][lockW1].clear();
-  }
-  else {
-    _segLocks[seg][lockW2].clear();
-    _segLocks[seg][lockW1].clear();
-  }
+  if (_wordsPerLock > 0)
+    relLock(seg, lockW1, lockW2);
 }
 

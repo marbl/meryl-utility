@@ -29,16 +29,17 @@
 //  while 'words' are the 128-bit machine words used to store the data.
 //
 
-wordArray::wordArray(uint32 valueWidth, uint64 segmentSizeInBits) {
+wordArray::wordArray(uint32 valueWidth, uint64 segmentSizeInBits, bool useLocks) {
 
   _valueWidth       = valueWidth;          //  In bits.
+  _valueMask        = buildLowBitMask<uint128>(_valueWidth);
   _segmentSize      = segmentSizeInBits;   //  In bits.
 
   _valuesPerSegment = _segmentSize / _valueWidth;
 
   _wordsPerSegment  = _segmentSize / 128;
-  _wordsPerLock     = 64;
-  _locksPerSegment  = _segmentSize / 128 / _wordsPerLock + 1;
+  _wordsPerLock     = (useLocks == false) ? (0) : (64);
+  _locksPerSegment  = (useLocks == false) ? (0) : (_segmentSize / 128 / _wordsPerLock + 1);
 
   _numValues        = 0;
   _numValuesLock.clear();
@@ -90,14 +91,21 @@ wordArray::allocate(uint64 nElements) {
                     _raAct::copyData | _raAct::clearNew);
 
   for (uint32 seg=_segmentsLen; seg<segmentsNeeded; seg++) {
-    if (_segments[seg] == nullptr) {
-      _segments[seg] = new uint128          [ _wordsPerSegment ];
+    if (_segments[seg] != nullptr)
+      continue;
+
+    //  Allocate the segment and (optionally, for debug and test)
+    //  initialize to non-zero values.
+
+    _segments[seg] = new uint128 [ _wordsPerSegment ];
+
+    //memset(_segments[seg], 0xff, sizeof(uint128) * _segmentSize / 128);
+
+    //  Allocate any needed locks, and open them.
+
+    if (_locksPerSegment > 0) {
       _segLocks[seg] = new std::atomic_flag [ _locksPerSegment ];
 
-      //  For debug and test, set all bits in the allocated space.
-      //memset(_segments[seg], 0xff, sizeof(uint128) * _segmentSize / 128);
-
-      //  Always reset the locks to the unlocked state.
       for (uint32 ll=0; ll<_locksPerSegment; ll++)
         _segLocks[seg][ll].clear();
     }

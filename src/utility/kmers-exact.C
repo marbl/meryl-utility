@@ -23,13 +23,6 @@
 #include <algorithm>
 
 
-//  If set, allocate another (large) array to verify that there are no holes in the
-//  data array.  Holes would lead to false positives.
-//
-#undef  VERIFY_SUFFIX_END
-
-
-
 //  Set some basic boring stuff.
 //
 void
@@ -90,6 +83,7 @@ merylExactLookup::initialize(merylFileReader *input_, kmvalu minValue_, kmvalu m
   _prePtrBits     = 64;
 
   _suffixBgn      = nullptr;
+  _suffixLen      = nullptr;
   _suffixEnd      = nullptr;
   _sufData        = nullptr;
   _valData        = nullptr;
@@ -246,14 +240,27 @@ merylExactLookup::configure(double  memInGB,
 void
 merylExactLookup::count(void) {
 
-  _suffixBgn = new uint64 [_nPrefix + 1];
+  _suffixBgn = new uint64 [_nPrefix];
+  _suffixLen = new uint64 [_nPrefix];
+  _suffixEnd = new uint64 [_nPrefix];
 
-  memset(_suffixBgn, 0, sizeof(uint64) * (_nPrefix + 1));
+  for (uint64 ii=0; ii<_nPrefix; ii++)
+    _suffixBgn[ii] = _suffixLen[ii] = _suffixEnd[ii] = uint64zero;
 
   //  Scan all kmer files, counting the number of kmers per prefix.
   //  This is thread safe when _prefixBits is more than 6 (the number of files).
 
   uint32   nf = _input->numFiles();
+
+  assert(nf == 64);
+
+  uint64   minp[nf];
+  uint64   maxp[nf];
+
+  for (uint32 ii=0; ii<nf; ii++) {
+    minp[ii] = uint64max;
+    maxp[ii] = uint64min;
+  }
 
 #pragma omp parallel for schedule(dynamic, 1)
   for (uint32 ff=0; ff<nf; ff++) {
@@ -294,9 +301,12 @@ merylExactLookup::count(void) {
 
         prefix = kbits >> _suffixBits;     //  Then extract the prefix
 
+        minp[ff] = std::min(minp[ff], (uint64)prefix);
+        maxp[ff] = std::max(maxp[ff], (uint64)prefix);
+
         assert(prefix < _nPrefix);
 
-        _suffixBgn[prefix]++;              //  Count the number of kmers per prefix.
+        _suffixLen[prefix]++;              //  Count the number of kmers per prefix.
       }
     }
 
@@ -312,28 +322,39 @@ merylExactLookup::count(void) {
     AS_UTL_closeFile(blockFile);
   }
 
-  //  Convert the kmers per prefix into begin coordinate for each prefix.
-  //  The loading loop uses _suffixEnd[] as the position to add the next
-  //  data.
+  //  If the min/max intersect, we've got a problem somewhere.  Each 'prefix'
+  //  will map to exactly one file, and they're supposed to map
+  //  consecutively.  Good luck figuring out what broke if this triggers.
 
-  uint64  bgn = 0;
-  uint64  nxt = 0;
+  for (uint32 ii=1; ii<nf; ii++)
+    assert(maxp[ii-1] < minp[ii]);
 
-  for (uint64 ii=0; ii<_nPrefix; ii++) {
-    nxt            = _suffixBgn[ii];
+  //  Now that we know the length of each block, we can set _suffixBgn to the
+  //  address of the first element.  _suffixEnd is set to that too; we'll use
+  //  it to load data into the table.
+  //
+  //  To allow threads without locks, we need to pad the end of each block so
+  //  that two blocks don't share a wordArray word.  Instead, we just pad the
+  //  last block that each thread (one thread per file) will access.  A
+  //  little bit harder to figure out, but less memory used.
+  //
+  //  For a prefix of [ffffffppp..pppp] a single thread will process all
+  //  kmers [ffffff......].  Thus, when the prefix ends in 1111...111, we can
+  //  just bump up 'bgn' a bit, just enough to get to the next 128-bit word.
+  //  But since this index is used both in storing suffixes and values,
+  //  that's impossible and we just add 256 bits.
+
+  uint64 mask = (_nPrefix - 1) >> 6;
+
+  for (uint64 bgn=0, ii=0; ii<_nPrefix; ii++) {
     _suffixBgn[ii] = bgn;
-    bgn           += nxt;
+    _suffixEnd[ii] = bgn;
+
+    bgn += _suffixLen[ii];
+
+    if ((ii & mask) == mask)
+      bgn += 256;
   }
-
-  assert(bgn == _nKmersLoaded);
-  _suffixBgn[_nPrefix] = bgn;
-
-#ifdef VERIFY_SUFFIX_END
-  _suffixEnd = new uint64 [_nPrefix];
-
-  for (uint64 ii=0; ii<_nPrefix; ii++)
-    _suffixEnd[ii] = _suffixBgn[ii];
-#endif
 
   //  Log.
 
@@ -357,34 +378,36 @@ merylExactLookup::allocate(void) {
   uint64  arrayBlockMin;
   double  memInGBused = 0.0;
 
+  uint64  ns = _suffixEnd[_nPrefix-1];   //  The largest word we access in wordArray.
+
   if (_suffixBits > 0) {
-    arraySize      = _nSuffix * _suffixBits;
+    arraySize      = ns * _suffixBits;
     arrayBlockMin  = std::max(arraySize / 1024llu, 268435456llu);   //  In bits, so 32MB per block.
     memInGBused   += bitsToGB(arraySize);
 
     if (_verbose)
       fprintf(stderr, "Allocating space for %lu suffixes of %u bits each -> %lu bits (%.3f GB) in blocks of %.3f MB\n",
-              _nSuffix, _suffixBits, arraySize, bitsToGB(arraySize), bitsToMB(arrayBlockMin));
+              ns, _suffixBits, arraySize, bitsToGB(arraySize), bitsToMB(arrayBlockMin));
 
     assert(_suffixBits <= 128);
 
-    _sufData = new wordArray(_suffixBits, arrayBlockMin);
-    _sufData->allocate(_nSuffix);
+    _sufData = new wordArray(_suffixBits, arrayBlockMin, false);
+    _sufData->allocate(ns);
   }
 
   if (_valueBits > 0) {
-    arraySize     = _nSuffix * _valueBits;
+    arraySize     = ns * _valueBits;
     arrayBlockMin = std::max(arraySize / 1024llu, 268435456llu);   //  In bits, so 32MB per block.
     memInGBused   += bitsToGB(arraySize);
 
     if (_verbose)
       fprintf(stderr, "                     %lu values   of %u bits each -> %lu bits (%.3f GB) in blocks of %.3f MB\n",
-              _nSuffix, _valueBits,  arraySize, bitsToGB(arraySize), bitsToMB(arrayBlockMin));
+              ns, _valueBits,  arraySize, bitsToGB(arraySize), bitsToMB(arrayBlockMin));
 
     assert(_valueBits <= 64);
 
-    _valData = new wordArray(_valueBits, arrayBlockMin);
-    _valData->allocate(_nSuffix);
+    _valData = new wordArray(_valueBits, arrayBlockMin, false);
+    _valData->allocate(ns);
   }
 
   return(memInGBused);
@@ -398,9 +421,10 @@ merylExactLookup::allocate(void) {
 //  In this case, we overallocate, but cannot cleanup at the end.
 void
 merylExactLookup::load(void) {
-  uint32   nf = _input->numFiles();
+  uint32   nf      = _input->numFiles();
+  uint64   sufMask = buildLowBitMask<kmdata>(_suffixBits);
+  uint64   valMask = buildLowBitMask<kmvalu>(_valueBits);
 
-  //  Disabled to prevent collisions in wordArray.
 #pragma omp parallel for schedule(dynamic, 1)
   for (uint32 ff=0; ff<nf; ff++) {
     FILE                  *blockFile = _input->blockFile(ff);
@@ -425,10 +449,10 @@ merylExactLookup::load(void) {
         kbits <<= _input->suffixSize();    //  suffix data to reconstruct
         kbits  |= block->suffixes()[ss];   //  the kmer bits.
 
-        suffix = kbits  & buildLowBitMask<kmdata>(_suffixBits);   //  Then extract the prefix
-        prefix = kbits >> _suffixBits;                            //  and suffix to use in the table
+        suffix = kbits  & sufMask;         //  Then extract the prefix
+        prefix = kbits >> _suffixBits;     //  and suffix to use in the table
 
-        _sufData->set(_suffixBgn[prefix], suffix);
+        _sufData->set(_suffixEnd[prefix], suffix);
 
         //  Compute and store the value, if requested.
 
@@ -438,18 +462,14 @@ merylExactLookup::load(void) {
           if (value > _maxValue + 1 - _minValue)
             fprintf(stderr, "minValue " F_U32 " maxValue " F_U32 " value " F_U32 " bits " F_U32 "\n",
                     _minValue, _maxValue, value, _valueBits);
-          assert(value <= buildLowBitMask<kmvalu>(_valueBits));
+          assert(value <= valMask);
 
-          _valData->set(_suffixBgn[prefix], value);
+          _valData->set(_suffixEnd[prefix], value);
         }
 
         //  Move to the next item.
 
-        _suffixBgn[prefix]++;
-
-#ifdef VERIFY_SUFFIX_END
         _suffixEnd[prefix]++;
-#endif
       }
     }
 
@@ -458,26 +478,11 @@ merylExactLookup::load(void) {
     AS_UTL_closeFile(blockFile);
   }
 
-  //  suffixBgn[i] is now the start of [i+1]; shift the array by one to
-  //  restore the proper meaning of suffixBgn.
+  //  Check that we loaded the expected number of kmers into each space
 
-  for (uint64 ii=_nPrefix; ii>0; ii--)
-    _suffixBgn[ii] = _suffixBgn[ii-1];
-
-  _suffixBgn[0] = 0;
-
-  //  Optionally verify that bgn[i] == end[i-1].
-
-#ifdef VERIFY_SUFFIX_END
-  for (uint64 ii=1; ii<_nPrefix; ii++)
-    assert(_suffixBgn[ii] == _suffixEnd[ii-1]);
-
-  fprintf(stderr, "_suffixEnd VERIFIED\n");
-
-  delete [] _suffixEnd;
-  _suffixEnd = NULL;
-#endif
-
+  for (uint64 ii=0; ii<_nPrefix; ii++)
+    assert(_suffixBgn[ii] + _suffixLen[ii] == _suffixEnd[ii]);
+  
   //  Now just log.
 
   if (_verbose)
@@ -551,7 +556,7 @@ merylExactLookup::exists_test(kmer k) {
 
   uint64  bgn = _suffixBgn[prefix];
   uint64  mid;
-  uint64  end = _suffixBgn[prefix + 1];
+  uint64  end = _suffixEnd[prefix];
 
   kmdata  tag;
 
@@ -588,12 +593,12 @@ merylExactLookup::exists_test(kmer k) {
   fprintf(stderr, "FAILED prefix 0x%s\n", toHex(prefix));
   fprintf(stderr, "FAILED suffix 0x%s\n", toHex(suffix));
   fprintf(stderr, "\n");
-  fprintf(stderr, "original  %9lu %9lu\n", _suffixBgn[prefix], _suffixBgn[prefix + 1]);
+  fprintf(stderr, "original  %9lu %9lu\n", _suffixBgn[prefix], _suffixEnd[prefix]);
   fprintf(stderr, "final     %9lu %9lu\n", bgn, end);
   fprintf(stderr, "\n");
 
   bgn = _suffixBgn[prefix];
-  end = _suffixBgn[prefix + 1];
+  end = _suffixEnd[prefix];
 
   fprintf(stderr, "BINARY SEARCH the bucket %lu-%lu for suffix %s.\n", bgn, end, toHex(suffix));
 
@@ -630,9 +635,12 @@ merylExactLookup::exists_test(kmer k) {
   }
 
   //  Exhaustively search all buckets.
+  //
+  //  THIS IS WRONG - it needs to skip the empty buckets in the middle, so needs to
+  //  iterate over each suffixBgn/suffixEnd pair individually.
 
   bgn = _suffixBgn[0];
-  end = _suffixBgn[_nPrefix];
+  end = _suffixEnd[_nPrefix - 1];
 
   fprintf(stderr, "LINEAR SEARCH the entire table %lu-%lu for suffix %s.\n", bgn, end, toHex(suffix));
 
@@ -645,9 +653,6 @@ merylExactLookup::exists_test(kmer k) {
     if (tag == suffix)
       return(true);
   }
-
-
-
 
   assert(0);
 };

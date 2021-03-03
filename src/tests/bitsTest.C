@@ -127,7 +127,7 @@ testBitArray(uint64 maxLength) {
 
 void
 testWordArray(uint64 wordSize) {
-  wordArray  *wa = new wordArray(wordSize, 8 * 64);
+  wordArray  *wa = new wordArray(wordSize, 8 * 64, false);
 
   for (uint32 ii=0; ii<1000; ii++)
     wa->set(ii, 0xffffffff);
@@ -139,6 +139,8 @@ testWordArray(uint64 wordSize) {
 
   for (uint32 ii=0; ii<1000; ii++)
     assert(wa->get(ii) == (ii & buildLowBitMask<uint64>(wordSize)));
+
+  fprintf(stderr, "Passed!\n");
 
   delete wa;
 }
@@ -462,19 +464,24 @@ main(int argc, char **argv) {
     }
 
     else if (strcmp(argv[arg], "-bitarray") == 0) {
-      uint64  maxLength = strtouint64(argv[++arg]);
+      if (++arg >= argc)
+        fprintf(stderr, "ERROR: -bitarray needs word-size argument.\n"), exit(1);
 
-      testBitArray(maxLength);
+      testBitArray(strtouint64(argv[arg]));
     }
 
     else if (strcmp(argv[arg], "-wordarray") == 0) {
-      uint64  wordSize = strtouint64(argv[++arg]);
+      if (++arg >= argc)
+        fprintf(stderr, "ERROR: -wordarray needs word-size argument.\n"), exit(1);
 
-      testWordArray(wordSize);
+      testWordArray(strtouint64(argv[arg]));
     }
 
     else if (strcmp(argv[arg], "-unary") == 0) {
-      uint32  maxSize = strtouint32(argv[++arg]);
+      if (++arg >= argc)
+        fprintf(stderr, "ERROR: -unary needs max-size argument.\n"), exit(1);
+
+      uint32  maxSize = strtouint32(argv[arg]);
 
 #pragma omp parallel for
       for (uint32 xx=1; xx<=maxSize; xx++) {

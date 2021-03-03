@@ -410,7 +410,7 @@ private:
 //
 class wordArray {
 public:
-  wordArray(uint32 valueWidth, uint64 segmentsSizeInBits = 64 * 1024);
+  wordArray(uint32 valueWidth, uint64 segmentsSizeInBits, bool useLocks);
   ~wordArray();
 
   void     clear(void);                   //  Reset the array to zero, doesn't deallocate space.
@@ -424,7 +424,13 @@ public:
   void     show(void);                    //  Dump the wordArray to the screen; debugging.
 
 private:
+  void     setLock(uint64 seg, uint64 lockW1, uint64 lockW2);
+  void     relLock(uint64 seg, uint64 lockW1, uint64 lockW2);
+  void     setNval(uint32 eIdx);
+
+private:
   uint64              _valueWidth       = 0;         //  Width of the values stored.
+  uint64              _valueMask        = 0;         //  Mask the low _valueWidth bits
   uint64              _segmentSize      = 0;         //  Size, in bits, of each block of data.
 
   uint64              _valuesPerSegment = 0;         //  Number of values in each block.

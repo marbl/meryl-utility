@@ -30,6 +30,7 @@ public:
   };
   ~merylExactLookup() {
     delete [] _suffixBgn;
+    delete [] _suffixLen;
     delete [] _suffixEnd;
     delete    _sufData;
     delete    _valData;
@@ -133,8 +134,9 @@ private:
 
   uint32            _prePtrBits    = 0;    //  How many bits wide is _suffixBgn (used only if _suffixBgn is a wordArray).
 
-  uint64           *_suffixBgn = nullptr;  //  The start of a block of data in suffix Data.  The end is the next start.
-  uint64           *_suffixEnd = nullptr;  //  The end.  Temporary.
+  uint64           *_suffixBgn = nullptr;  //  The start of a block of data in suffix Data.
+  uint64           *_suffixLen = nullptr;  //  The number of kmers to load in each block.
+  uint64           *_suffixEnd = nullptr;  //  The end of a block.  (NOTE: bgn + len != end)
   wordArray        *_sufData   = nullptr;  //  Finally, kmer suffix data!
   wordArray        *_valData   = nullptr;  //  Finally, value data!
 };
@@ -170,7 +172,7 @@ merylExactLookup::exists(kmer k) {
 
   uint64  bgn = _suffixBgn[prefix];
   uint64  mid;
-  uint64  end = _suffixBgn[prefix + 1];
+  uint64  end = _suffixEnd[prefix];
 
   kmdata  tag;
 
@@ -216,7 +218,7 @@ merylExactLookup::exists(kmer k, kmvalu &value) {
 
   uint64  bgn = _suffixBgn[prefix];
   uint64  mid;
-  uint64  end = _suffixBgn[prefix + 1];
+  uint64  end = _suffixEnd[prefix];
 
   kmdata  tag;
 
@@ -271,7 +273,7 @@ merylExactLookup::value(kmer k) {
 
   uint64  bgn = _suffixBgn[prefix];
   uint64  mid;
-  uint64  end = _suffixBgn[prefix + 1];
+  uint64  end = _suffixEnd[prefix];
 
   kmdata  tag;
 

@@ -119,7 +119,7 @@ merylFileBlockReader::decodeBlock(void) {
   if (_data == NULL)
     return;
 
-  resizeArrayPair(_suffixes, _values, 0, _nKmersMax, _nKmers);
+  resizeArrayPair(_suffixes, _values, 0, _nKmersMax, _nKmers, _raAct::doNothing);
   decodeBlock(_suffixes, _values);
 }
 

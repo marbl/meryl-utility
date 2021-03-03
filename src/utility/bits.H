@@ -60,11 +60,42 @@ displayWord(uint64 word, char *buffer=NULL) {
 
 
 
-//  Generate a mask on the low bits (e.g., 0x000fffff) or the high bits
-//  (e.g., 0xfffff000).
+//  Generate a bit mask on the low (0x000fff) or high bits (0xfff000).
 //
-template<typename uintType> uintType buildLowBitMask(uint32 numBits);
-template<typename uintType> uintType buildHighBitMask(uint32 numBits);
+//  Algorithm:
+//   - set the return value to all 1's
+//   - shift left or right to keep the desired numBits in the word
+//   - reset to all 0's if the numBits is zero
+//     (if     zero, 'r & -0' == 'r & 0000..000)
+//     (if not zero, 'r & -1' == 'r & 1111..111)
+//   - reset to all 1's if the numBits is larger than the number of bits in the word
+//
+template<typename uintType>
+uintType
+buildLowBitMask(uint32 numBits) {
+  uintType  r;
+
+  r   = ~((uintType)0);
+  r >>= 8 * sizeof(uintType) - numBits;
+  r  &= -(uintType)(numBits != 0);
+  r  |= -(uintType)(numBits  > 8 * sizeof(uintType));
+
+  return(r);
+}
+
+template<typename uintType>
+uintType
+buildHighBitMask(uint32 numBits) {
+  uintType  r;
+
+  r   = ~((uintType)0);
+  r <<= 8 * sizeof(uintType) - numBits;
+  r  &= -(uintType)(numBits != 0);
+  r  |= -(uintType)(numBits  > 8 * sizeof(uintType));
+
+  return(r);
+}
+
 
 
 //  Return bits in a word:

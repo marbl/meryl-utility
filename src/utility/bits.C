@@ -21,59 +21,6 @@
 #include "files.H"
 
 
-////////////////////////////////////////////////////////////
-//
-//  Return a mask appropriate to keep the low or high bits in a word.
-//   - set the return value to all 1's
-//   - shift left or right to keep the desired numBits in the word
-//   - reset to all 0's if the numBits is zero
-//     (if     zero, 'r & -0' == 'r & 0000..000)
-//     (if not zero, 'r & -1' == 'r & 1111..111)
-//   - reset to all 1's if the numBits is larger than the number of bits in the word
-//
-template<typename uintType>
-uintType
-buildLowBitMask(uint32 numBits) {
-  uintType  r;
-
-  r   = ~((uintType)0);
-  r >>= 8 * sizeof(uintType) - numBits;
-  r  &= -(uintType)(numBits != 0);
-  r  |= -(uintType)(numBits  > 8 * sizeof(uintType));
-
-  return(r);
-}
-
-template<typename uintType>
-uintType
-buildHighBitMask(uint32 numBits) {
-  uintType  r;
-
-  r   = ~((uintType)0);
-  r <<= 8 * sizeof(uintType) - numBits;
-  r  &= -(uintType)(numBits != 0);
-  r  |= -(uintType)(numBits  > 8 * sizeof(uintType));
-
-  return(r);
-}
-
-template uint128 buildLowBitMask<uint128>(uint32 numBits);
-template uint64  buildLowBitMask<uint64> (uint32 numBits);
-template uint32  buildLowBitMask<uint32> (uint32 numBits);
-template uint16  buildLowBitMask<uint16> (uint32 numBits);
-template uint8   buildLowBitMask<uint8>  (uint32 numBits);
-
-template uint128 buildHighBitMask<uint128>(uint32 numBits);
-template uint64  buildHighBitMask<uint64> (uint32 numBits);
-template uint32  buildHighBitMask<uint32> (uint32 numBits);
-template uint16  buildHighBitMask<uint16> (uint32 numBits);
-template uint8   buildHighBitMask<uint8>  (uint32 numBits);
-
-
-
-////////////////////////////////////////////////////////////
-//
-//
 
 stuffedBits::stuffedBits(uint64 nBits) {
 

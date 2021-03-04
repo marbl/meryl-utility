@@ -48,15 +48,17 @@ public:
 class sweatShopState {
 public:
   sweatShopState(void *userData) {
-    _user     = userData;
-    _computed = false;
-    _next     = 0L;
+    _user      = userData;
+    _computed  = false;
+    _outputted = false;
+    _next      = 0L;
   };
   ~sweatShopState() {
   };
 
   void             *_user;
   bool              _computed;
+  bool              _outputted;
   sweatShopState   *_next;
 };
 
@@ -105,6 +107,7 @@ sweatShop::sweatShop(void*(*loaderfcn)(void *G),
   _loaderP          = 0L;
 
   _showStatus       = false;
+  _writeInOrder     = true;
 
   _loaderQueueSize  = 1024;
   _loaderQueueMax   = 10240;
@@ -229,7 +232,7 @@ sweatShop::loader(void) {
     }
 
     //  Otherwise, we've loaded a user object.  Push it onto the local list,
-    //  the merge into the global list if the local list is long enough.
+    //  then merge into the global list if the local list is long enough.
 
     loaderAddToLocal(tail, head, thisState);
     numLoaded++;
@@ -321,45 +324,68 @@ sweatShop::worker(sweatShopWorker *workerData) {
 }
 
 
+void
+sweatShop::writerWrite(sweatShopState *w) {
+
+  if (_userWriter)
+    (*_userWriter)(_globalUserData, w->_user);
+  _numberOutput++;
+
+  w->_outputted = true;
+}
+
+
 void*
 sweatShop::writer(void) {
   sweatShopState  *deleteState = 0L;
+  struct timespec naptime1 = { .tv_sec = 0, .tv_nsec = 5000000ULL };
+  struct timespec naptime2 = { .tv_sec = 0, .tv_nsec = 5000000ULL };
 
-  //  Wait for output to appear, then write.
-  //
-  while (_writerP && _writerP->_user) {
 
-    if        (_writerP->_computed == false) {
-      //  Wait for a slow computation.
-      struct timespec   naptime;
-      naptime.tv_sec      = 0;
-      naptime.tv_nsec     = 5000000ULL;
+  while ((_writerP        != nullptr) &&
+         (_writerP->_user != nullptr)) {
 
-      //fprintf(stderr, "Writer waits for slow thread at " F_U64 ".\n", _numberOutput);
-      nanosleep(&naptime, 0L);
-    } else if (_writerP->_next == 0L) {
-      //  Wait for the input.
-      struct timespec   naptime;
-      naptime.tv_sec      = 0;
-      naptime.tv_nsec     = 5000000ULL;
-
-      //fprintf(stderr, "Writer waits for all threads at " F_U64 ".\n", _numberOutput);
-      nanosleep(&naptime, 0L);
-    } else {
-      if (_userWriter)
-        (*_userWriter)(_globalUserData, _writerP->_user);
-      _numberOutput++;
-
-      deleteState = _writerP;
-      _writerP    = _writerP->_next;
-      delete deleteState;
+    //  If a complete result, write it.
+    if ((_writerP->_computed  == true) &&
+        (_writerP->_outputted == false)) {
+      writerWrite(_writerP);
+      continue;
     }
+
+    //  If we can write output out-of-order, search ahead
+    //  for any results and output them.
+    //  if (_outOfOrder == true)
+    if (_writeInOrder == false) {
+      for (sweatShopState *ss = _writerP; ss != nullptr; ss = ss->_next)
+        if ((ss->_computed  == true) &&
+            (ss->_outputted == false)) {
+          writerWrite(ss);
+        }
+    }
+
+    //  If no next, wait for input to appear.  We can't purge this node
+    //  from the list until there is a next, else we lose the list!
+    if (_writerP->_next == nullptr) {
+      nanosleep(&naptime1, 0L);
+      continue;
+    }
+
+    //  If already output, remove the node.
+    if (_writerP->_outputted == true) {
+      sweatShopState *ds = _writerP;
+      _writerP           = _writerP->_next;
+
+      delete ds;
+      continue;
+    }
+
+    //  Otherwise, we need to wait for a state to appear on the queue.
+    nanosleep(&naptime2, 0L);
   }
 
   //  Tell status to stop.
   _writerP = 0L;
 
-  //fprintf(stderr, "sweatShop::writer exits.\n");
   return(0L);
 }
 

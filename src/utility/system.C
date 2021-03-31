@@ -186,21 +186,27 @@ getPageSize(void) {
 //  Query the machine or the environment to find any memory size limit.  If
 //  there is no environment limit, the physical memory size is returned.
 //
-//  SLURM_MEM_PER_CPU
-//    Set if --mem-per-cpu is supplied to sbatch.
-//    "SLURM_MEM_PER_CPU=2048" for a request of --mem-per-cpu=2g
+//  Slurm variables (from sbatch man page).
+//    SLURM_MEM_PER_CPU
+//      Set if --mem-per-cpu is supplied to sbatch.
+//      "SLURM_MEM_PER_CPU=2048" for a request of --mem-per-cpu=2g
 //
-//  SLURM_MEM_PER_NODE
-//    Set if --mem is supplied to sbatch.
-//    "SLURM_MEM_PER_NODE=5120" for a request of --mem=5g
+//    SLURM_MEM_PER_NODE
+//      Set if --mem is supplied to sbatch.
+//      "SLURM_MEM_PER_NODE=5120" for a request of --mem=5g
 //
-//  SLURM_MEM_PER_GPU
-//    Requested memory per allocated GPU.
-//      Only set if the --mem-per-gpu option is specified.
-//      Not checked for below.
+//    SLURM_MEM_PER_GPU
+//      Requested memory per allocated GPU.
+//        Only set if the --mem-per-gpu option is specified.
+//        Not checked for below.
 //
 //  There doesn't appear to be a comparable environment variable for SGE.
-//  I didn't look for PBS/OpenPBS/PBS Pro.
+//
+//  PBS/OpenPBS/PBS Pro variables.
+//    PBS_RESC_MEM
+//    TORQUE_RESC_MEM  (probably obsolete)
+//      Potentially memory in bytes.
+//
 //
 uint64
 getMaxMemoryAllowed(void) {
@@ -214,6 +220,10 @@ getMaxMemoryAllowed(void) {
   env = getenv("SLURM_MEM_PER_NODE");
   if (env)
     maxmem = strtouint64(env) * 1024 * 1024;
+
+  env = getenv("PBS_RESC_MEM");
+  if (env)
+    maxmem = strtouint64(env);
 
   return(maxmem);
 }
@@ -252,18 +262,25 @@ getMaxMemoryAllowed(void) {
 //     - total number of nodes in the job's resource allocation
 //
 //  PBS/OpenPBS/PBS Pro variables (from Torque 9.0.3).
-//    PBS_NUM_NODES - Number of nodes allocated to the job
-//    PBS_NUM_PPN   - Number of procs per node allocated to the job
-//    PBS_NP        - Number of execution slots (cores) for the job
+//    PBS_NUM_NODES    - Number of nodes allocated to the job
+//    PBS_NUM_PPN      - Number of procs per node allocated to the job
+//    PBS_NCPUS        - (older version of PBS_NUM_PPN?)
+//    PBS_NP           - Number of execution slots (cores) for the job
+//    TORQUE_RESC_PROC - (can't find any doc on this)
 //
 //  SGE variables.
 //    NSLOTS
+//
 uint32
 getMaxThreadsAllowed(void) {
   char    *env;
   uint32   nAllowed = omp_get_max_threads();
 
   env = getenv("SLURM_JOB_CPUS_PER_NODE");
+  if (env)
+    nAllowed = strtouint32(env);
+
+  env = getenv("PBS_NCPUS");
   if (env)
     nAllowed = strtouint32(env);
 

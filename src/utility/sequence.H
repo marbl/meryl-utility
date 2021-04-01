@@ -113,6 +113,9 @@ public:
 
   uint64            length(void)       { return(_seqLen); };
 
+  void              releaseAll(void);      //  Release all memory.
+  void              releaseBases(void);    //  Release seq memory; keep the name.
+
   bool              copy(char  *bout,
                          uint32 bgn, uint32 end, bool terminate = true);
 
@@ -207,6 +210,9 @@ public:
   bool   isFASTA(void)      { return(_isFASTA); };
   bool   isFASTQ(void)      { return(_isFASTQ); };
 
+  //  Return the sequence index of the last loaded sequence.
+  uint32 seqIdx(void)       { return(_seqIdx-1); };
+
   //  True if the input file is compressed (gzip, xz, etc).
   bool   isCompressed(void) { return(_file->isCompressed()); };
 
@@ -214,16 +220,7 @@ public:
   bool   loadSequence(char   *&name, uint32 &nameMax,
                       char   *&seq,
                       uint8  *&qlt,  uint64 &seqMax, uint64 &seqLen, uint32 &errorCode);
-
-  bool   loadSequence(dnaSeq &seq) {
-    bool result = loadSequence(seq._name, seq._nameMax,
-                               seq._seq,
-                               seq._qlt,  seq._seqMax, seq._seqLen, seq._error);
-    if (result)
-      seq.findNameAndFlags();
-
-    return(result);
-  };
+  bool   loadSequence(dnaSeq &seq);
 
 public:
   bool   loadBases(char    *seq,
@@ -250,6 +247,7 @@ private:
 
   bool                   _isFASTA  = false;
   bool                   _isFASTQ  = false;
+  uint64                 _seqIdx   = 0;
 
   compressedFileReader  *_file     = nullptr;
   readBuffer            *_buffer   = nullptr;
@@ -262,7 +260,6 @@ private:
   dnaSeqIndexEntry      *_index    = nullptr;
   uint64                 _indexLen = 0;
   uint64                 _indexMax = 0;
-
 };
 
 

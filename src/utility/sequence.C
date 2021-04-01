@@ -476,6 +476,28 @@ dnaSeq::~dnaSeq() {
 };
 
 
+void
+dnaSeq::releaseAll(void) {
+  delete [] _name;    _name = _ident = _flags = nullptr;
+  delete [] _seq;     _seq                    = nullptr;
+  delete [] _qlt;     _qlt                    = nullptr;
+
+  _nameMax = 0;
+  _seqMax  = 0;
+  _seqLen  = 0;
+}
+
+
+void
+dnaSeq::releaseBases(void) {
+  delete [] _seq;     _seq                    = nullptr;
+  delete [] _qlt;     _qlt                    = nullptr;
+
+  _seqMax  = 0;
+  _seqLen  = 0;
+}
+
+
 bool
 dnaSeq::copy(char  *bout,
              uint32 bgn, uint32 end, bool terminate) {
@@ -597,6 +619,8 @@ dnaSeqFile::findSequence(uint64 i) {
   if (_indexLen <= i)   return(false);
 
   _buffer->seek(_index[i]._fileOffset);
+
+  _seqIdx = i;
 
   return(true);
 }
@@ -844,6 +868,8 @@ dnaSeqFile::loadFASTA(char  *&name, uint32 &nameMax,
   assert(seqLen  < seqMax);
   assert(qltLen  < seqMax);
 
+  _seqIdx++;
+
   return(true);
 }
 
@@ -945,6 +971,8 @@ dnaSeqFile::loadFASTQ(char  *&name, uint32 &nameMax,
   assert(seqLen  < seqMax);
   assert(qltLen  < seqMax);
 
+  _seqIdx++;
+
   return(true);
 }
 
@@ -1040,6 +1068,20 @@ dnaSeqFile::loadSequence(char  *&name, uint32 &nameMax,
   }
 
   return(true);
+}
+
+
+
+bool
+dnaSeqFile::loadSequence(dnaSeq &seq) {
+  bool result = loadSequence(seq._name, seq._nameMax,
+                             seq._seq,
+                             seq._qlt,  seq._seqMax, seq._seqLen, seq._error);
+
+  if (result)
+    seq.findNameAndFlags();
+
+  return(result);
 }
 
 

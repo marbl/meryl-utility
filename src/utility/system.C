@@ -210,12 +210,13 @@ getPageSize(void) {
 //
 uint64
 getMaxMemoryAllowed(void) {
-  char    *env;
+  char    *env, *cpu;
   uint64   maxmem = getPhysicalMemorySize();
 
+  cpu = getenv("SLURM_JOB_CPUS_PER_NODE");
   env = getenv("SLURM_MEM_PER_CPU");
-  if (env)
-    maxmem = getMaxThreadsAllowed() * strtouint64(env) * 1024 * 1024;
+  if (env && cpu)
+    maxmem = strtouint64(cpu) * strtouint64(env) * 1024 * 1024;
 
   env = getenv("SLURM_MEM_PER_NODE");
   if (env)

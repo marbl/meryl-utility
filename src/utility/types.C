@@ -446,27 +446,23 @@ template char const *toOct<uint8>  (uint8   v, uint32 width);
 template<typename uintType>
 char *
 toDec(uintType v, char *ret, uint32 w) {
-  uint32  p = 64;
-  uint32  x = 0;
+  uint32   p = 1;
+  uint32   e = 0;
 
-  if (v == 0) {
-    ret[x++] = '0';
-  }
+  for (uintType t=v/10; t > 0; t /= 10)   //  Count how long the output string will
+    p++;                                  //  be; we build backwards, right-to-left.
 
-  else {
-    while (v > 0) {               //  Write the number, low-order
-      p -= 1;                     //  digits first, to the end
-      ret[p] = alpha[ v % 10 ];   //  of the string.
-      v /= 10;
-    }
+  ret[p]   =  0;                          //  Terminate the string, and remember the
+  e = p;                                  //  end position so we can return it to the user.
 
-    for (x=0; p<64; x++, p++)     //  Shift the string so it
-      ret[x] = ret[p];            //  starts at the origin.
-  }
+  ret[--p] = alpha[ v % 10 ];             //  Convert the last digit; this handles v=0 too.
 
-  ret[x] = 0;
+  for (uintType t=v/10; t > 0; t /= 10)   //  Convert the next low order digit to
+    ret[--p] = alpha[ t % 10 ];           //  an ASCII letter, repeat.
 
-  return(ret + x);
+  assert(p == 0);
+
+  return(ret + e);
 }
 
 template<typename uintType>

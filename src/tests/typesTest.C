@@ -91,6 +91,39 @@ test_strto(void) {
   assert(strtoint8(min8) == int8min);
   assert(strtoint8(max8) == int8max);
 
+  fprintf(stderr, "Testing conversion of string to signed integers.\n");
+
+  char  outstr[13], *outp;
+
+  for (uint32 tt=0; tt<13; tt++)
+    outstr[tt] = 100;
+
+  for (uint32 tt=0; 1; tt++) {
+    outp = toDec(tt, outstr);
+
+    if ((tt < 25) || (tt > uint32max-25) || ((tt % 1844751) == 0))
+      fprintf(stderr, "tt %10u len %d -- out '%s'\n", tt, (int32)(outp - outstr), outstr);
+
+    if      (tt < 10)            assert(outstr+1  == outp);
+    else if (tt < 100)           assert(outstr+2  == outp);
+    else if (tt < 1000)          assert(outstr+3  == outp);
+    else if (tt < 10000)         assert(outstr+4  == outp);
+    else if (tt < 100000)        assert(outstr+5  == outp);
+    else if (tt < 1000000)       assert(outstr+6  == outp);
+    else if (tt < 10000000)      assert(outstr+7  == outp);
+    else if (tt < 100000000)     assert(outstr+8  == outp);
+    else if (tt < 1000000000)    assert(outstr+9  == outp);
+
+    assert(outp[0] == 0);
+    assert(outp[1] == 100);
+    assert(outp[2] == 100);
+
+    assert(strtouint32(outstr) == tt);
+
+    if (tt == uint32max)   //  Otherwise we look infinitely.  (Actually, we fail the
+      break;               //  '==100' assert above when we wrap around.)
+  }
+
   fprintf(stderr, "Tests passed.\n");
 
   return(true);

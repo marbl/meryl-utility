@@ -140,7 +140,13 @@ merylExactLookup::configure(double  memInGB,
   if (pbMax > kmer::merSize() * 2)
     pbMax = kmer::merSize() * 2;
 
-  for (uint32 pb=0; pb<pbMax; pb++) {
+  //  The asserts down at line 350 or so do not like (did not like) it when
+  //  prefixBits was less than 6.  Not sure if the asserts were wrong, or
+  //  if there is a real problem somewhere -- I suspect the asserts were
+  //  wrong.  In any case, prefixBits < 6 really makes little sense, so
+  //  we'll just search 6 and larger here.
+
+  for (uint32 pb=6; pb<pbMax; pb++) {
     uint64  nprefix = (uint64)1 << pb;
     uint64  space   = nprefix * _prePtrBits + _nSuffix * (_Kbits - pb) + _nSuffix * _valueBits;
 
@@ -325,6 +331,11 @@ merylExactLookup::count(void) {
   //  If the min/max intersect, we've got a problem somewhere.  Each 'prefix'
   //  will map to exactly one file, and they're supposed to map
   //  consecutively.  Good luck figuring out what broke if this triggers.
+  //
+  //  This triggered with prefixBits < 6 (see also line ~150).  What happened
+  //  is that we didn't have enough different prefixes to assign them to
+  //  different files....so I guess I just figured out what broke if this
+  //  triggers.
 
   for (uint32 ii=1; ii<nf; ii++)
     assert(maxp[ii-1] < minp[ii]);

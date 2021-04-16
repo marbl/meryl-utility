@@ -201,43 +201,7 @@ writeToFile(OBJ const *object, char const *description, FILE *file) {
 
 
 
-
-
-
-
-//  Writes sequence as fasta, with at most 'bl' letters per line (unlimited if 0).
-void
-AS_UTL_writeFastA(FILE *f,
-                  char const *s, int sl, int bl,
-                  char const *h, ...);
-
-//  Writes FastQ, with Sanger QVs.
-void
-AS_UTL_writeFastQ(FILE *f,
-                  char const *s, int sl,
-                  char const *q, int ql,   //  As Sanger QV, already encoded
-                  char const *h, ...);
-
-void
-AS_UTL_writeFastQ(FILE *f,
-                  char  const *s, int sl,
-                  uint8 const *q, int ql,   //  As Sanger QV, from integer values
-                  char  const *h, ...);
-
-//  Writes FASTA or FASTQ, depending on what data is present and what format
-//  is explicitly desired.
-void
-outputSequence(FILE        *OUT,
-               char  const *outputName,
-               char  const *outputBases,
-               uint8 const *outputQuals,  uint32  outputBasesLen,
-               bool         isFASTA,
-               bool         isFASTQ,
-               bool         outputFASTA,
-               bool         outputFASTQ,
-               uint8        QV);
-
-
+#include "files-fasta-fastq.H"
 #include "files-compressed.H"
 #include "files-buffered.H"
 #include "files-buffered-implementation.H"

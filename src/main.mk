@@ -13,6 +13,7 @@ SOURCES      := utility/runtime.C \
                 utility/files.C \
                 utility/files-buffered.C \
                 utility/files-compressed.C \
+                utility/files-fasta-fastq.C \
                 utility/files-memoryMapped.C \
                 \
                 utility/logging.C \
@@ -82,6 +83,7 @@ ifeq ($(BUILDTESTS), 1)
 SUBMAKEFILES += tests/alignTest-ssw.mk \
                 tests/alignTest-ksw2.mk \
                 tests/bitsTest.mk \
+                tests/fasta-fastq.mk \
                 tests/filesTest.mk \
                 tests/intervalListTest.mk \
                 tests/intervalsTest.mk \

@@ -93,6 +93,8 @@ SUBMAKEFILES += tests/alignTest-ssw.mk \
                 tests/readLines.mk \
                 tests/sequenceTest.mk \
                 tests/stddevTest.mk \
+                tests/stringsTest.mk \
                 tests/systemTest.mk \
+                tests/toHexTest.mk \
                 tests/typesTest.mk
 endif

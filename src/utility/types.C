@@ -521,9 +521,9 @@ template char       *toHex<uint32> (uint32  v, char *out, uint32 width);
 template char       *toHex<uint16> (uint16  v, char *out, uint32 width);
 template char       *toHex<uint8>  (uint8   v, char *out, uint32 width);
 
-template char const *toHex<uint128>(uint128 v, uint32 width);
-template char const *toHex<uint64> (uint64  v, uint32 width);
-template char const *toHex<uint32> (uint32  v, uint32 width);
-template char const *toHex<uint16> (uint16  v, uint32 width);
-template char const *toHex<uint8>  (uint8   v, uint32 width);
+template char const *toHex<uint128>(uint128 v, uint32 width=32);
+template char const *toHex<uint64> (uint64  v, uint32 width=16);
+template char const *toHex<uint32> (uint32  v, uint32 width=8);
+template char const *toHex<uint16> (uint16  v, uint32 width=4);
+template char const *toHex<uint8>  (uint8   v, uint32 width=2);
 

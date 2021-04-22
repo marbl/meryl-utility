@@ -55,7 +55,6 @@
 
 
 #elif defined(LIBBACKTRACE)
-#warning LIBBACKTRACE
 
 extern "C" {
 #include "libbacktrace/backtrace.h"
@@ -101,7 +100,6 @@ AS_UTL_catchCrash(int sig_num, siginfo_t *UNUSED(info), void *UNUSED(ctx)) {
 
 
 #elif defined(LIBUNWIND)
-#warning LIBUNWIND
 
 #include <libunwind.h>
 
@@ -157,7 +155,6 @@ AS_UTL_catchCrash(int sig_num, siginfo_t *UNUSED(info), void *UNUSED(ctx)) {
 
 
 #elif defined(BACKWARDCPP)
-#warning BACKWARDCPP
 
 #include "backward.hpp"
 
@@ -228,7 +225,6 @@ AS_UTL_catchCrash(int sig_num, siginfo_t *UNUSED(info), void *UNUSED(ctx)) {
 
 
 #else
-#warning DEFAULT
 
 void
 AS_UTL_catchCrash(int sig_num, siginfo_t *UNUSED(info), void *UNUSED(ctx)) {

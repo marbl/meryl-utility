@@ -233,7 +233,7 @@ inline bool   isWhiteSpace(char c) { return((c == ' ')  || (c == '\n') ||
                                             (c == '\t') || (c == '\r')); };
 
 inline bool   isComment(char c)    { return((c == '!') || (c == '#') || (c == 0));        };
-inline bool   isDelimiter(char c)  { return((c == ':') || (c == '=') || isWhiteSpace(c)); };
+inline bool   isDelimiter(char c)  { return((c == ':') || (c == '='));                    };
 
 inline bool   isBinDigit(char c)   { return((('0' <= c) && (c <= '1')));  }
 inline bool   isOctDigit(char c)   { return((('0' <= c) && (c <= '7')));  }

@@ -82,9 +82,9 @@ KeyAndValue::find(const char *line) {
   //    Detect the first comment mark that is preceeded by a space.
   //      Change it to NUL to terminate the string and return.
   //
-  //    Detect the key=value delimiter.
+  //    Detect the first key=value delimiter.
   //      Change it to a space so we can iterate over it.
-  //      lastspace must be set before this is changed.
+  //      Change all consecutive delimiters to a space too.
 
   char *equals    = nullptr;
   char *eol       = nullptr;
@@ -101,8 +101,14 @@ KeyAndValue::find(const char *line) {
     lastspace = isWhiteSpace(*ptr);
 
     if ((isDelimiter(*ptr) == true) && (equals == nullptr)) {
-      *ptr = ' ';
-      equals = ptr;
+      equals = ptr;    //  Remember the first letter in the delimiter
+
+      while ((*ptr != 0) && (isDelimiter(*ptr) == true))
+        *ptr++ = ' ';
+
+      ptr--;           //  Back up to the last delimiter letter.
+
+      eol    = ptr;    //  Update eol since we possibly moved ptr ahead.
     }
 
     if (*ptr == 0)

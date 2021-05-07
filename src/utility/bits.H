@@ -430,6 +430,8 @@ private:
 //  The size, in bits, of each element is set at construction time.  All
 //  elements must be the same size.
 //
+//  Words of at most 128 bits in size can be stored.
+//
 //  The elements are stored in a set of fixed-size blocks.  The block size
 //  can also be set at construction time.  Note that this is specified IN
 //  BITS.  The default size is 64 KB per block.  Decrease this if you know
@@ -461,7 +463,7 @@ private:
 
 private:
   uint64              _valueWidth       = 0;         //  Width of the values stored.
-  uint64              _valueMask        = 0;         //  Mask the low _valueWidth bits
+  uint128             _valueMask        = 0;         //  Mask the low _valueWidth bits
   uint64              _segmentSize      = 0;         //  Size, in bits, of each block of data.
 
   uint64              _valuesPerSegment = 0;         //  Number of values in each block.

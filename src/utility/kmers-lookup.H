@@ -128,6 +128,7 @@ private:
   uint32            _valueBits     = 0;    //  How many bits of the suffix entry are data.
 
   kmdata            _suffixMask    = 0;
+  kmvalu            _valueMask     = 0;
 
   uint64            _nPrefix       = 0;    //  How many entries in _suffixBgn  == 2 ^ _prefixBits.
   uint64            _nSuffix       = 0;    //  How many entries in _suffixData == nDistinct in the input database.
@@ -152,10 +153,7 @@ merylExactLookup::value_value(kmvalu value) {
   if (_valueBits == 0)               //  Return 'true' if no value
     return(1);                       //  is stored.
 
-  value &= buildLowBitMask<kmvalu>(_valueBits);
-
-  //if (value == 0)                    //  Return zero if the value
-  //  return(0);                       //  is actually zero.
+  value &= _valueMask;
 
   return(value + _valueOffset);      //  Otherwise, return the value.
 };

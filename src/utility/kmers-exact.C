@@ -65,6 +65,7 @@ merylExactLookup::initialize(merylFileReader *input_, kmvalu minValue_, kmvalu m
     _valueBits = countNumberOfBits64(_maxValue + 1 - _minValue);
 
   _suffixMask     = 0;
+  _valueMask      = buildLowBitMask<kmvalu>(_valueBits);
 
   _nPrefix        = 0;                               //  Number of entries in pointer table.
   _nSuffix        = 0;                               //  Number of entries in suffix dable.
@@ -433,8 +434,9 @@ merylExactLookup::allocate(void) {
 void
 merylExactLookup::load(void) {
   uint32   nf      = _input->numFiles();
-  uint64   sufMask = buildLowBitMask<kmdata>(_suffixBits);
-  uint64   valMask = buildLowBitMask<kmvalu>(_valueBits);
+
+  assert(buildLowBitMask<kmvalu>(_valueBits)  == _valueMask);
+  assert(buildLowBitMask<kmdata>(_suffixBits) == _suffixMask);
 
 #pragma omp parallel for schedule(dynamic, 1)
   for (uint32 ff=0; ff<nf; ff++) {
@@ -460,10 +462,28 @@ merylExactLookup::load(void) {
         kbits <<= _input->suffixSize();    //  suffix data to reconstruct
         kbits  |= block->suffixes()[ss];   //  the kmer bits.
 
-        suffix = kbits  & sufMask;         //  Then extract the prefix
+        suffix = kbits  & _suffixMask;     //  Then extract the prefix
         prefix = kbits >> _suffixBits;     //  and suffix to use in the table
 
         _sufData->set(_suffixEnd[prefix], suffix);
+
+#ifdef TEST_STORE
+        if (_sufData->get(_suffixEnd[prefix]) != suffix) {
+          char ks[65];
+          kmer k;
+
+          k._mer = kbits;
+
+          fprintf(stdout, "STORE kmer %s (%s/%s) at position %lu\n",
+                  k.toString(ks),
+                  toHex(prefix, _prefixBits),
+                  toHex(suffix, _suffixBits),
+                  _suffixEnd[prefix]);
+
+          fprintf(stderr, "FAIL stored 0x%s != value 0x%s\n", toHex(_sufData->get(_suffixEnd[prefix])), toHex(suffix));
+        }
+        assert(_sufData->get(_suffixEnd[prefix]) == suffix);
+#endif
 
         //  Compute and store the value, if requested.
 
@@ -473,7 +493,7 @@ merylExactLookup::load(void) {
           if (value > _maxValue + 1 - _minValue)
             fprintf(stderr, "minValue " F_U32 " maxValue " F_U32 " value " F_U32 " bits " F_U32 "\n",
                     _minValue, _maxValue, value, _valueBits);
-          assert(value <= valMask);
+          assert(value <= _valueMask);
 
           _valData->set(_suffixEnd[prefix], value);
         }

@@ -53,6 +53,10 @@ wordArray::wordArray(uint32 valueWidth, uint64 segmentSizeInBits, bool useLocks)
     _segments[ss] = nullptr;
     _segLocks[ss] = nullptr;
   }
+
+  if (_valueWidth > 128)
+    fprintf(stderr, "wordArray::wordArray()-- valueWidth=%lu too large; must be at most 128.\n", _valueWidth), exit(1);
+  assert(_valueWidth <= 128);
 }
 
 

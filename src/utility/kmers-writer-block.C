@@ -93,14 +93,15 @@ merylBlockWriter::~merylBlockWriter() {
 
 
 //  We're given a block of kmers with the same prefix, sorted, with values.
-//  Which is exactly what merylFileWriter wants, so we can just forward
-//  the call to it.
+//  Which is exactly what merylFileWriter wants, so we can just forward the
+//  call to it.
 //
 void
-merylBlockWriter::addBlock(kmpref  prefix,
-                           uint64  nKmers,
-                           kmdata *suffixes,
-                           kmvalu *values) {
+merylBlockWriter::addCountedBlock(kmpref  prefix,
+                                  uint64  nKmers,
+                                  kmdata *suffixes,
+                                  kmvalu *values,
+                                  kmlabl  label) {
 
   //  Open a new file, if needed.
 
@@ -115,7 +116,9 @@ merylBlockWriter::addBlock(kmpref  prefix,
                             prefix,
                             nKmers,
                             suffixes,
-                            values);
+                            values,
+                            nullptr,
+                            label);
 
   //  Insert values into the histogram.
 
@@ -237,18 +240,20 @@ merylBlockWriter::mergeBatches(uint32 oi) {
   //  Create space to save out suffixes and values.
 
   uint64    nKmersMax = 0;
-  kmdata   *suffixes  = NULL;
-  kmvalu   *values    = NULL;
+  kmdata   *suffixes  = nullptr;
+  kmvalu   *values    = nullptr;
+  kmlabl   *labels    = nullptr;
 
   uint64    kmersIn   = 0;
   uint64    kmersOut  = 0;
 
   //  Load each block from each file, merge, and write.
 
-  uint32    p[_iteration+1];  //  Position in s[] and v[]
-  uint64    l[_iteration+1];  //  Number of entries in s[] and v[]
-  kmdata   *s[_iteration+1];  //  Pointer to the suffixes for piece x
-  kmvalu   *v[_iteration+1];  //  Pointer to the values   for piece x
+  uint32    po[_iteration+1];  //  Position in su[] and va[]
+  uint64    nn[_iteration+1];  //  Number of entries in su[] and va[]
+  kmdata   *su[_iteration+1];  //  Pointer to the suffixes for piece x
+  kmvalu   *va[_iteration+1];  //  Pointer to the values   for piece x
+  kmlabl   *la[_iteration+1];  //  Pointer to the labels   for piece x
 
   for (uint32 bb=0; bb<_numBlocks; bb++) {
     uint64  totnKmers = 0;
@@ -256,16 +261,17 @@ merylBlockWriter::mergeBatches(uint32 oi) {
 
     //  Load and decode each block.  NO ERROR CHECKING.
 
-    for (uint32 ii=1; ii <= _iteration; ii++) {        //  This loop _could_ be threaded, but the
-      inBlocks[ii].loadBlock(inFiles[ii], oi, ii);     //  caller to this function has already
-      inBlocks[ii].decodeBlock();                      //  threaded things, so no real point.
+    for (uint32 ii=1; ii <= _iteration; ii++) {              //  This loop _could_ be threaded, but the
+      inBlocks[ii].loadKmerFileBlock(inFiles[ii], oi, ii);   //  caller to this function has already
+      inBlocks[ii].decodeKmerFileBlock();                    //  threaded things, so no real point.
 
-      p[ii] = 0;
-      l[ii] = inBlocks[ii].nKmers();
-      s[ii] = inBlocks[ii].suffixes();
-      v[ii] = inBlocks[ii].values();
+      po[ii] = 0;
+      nn[ii] = inBlocks[ii].nKmers();
+      su[ii] = inBlocks[ii].suffixes();
+      va[ii] = inBlocks[ii].values();
+      la[ii] = inBlocks[ii].labels();
 
-      totnKmers += l[ii];
+      totnKmers += nn[ii];
     }
 
     //  Check that everyone has loaded the same prefix.
@@ -273,7 +279,7 @@ merylBlockWriter::mergeBatches(uint32 oi) {
     kmpref  prefix = inBlocks[1].prefix();
 
     //fprintf(stderr, "MERGE prefix 0x%04lx %8lu kmers and 0x%04lx %8lu kmers.\n",
-    //        prefix, l[1], inBlocks[2].prefix(), l[2]);
+    //        prefix, nn[1], inBlocks[2].prefix(), nn[2]);
 
     for (uint32 ii=1; ii <= _iteration; ii++) {
       if (prefix != inBlocks[ii].prefix())
@@ -292,21 +298,23 @@ merylBlockWriter::mergeBatches(uint32 oi) {
     while (1) {
       kmdata  minSuffix = ~((kmdata)0);
       kmvalu  sumValue  = 0;
+      kmlabl  theLabel  = 0;
 
       //  Find the smallest suffix over all the inputs;
       //  Remember the sum of their values.
 
       for (uint32 ii=1; ii <= _iteration; ii++) {
-        if (p[ii] < l[ii]) {
-          if (minSuffix > s[ii][ p[ii] ]) {
-            minSuffix = s[ii][ p[ii] ];
-            sumValue  = v[ii][ p[ii] ];
+        if (po[ii] < nn[ii]) {
+          if (minSuffix > su[ii][ po[ii] ]) {
+            minSuffix = su[ii][ po[ii] ];
+            sumValue  = va[ii][ po[ii] ];
+            theLabel  = la[ii][ po[ii] ];
           }
 
-          else if (minSuffix == s[ii][ p[ii] ]) {
-            sumValue += v[ii][ p[ii] ];
+          else if (minSuffix == su[ii][ po[ii] ]) {
+            sumValue += va[ii][ po[ii] ];
 
-            if (sumValue < v[ii][ p[ii] ])   //  Check for overflow.
+            if (sumValue < va[ii][ po[ii] ])   //  Check for overflow.
               sumValue = ~((kmvalu)0);
           }
         }
@@ -321,6 +329,7 @@ merylBlockWriter::mergeBatches(uint32 oi) {
 
       suffixes[savnKmers] = minSuffix;
       values  [savnKmers] = sumValue;
+      labels  [savnKmers] = theLabel;
 
       savnKmers++;
 
@@ -332,9 +341,9 @@ merylBlockWriter::mergeBatches(uint32 oi) {
       //  exhausted, mark it as so.
 
       for (uint32 ii=1; ii <= _iteration; ii++) {
-        if ((p[ii] < l[ii]) &&
-            (minSuffix == s[ii][ p[ii] ]))
-          p[ii]++;
+        if ((po[ii] < nn[ii]) &&
+            (minSuffix == su[ii][ po[ii] ]))
+          po[ii]++;
       }
     }
 
@@ -344,7 +353,8 @@ merylBlockWriter::mergeBatches(uint32 oi) {
                               prefix,
                               savnKmers,
                               suffixes,
-                              values);
+                              values,
+                              labels);
 
     //  Finally, don't forget to insert the values into the histogram!
 

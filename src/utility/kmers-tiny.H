@@ -29,20 +29,21 @@
 typedef uint128    kmdata;   //  128 bits of kmer data
 typedef uint32     kmpref;   //   32 bits of kmer prefix == 6 bits file prefix, 6 (default) suffix prefix
 typedef uint32     kmvalu;   //   32 bits of kmer value
-typedef uint64     kmcolo;   //   64 bits of kmer color
+typedef uint64     kmlabl;   //   64 bits of kmer color
 
-constexpr kmvalu   kmvalumax = uint32max;
-constexpr kmcolo   kmcolomax = uint64max;
+constexpr kmvalu   kmvaluzero = uint32zero;
+constexpr kmvalu   kmvaluone  = uint32one;
+constexpr kmvalu   kmvalumin  = uint32min;
+constexpr kmvalu   kmvalumax  = uint32max;
+
+constexpr kmlabl   kmlablzero = uint64zero;
+constexpr kmlabl   kmlablone  = uint64one;
+constexpr kmlabl   kmlablmin  = uint64min;
+constexpr kmlabl   kmlablmax  = uint64max;
 
 
 class  kmerTiny {
 public:
-  kmerTiny() {
-    _mer = 0;
-  };
-
-  ~kmerTiny() {
-  };
 
   static
   void        setSize(uint32 ms, bool beVerbose=false) {
@@ -64,7 +65,14 @@ public:
   };
 
   static
-  uint32      merSize(void) { return(_merSize); };
+  uint32      merSize(void)             { return(_merSize);   };
+
+  static
+  void        setLabelSize(uint32 ls)   { _labelSize = ls;    };
+
+  static
+  uint32      labelSize(void)           { return(_labelSize); };
+
 
   //  Push an ASCII base onto the mer, shifting the mer to the right or left
   //  to make space for the new base.  Unlike the 'standard' two-bit encoding,
@@ -187,9 +195,10 @@ private:
 
 private:
 public:
-  kmdata         _mer;
+  kmdata         _mer = 0;
 
-  static uint32  _merSize;     //  number of bases in this mer
+  static uint32  _merSize;     //  number of bases in a mer
+  static uint32  _labelSize;   //  number of bits in a label
 
   static kmdata  _fullMask;    //  mask to ensure kmer has exactly _merSize bases in it
 

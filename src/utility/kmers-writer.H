@@ -37,7 +37,7 @@
 class merylFileWriter {
 public:
   merylFileWriter(const char *outputName,
-                      uint32      prefixSize = 0);
+                  uint32      prefixSize = 0);
 
   ~merylFileWriter();
 
@@ -47,6 +47,11 @@ public:
 public:
   void    initialize(uint32 prefixSize = 0, bool isMultiSet = false);
 
+  //  The merylBlockWriter is used exclusively by meryl counting operations.
+  //
+  //  The merylStreamWriter is used by the rest of the meryl operations, and
+  //  probably any other client that wants to write kmers.
+  //
   merylBlockWriter  *getBlockWriter(void)        { return(new merylBlockWriter (this));      };
   merylStreamWriter *getStreamWriter(uint32 ff)  { return(new merylStreamWriter(this, ff));  };
 
@@ -57,13 +62,22 @@ public:
 
   uint32  fileNumber(uint64 prefix);
 
+  //  The merylBlockWriter and merylStreamWriter (friends to this class)
+  //  collect kmer data then call writeBlockToFile() actually get the data
+  //  written.
+  //
+  //  Since labels from count operations are all the same, merylBlockWriter
+  //  doesn't supply a labels array, instead, it supplies a single label.
+  //
 private:
   void    writeBlockToFile(FILE            *datFile,
                            merylFileIndex  *datFileIndex,
                            kmpref           blockPrefix,
                            uint64           nKmers,
                            kmdata          *suffixes,
-                           kmvalu          *values);
+                           kmvalu          *values,
+                           kmlabl          *labels,
+                           kmlabl           label = 0);
 
 private:
   bool                       _initialized;

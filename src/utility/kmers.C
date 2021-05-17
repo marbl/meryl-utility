@@ -20,6 +20,7 @@
 #include "kmers.H"
 
 uint32 kmerTiny::_merSize   = 0;
+uint32 kmerTiny::_labelSize = 0;
 kmdata kmerTiny::_fullMask  = 0;
 kmdata kmerTiny::_leftMask  = 0;
 uint32 kmerTiny::_leftShift = 0;

@@ -54,24 +54,33 @@ openInputBlock(char   *nameprefix,
                uint32  iteration=0);
 
 
-//  Read a block of kmer data from disk, and decode it into a list of kmers,
-//  counts and (eventually) colors.
+//  Read a block of kmer data from disk, and decode it into a
+//  list of kmers, counts and labels.
 
 class merylFileBlockReader {
 public:
   merylFileBlockReader();
   ~merylFileBlockReader();
 
-  bool      loadBlock(FILE *inFile, uint32 activeFile, uint32 activeIteration=0);
+  bool      loadKmerFileBlock(FILE *inFile, uint32 activeFile, uint32 activeIteration=0);
 
-  void      decodeBlock(void);                               //  to our own storage
-  void      decodeBlock(kmdata *suffixes, kmvalu *values);   //  to external storage
+private:
+  void      decodeKmerFileBlockData(kmdata *suffixes);
+  void      decodeKmerFileBlockValu(kmvalu *values);
+  void      decodeKmerFileBlockLabl(kmlabl *labels);
+public:
+  void      decodeKmerFileBlock(void);                       //  to our own storage
+  void      decodeKmerFileBlock(kmdata *suffixes,            //  to external storage
+                                kmvalu *values,
+                                kmlabl *labels);
 
+public:
   kmpref    prefix(void)   { return(_blockPrefix); };        //  kmer prefix of this block
   uint64    nKmers(void)   { return(_nKmers);      };        //  number of kmers in this block
 
   kmdata   *suffixes(void) { return(_suffixes); };           //  direct access to decoded data
   kmvalu   *values(void)   { return(_values);   };
+  kmlabl   *labels(void)   { return(_labels);   };
 
 private:
   stuffedBits  *_data;
@@ -89,8 +98,14 @@ private:
   uint64        _c1;           //    unused
   uint64        _c2;           //    unused
 
-  kmdata       *_suffixes;     //  Decoded suffixes and values.
-  kmvalu       *_values;       //
+  uint32        _lCode;        //  Encoding type of the labels, then 128 bits of parameters
+  uint32        _labelBits;    //    bits in the label (6 bits on disk)
+  uint64        _l1;           //    unused (58 bits)
+  uint64        _l2;           //    unused (64 bits)
+
+  kmdata       *_suffixes;     //  Decoded suffixes
+  kmvalu       *_values;       //    ...and values
+  kmlabl       *_labels;       //    ...and labels
 };
 
 

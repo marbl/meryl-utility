@@ -184,7 +184,9 @@ merylFileWriter::writeBlockToFile(FILE            *datFile,
                                   kmpref           blockPrefix,
                                   uint64           nKmers,
                                   kmdata          *suffixes,
-                                  kmvalu          *values) {
+                                  kmvalu          *values,
+                                  kmlabl          *labels,
+                                  kmlabl           label) {
 
   //  Figure out the optimal size of the Elias-Fano prefix.  It's just log2(N)-1.
 
@@ -199,13 +201,22 @@ merylFileWriter::writeBlockToFile(FILE            *datFile,
 
   //  Decide how to encode the data.
   //
-  //    kmer coding type 1 == Elias Fano
+  //    kmer coding type
+  //      1 == Elias Fano
   //
-  //    valu coding type 1 == 32-bit binary data
-  //    valu coding type 2 == 64-bit binary data
+  //    valu coding type
+  //      0 == ??? (no values stored)
+  //      1 == 32-bit binary data
+  //      2 == 64-bit binary data
+  //
+  //    labl coding type
+  //      0 == ??? (no labels stored)
+  //      1 == labels N-bit binary data
+  //
 
-  uint32  kct = 1;
-  uint32  vct = sizeof(kmvalu) / 4;
+  uint64  kcode = 1;
+  uint64  vcode = sizeof(kmvalu) / 4;
+  uint64  lcode = 1;
 
   //  Dump data.
   //
@@ -225,19 +236,26 @@ merylFileWriter::writeBlockToFile(FILE            *datFile,
 
   stuffedBits   *dumpData = new stuffedBits(blockSize);
 
-  dumpData->setBinary(64, 0x7461446c7972656dllu);    //  Magic number, part 1.
-  dumpData->setBinary(64, 0x0a3030656c694661llu);    //  Magic number, part 2.
+  //  Write blocks in merylDataFile01 format.
+
+  dumpData->setBinary(64, 0x7461446c7972656dllu);
+  dumpData->setBinary(64, 0x0a3130656c694661llu);
 
   dumpData->setBinary(64, blockPrefix);
   dumpData->setBinary(64, nKmers);
 
-  dumpData->setBinary(8,  kct);                      //  Kmer coding type
+  dumpData->setBinary(8,  kcode);                    //  Kmer coding type
   dumpData->setBinary(32, unaryBits);                //  Kmer coding parameters
   dumpData->setBinary(32, binaryBits);
   dumpData->setBinary(64, 0);
 
-  dumpData->setBinary(8,  vct);                      //  Value coding type
+  dumpData->setBinary(8,  vcode);                    //  Value coding type
   dumpData->setBinary(64, 0);                        //  Value coding parameters
+  dumpData->setBinary(64, 0);
+
+  dumpData->setBinary(8,  lcode);                    //  Label coding type
+  dumpData->setBinary(6,  kmer::labelSize());        //  Labels are N bits wide
+  dumpData->setBinary(58, 0);                        //  Label coding parameters
   dumpData->setBinary(64, 0);
 
   //  Split the kmer suffix into two pieces, one unary encoded offsets and one binary encoded.
@@ -245,7 +263,7 @@ merylFileWriter::writeBlockToFile(FILE            *datFile,
   uint64  lastPrefix = 0;
   uint64  thisPrefix = 0;
 
-  assert(kct == 1);  //  Eventually could add more...
+  assert(kcode == 1);  //  Eventually could add more...
 
   for (uint32 kk=0; kk<nKmers; kk++) {
     thisPrefix = suffixes[kk] >> binaryBits;
@@ -263,15 +281,27 @@ merylFileWriter::writeBlockToFile(FILE            *datFile,
     lastPrefix = thisPrefix;
   }
 
-  //  Save the values, too.  Eventually these will be cleverly encoded.  Really.
+  //  Save the values.  Eventually these will be cleverly encoded.  Really.
 
-  uint64  lastValue = 0;
-  uint64  thisValue = 0;
-
-  assert((vct == 1) || (vct == 2));
+  assert((vcode == 1) || (vcode == 2));
 
   for (uint32 kk=0; kk<nKmers; kk++) {
-    dumpData->setBinary(32 * vct, values[kk]);
+    dumpData->setBinary(32 * vcode, values[kk]);
+  }
+
+  //  Save the labels.
+
+  assert(lcode == 1);
+
+  if (kmer::labelSize() > 0) {
+    fprintf(stderr, "WRITE labels %p const %lx\n", labels, label);
+
+    if (labels)
+      for (uint32 kk=0; kk<nKmers; kk++)
+        dumpData->setBinary(kmer::labelSize(), labels[kk]);
+    else
+      for (uint32 kk=0; kk<nKmers; kk++)
+        dumpData->setBinary(kmer::labelSize(), label);
   }
 
   //  Save the index entry.

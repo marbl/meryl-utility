@@ -282,8 +282,8 @@ merylExactLookup::count(void) {
 
     //  Load blocks until there are no more.
 
-    while (block->loadBlock(blockFile, ff) == true) {
-      block->decodeBlock();
+    while (block->loadKmerFileBlock(blockFile, ff) == true) {
+      block->decodeKmerFileBlock();
 
       for (uint32 ss=0; ss<block->nKmers(); ss++) {
         kmdata   kbits  = 0;
@@ -445,8 +445,8 @@ merylExactLookup::load(void) {
 
     //  Load blocks until there are no more.
 
-    while (block->loadBlock(blockFile, ff) == true) {
-      block->decodeBlock();
+    while (block->loadKmerFileBlock(blockFile, ff) == true) {
+      block->decodeKmerFileBlock();
 
       for (uint32 ss=0; ss<block->nKmers(); ss++) {
         kmdata   kbits  = 0;

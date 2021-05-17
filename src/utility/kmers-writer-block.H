@@ -26,6 +26,8 @@
 
 //  Responsible for taking a block of sorted kmers
 //  and writing them to the appropriate file.
+//
+//  All kmers in this block will have the same label.
 
 class merylFileWriter;
 
@@ -35,7 +37,11 @@ public:
   ~merylBlockWriter();
 
 public:
-  void    addBlock(kmpref prefix, uint64 nKmers, kmdata *suffixes, kmvalu *values);
+  void    addCountedBlock(kmpref prefix,
+                          uint64 nKmers,
+                          kmdata *suffixes,
+                          kmvalu *values,
+                          kmlabl  label);
 
   void    finishBatch(void);
   void    finish(void);

@@ -24,36 +24,14 @@
 void
 merylFileReader::initializeFromMasterI_v00(void) {
 
-  _prefixSize    = 0;
-  _suffixSize    = 0;
-
-  _numFilesBits  = 0;
-  _numBlocksBits = 0;
-
-  _numFiles      = 0;
-  _numBlocks     = 0;
-
-  _stats         = NULL;
-
-  _datFile       = NULL;
-
   _block         = new merylFileBlockReader();
-  _blockIndex    = NULL;
-
-  _kmer          = kmer();
-  _value         = 0;
-
-  _prefix        = 0;
-
-  _activeMer     = 0;
-  _activeFile    = 0;
-
-  _threadFile    = UINT32_MAX;
+  _blockIndex    = nullptr;
 
   _nKmers        = 0;
   _nKmersMax     = 1024;
   _suffixes      = new kmdata [_nKmersMax];
   _values        = new kmvalu [_nKmersMax];
+  _labels        = new kmlabl [_nKmersMax];
 }
 
 
@@ -125,6 +103,14 @@ merylFileReader::initializeFromMasterI_v03(stuffedBits  *masterIndex,
 
 
 void
+merylFileReader::initializeFromMasterI_v04(stuffedBits  *masterIndex,
+                                           bool          doInitialize) {
+  initializeFromMasterI_v02(masterIndex, doInitialize);
+}
+
+
+
+void
 merylFileReader::initializeFromMasterIndex(bool  doInitialize,
                                            bool  loadStatistics,
                                            bool  beVerbose) {
@@ -160,6 +146,11 @@ merylFileReader::initializeFromMasterIndex(bool  doInitialize,
              (m2 == 0x33302e765f5f7865llu)) {   //  ex__v.03
     initializeFromMasterI_v03(masterIndex, doInitialize);
     vv = 3;
+
+  } else if ((m1 == 0x646e496c7972656dllu) &&   //  merylInd
+             (m2 == 0x34302e765f5f7865llu)) {   //  ex__v.04
+    initializeFromMasterI_v04(masterIndex, doInitialize);
+    vv = 4;
 
   } else {
     fprintf(stderr, "ERROR: '%s' doesn't look like a meryl input; file '%s' fails magic number check.\n",
@@ -287,161 +278,6 @@ merylFileReader::loadBlockIndex(void) {
 
 
 
-//  Like loadBlock, but just reports all blocks in the file, ignoring
-//  the kmer data.
-//
-void
-dumpMerylDataFile(char *name) {
-  FILE            *F = NULL;
-  merylFileIndex   I;
-  stuffedBits     *D = NULL;
-
-  //  Dump the merylIndex for this block.
-
-  if (fileExists(name, '.', "merylIndex") == false)
-    fprintf(stderr, "ERROR: '%s.merylIndex' doesn't exist.  Can't dump it.\n",
-            name), exit(1);
-
-  F = AS_UTL_openInputFile(name, '.', "merylIndex");
-
-  fprintf(stdout, "\n");
-  fprintf(stdout, "    prefix    blkPos    nKmers\n");
-  fprintf(stdout, "---------- --------- ---------\n");
-
-  while (loadFromFile(I, "merylFileIndex", F, false) != 0) {
-    fprintf(stdout, "0x%08x %9lu %9lu\n", I.blockPrefix(), I.blockPosition(), I.numKmers());
-  }
-
-  AS_UTL_closeFile(F);
-
-  //  Read each block, sequentially, and report the header.
-
-  if (fileExists(name, '.', "merylData") == false)
-    fprintf(stderr, "ERROR: '%s.merylData' doesn't exist.  Can't dump it.\n",
-            name), exit(1);
-
-  F = AS_UTL_openInputFile(name, '.', "merylData");
-  D = new stuffedBits;
-
-  fprintf(stdout, "\n");
-  fprintf(stdout, "            prefix   nKmers kCode uBits bBits                 k1 cCode                 c1                 c2\n");
-  fprintf(stdout, "------------------ -------- ----- ----- ----- ------------------ ----- ------------------ ------------------\n");
-
-  while (D->loadFromFile(F)) {
-    uint64 position   = D->getPosition();
-
-    uint64 m1         = D->getBinary(64);
-    uint64 m2         = D->getBinary(64);
-
-    uint64 prefix     = D->getBinary(64);
-    uint64 nKmers     = D->getBinary(64);
-
-    uint8  kCode      = D->getBinary(8);
-    uint32 unaryBits  = D->getBinary(32);
-    uint32 binaryBits = D->getBinary(32);
-    uint64 k1         = D->getBinary(64);
-
-    uint8  cCode      = D->getBinary(8);
-    uint64 c1         = D->getBinary(64);
-    uint64 c2         = D->getBinary(64);
-
-    if ((m1 != 0x7461446c7972656dllu) ||
-        (m2 != 0x0a3030656c694661llu)) {
-      fprintf(stderr, "merylFileReader::nextMer()-- Magic number mismatch at position " F_U64 ".\n", position);
-      fprintf(stderr, "merylFileReader::nextMer()-- Expected 0x7461446c7972656d got 0x%016" F_X64P "\n", m1);
-      fprintf(stderr, "merylFileReader::nextMer()-- Expected 0x0a3030656c694661 got 0x%016" F_X64P "\n", m2);
-      exit(1);
-    }
-
-    fprintf(stdout, "0x%016lx %8lu %5u %5u %5u 0x%016lx %5u 0x%016lx 0x%016lx\n",
-            prefix, nKmers, kCode, unaryBits, binaryBits, k1, cCode, c1, c2);
-  }
-
-  delete D;
-
-  AS_UTL_closeFile(F);
-
-  //  Read each block again, dump the kmers in the block.
-
-  F = AS_UTL_openInputFile(name, '.', "merylData");
-  D = new stuffedBits;
-
-  while (D->loadFromFile(F)) {
-    uint64 position   = D->getPosition();
-
-    uint64 m1         = D->getBinary(64);
-    uint64 m2         = D->getBinary(64);
-
-    uint64 prefix     = D->getBinary(64);
-    uint64 nKmers     = D->getBinary(64);
-
-    uint8  kCode      = D->getBinary(8);
-    uint32 unaryBits  = D->getBinary(32);
-    uint32 binaryBits = D->getBinary(32);
-    uint64 k1         = D->getBinary(64);
-
-    uint8  cCode      = D->getBinary(8);
-    uint64 c1         = D->getBinary(64);
-    uint64 c2         = D->getBinary(64);
-
-    fprintf(stdout, "\n");
-    fprintf(stdout, " kmerIdx prefixDelta      prefix |--- suffix-size and both suffixes ---|    value\n");
-    fprintf(stdout, "-------- ----------- ----------- -- ---------------- -- ---------------- --------\n");
-
-    uint64   *pd = new uint64 [nKmers];
-    uint64   *s1 = new uint64 [nKmers];
-    uint64   *s2 = new uint64 [nKmers];
-    uint64   *va = new uint64 [nKmers];
-
-    uint32    ls = (binaryBits <= 64) ? (0)          : (binaryBits - 64);
-    uint32    rs = (binaryBits <= 64) ? (binaryBits) : (64);
-
-    uint64    tp = 0;
-
-    //  Get all the kmers.
-    for (uint32 kk=0; kk<nKmers; kk++) {
-      if (kCode == 1) {
-        pd[kk] = D->getUnary();
-        s1[kk] = D->getBinary(ls);
-        s2[kk] = D->getBinary(rs);
-      }
-
-      else {
-        fprintf(stderr, "ERROR: unknown kCode %u\n", kCode), exit(1);
-      }
-    }
-
-    //  Get all the values.
-    for (uint32 kk=0; kk<nKmers; kk++) {
-      if      (cCode == 1) {
-        va[kk] = D->getBinary(32);
-      }
-
-      else if (cCode == 2) {
-        va[kk] = D->getBinary(64);
-      }
-
-      else {
-        fprintf(stderr, "ERROR: unknown cCode %u\n", cCode), exit(1);
-      }
-    }
-
-    //  Dump.
-    for (uint32 kk=0; kk<nKmers; kk++) {
-      tp += pd[kk];
-
-      fprintf(stdout, "%8u %11lu %011lx %2u %016lx %2u %016lx %8lx\n",
-              kk, pd[kk], tp, ls, s1[kk], rs, s2[kk], va[kk]);
-    }
-  }
-
-  delete D;
-
-  AS_UTL_closeFile(F);
-}
-
-
-
 bool
 merylFileReader::nextMer(void) {
 
@@ -466,7 +302,7 @@ merylFileReader::nextMer(void) {
 
   //  Load blocks.
 
-  bool loaded = _block->loadBlock(_datFile, _activeFile);
+  bool loaded = _block->loadKmerFileBlock(_datFile, _activeFile);
 
   //  If nothing loaded. open a new file and try again.
 
@@ -499,11 +335,12 @@ merylFileReader::nextMer(void) {
 
   //  Decode the block into _OUR_ space.
   //
-  //  decodeBlock() marks the block as having no data, so the next time we loadBlock() it will
-  //  read more data from disk.  For blocks that don't get decoded, they retain whatever was
-  //  loaded, and do not load another block in loadBlock().
+  //  decodeKmerFileBlock() marks the block as having no data, so the next
+  //  time we loadBlock() it will read more data from disk.  For blocks that
+  //  don't get decoded, they retain whatever was loaded, and do not load
+  //  another block in loadBlock().
 
-  _block->decodeBlock(_suffixes, _values);
+  _block->decodeKmerFileBlock(_suffixes, _values, _labels);
 
   //  But if no kmers in this block, load another block.  Sadly, the block must always
   //  be decoded, otherwise, the load will not load a new block.
@@ -517,6 +354,7 @@ merylFileReader::nextMer(void) {
 
   _kmer.setPrefixSuffix(_prefix, _suffixes[_activeMer], _suffixSize);
   _value = _values[_activeMer];
+  _label = _labels[_activeMer];
 
   return(true);
 }

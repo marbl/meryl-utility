@@ -31,6 +31,7 @@ private:
   void    initializeFromMasterI_v01(stuffedBits  *masterIndex, bool doInitialize);
   void    initializeFromMasterI_v02(stuffedBits  *masterIndex, bool doInitialize);
   void    initializeFromMasterI_v03(stuffedBits  *masterIndex, bool doInitialize);
+  void    initializeFromMasterI_v04(stuffedBits  *masterIndex, bool doInitialize);
   void    initializeFromMasterIndex(bool  doInitialize, bool  loadStatistics, bool  beVerbose);
 
 public:
@@ -68,8 +69,10 @@ public:
 
 public:
   bool    nextMer(void);
+
   kmer    theFMer(void)        { return(_kmer);        };
   kmvalu  theValue(void)       { return(_value);       };
+  kmlabl  theLabel(void)       { return(_label);       };
 
   bool    isMultiSet(void)     { return(_isMultiSet);  };
 
@@ -105,39 +108,41 @@ public:
   };
 
 private:
-  char                       _inName[FILENAME_MAX+1];
+  char                       _inName[FILENAME_MAX+1] = {0};
 
-  uint32                     _prefixSize;
-  uint32                     _suffixSize;
-  uint32                     _numFilesBits;
-  uint32                     _numBlocksBits;
+  uint32                     _prefixSize    = 0;
+  uint32                     _suffixSize    = 0;
+  uint32                     _numFilesBits  = 0;
+  uint32                     _numBlocksBits = 0;
 
-  uint32                     _numFiles;
-  uint32                     _numBlocks;
+  uint32                     _numFiles      = 0;
+  uint32                     _numBlocks     = 0;
 
-  bool                       _isMultiSet;
+  bool                       _isMultiSet    = false;
 
-  merylHistogram            *_stats;
+  merylHistogram            *_stats         = nullptr;
 
-  FILE                      *_datFile;
+  FILE                      *_datFile       = nullptr;;
 
-  merylFileBlockReader      *_block;
-  merylFileIndex            *_blockIndex;
+  merylFileBlockReader      *_block         = nullptr;
+  merylFileIndex            *_blockIndex    = nullptr;
 
-  kmer                       _kmer;
-  kmvalu                     _value;
+  kmer                       _kmer          = kmer();
+  kmvalu                     _value         = 0;
+  kmlabl                     _label         = 0;
 
-  uint64                     _prefix;
+  uint64                     _prefix        = 0;
 
-  kmdata                     _activeMer;
-  uint32                     _activeFile;
+  kmdata                     _activeMer     = 0;
+  uint32                     _activeFile    = 0;
 
-  uint32                     _threadFile;
+  uint32                     _threadFile    = UINT32_MAX;
 
-  uint64                     _nKmers;
-  uint64                     _nKmersMax;
-  kmdata                    *_suffixes;
-  kmvalu                    *_values;
+  uint64                     _nKmers        = 0;
+  uint64                     _nKmersMax     = 0;
+  kmdata                    *_suffixes      = nullptr;
+  kmvalu                    *_values        = nullptr;
+  kmlabl                    *_labels        = nullptr;
 };
 
 

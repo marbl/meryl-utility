@@ -34,7 +34,7 @@ public:
   ~merylStreamWriter();
 
 public:
-  void    addMer(kmer k, kmvalu c);
+  void    addMer(kmer k, kmvalu c, kmlabl l);
 
 private:
   void    dumpBlock(kmpref nextPrefix=~((kmpref)0));
@@ -69,6 +69,7 @@ private:
   uint64                 _batchMaxKmers;
   kmdata                *_batchSuffixes;
   kmvalu                *_batchValues;
+  kmlabl                *_batchLabels;
 };
 
 #endif  //   MERYL_UTIL_KMER_WRITER_STREAM_H

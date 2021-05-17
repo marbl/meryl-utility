@@ -50,8 +50,9 @@ merylStreamWriter::merylStreamWriter(merylFileWriter *writer, uint32 fileNumber)
   _batchPrefix   = 0;
   _batchNumKmers = 0;
   _batchMaxKmers = 16 * 1048576;
-  _batchSuffixes = NULL;
-  _batchValues   = NULL;
+  _batchSuffixes = nullptr;
+  _batchValues   = nullptr;
+  _batchLabels   = nullptr;
 }
 
 
@@ -65,6 +66,7 @@ merylStreamWriter::~merylStreamWriter() {
 
   delete [] _batchSuffixes;
   delete [] _batchValues;
+  delete [] _batchLabels;
 
   AS_UTL_closeFile(_datFile);
 
@@ -96,7 +98,8 @@ merylStreamWriter::dumpBlock(kmpref nextPrefix) {
                             _batchPrefix,
                             _batchNumKmers,
                             _batchSuffixes,
-                            _batchValues);
+                            _batchValues,
+                            _batchLabels);
 
   //  Insert counts into the histogram.
 
@@ -113,7 +116,7 @@ merylStreamWriter::dumpBlock(kmpref nextPrefix) {
 
 
 void
-merylStreamWriter::addMer(kmer k, kmvalu c) {
+merylStreamWriter::addMer(kmer k, kmvalu c, kmlabl l) {
 
   kmpref  prefix = (kmdata)k >> _suffixSize;   //  Yes, cast to kmdata.
   kmdata  suffix = (kmdata)k  & _suffixMask;
@@ -128,6 +131,9 @@ merylStreamWriter::addMer(kmer k, kmvalu c) {
     _batchMaxKmers = 16 * 1048576;
     _batchSuffixes = new kmdata [_batchMaxKmers];
     _batchValues   = new kmvalu [_batchMaxKmers];
+
+    if (kmer::labelSize() > 0)
+      _batchLabels   = new kmlabl [_batchMaxKmers];
   }
 
   //  If the batch is full, or we've got a kmer for a different batch, dump the batch
@@ -151,6 +157,9 @@ merylStreamWriter::addMer(kmer k, kmvalu c) {
 
   _batchSuffixes[_batchNumKmers] = suffix;
   _batchValues  [_batchNumKmers] = c;
+
+  if (_batchLabels)
+    _batchLabels[_batchNumKmers] = l;
 
   _batchNumKmers++;
 }

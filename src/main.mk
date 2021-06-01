@@ -83,6 +83,7 @@ ifeq ($(BUILDTESTS), 1)
 SUBMAKEFILES += tests/alignTest-ssw.mk \
                 tests/alignTest-ksw2.mk \
                 tests/bitsTest.mk \
+                tests/decodeIntegerTest.mk \
                 tests/fasta-fastq.mk \
                 tests/filesTest.mk \
                 tests/intervalListTest.mk \

@@ -220,6 +220,21 @@ inline bool    strtobool(char const *str)  {
   return(false);
 }
 
+
+//  A fancy string-to-integer conversion that handles positive and negative
+//  numbers, different bases, SI units (and the binary form) and different
+//  types.
+//
+//  Errors are reutned in a vector, which is convenient but only for command
+//  line processing.
+//
+template<typename X>
+X
+decodeInteger(char const *str, uint64 bgn, uint64 end,
+              X &result,
+              std::vector<char const *> &err);
+
+
 //  Test if a character or string is of the desired encoding.
 
 inline bool   isNUL(char c)        { return(c == 0); }

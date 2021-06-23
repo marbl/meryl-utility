@@ -24,9 +24,9 @@
 
 
 parasailLib::parasailLib(int32 matchScore,
-                 int32 mismatchScore,
-                 int32 gapopenPenalty,
-                 int32 gapextendPenalty) {
+                         int32 mismatchScore,
+                         int32 gapopenPenalty,
+                         int32 gapextendPenalty) {
   setMatchScores(matchScore, mismatchScore);
   setGapPenalties(gapopenPenalty, gapextendPenalty);
 }

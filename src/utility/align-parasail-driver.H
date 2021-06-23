@@ -36,8 +36,8 @@ class parasailLib {
 public:
   parasailLib(int32 match     =  1,    //  All these must specified as additive scores.
               int32 mismatch  = -2,    //  
-              int32 gapopen   = -2,    //  'gapopen' is the score for a single gap;
-              int32 gapextend = -1);   //  two gaps will score as 'gapopen + gapextend'.
+              int32 gapopen   =  2,    //  'gapopen' is the penalty for a single gap;
+              int32 gapextend =  1);   //  two gaps will score as 'gapopen + gapextend'.
   ~parasailLib();
 
   void     setMatchScores(int8 match, int8 mismatch);

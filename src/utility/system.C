@@ -273,7 +273,7 @@ getMaxMemoryAllowed(void) {
 //    NSLOTS
 //
 uint32
-getMaxThreadsAllowed(void) {
+getMaxThreadsAllowed(uint32 limit) {
   char    *env;
   uint32   nAllowed = omp_get_max_threads();
 
@@ -293,9 +293,16 @@ getMaxThreadsAllowed(void) {
   if (env)
     nAllowed = strtouint32(env);
 
-  omp_set_num_threads(nAllowed);
+  nAllowed = std::min(limit, nAllowed);
 
   return(nAllowed);
+}
+
+
+
+uint32
+getNumThreads(void) {
+  return(omp_get_max_threads());
 }
 
 
@@ -305,3 +312,24 @@ getNumThreadsActive(void) {
   return(omp_get_num_threads());
 }
 
+
+
+uint32
+getThreadNum(void) {
+  return(omp_get_thread_num());
+}
+
+
+
+uint32
+setNumThreads(char const *opt) {
+  return(setNumThreads(strtouint32(opt)));
+}
+
+
+
+uint32
+setNumThreads(uint32 thr) {
+  omp_set_num_threads(thr);
+  return(omp_get_max_threads());
+}

@@ -199,7 +199,7 @@ merylFileReader::initializeFromMasterIndex(bool  doInitialize,
 
 
 merylFileReader::merylFileReader(const char *inputName,
-                                         bool        beVerbose) {
+                                 bool        beVerbose) {
   strncpy(_inName, inputName, FILENAME_MAX);
   initializeFromMasterIndex(true, false, beVerbose);
 }
@@ -207,8 +207,8 @@ merylFileReader::merylFileReader(const char *inputName,
 
 
 merylFileReader::merylFileReader(const char *inputName,
-                                         uint32      threadFile,
-                                         bool        beVerbose) {
+                                 uint32      threadFile,
+                                 bool        beVerbose) {
   strncpy(_inName, inputName, FILENAME_MAX);
   initializeFromMasterIndex(true, false, beVerbose);
   enableThreads(threadFile);

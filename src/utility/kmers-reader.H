@@ -36,11 +36,11 @@ private:
 
 public:
   merylFileReader(const char *inputName,
-                      bool        beVerbose=false);
+                  bool        beVerbose=false);
 
   merylFileReader(const char *inputName,
-                      uint32      threadFile,
-                      bool        beVerbose=false);
+                  uint32      threadFile,
+                  bool        beVerbose=false);
 
   ~merylFileReader();
 

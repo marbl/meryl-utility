@@ -245,15 +245,7 @@ merylFileBlockReader::decodeKmerFileBlock(void) {
   if (_data == nullptr)
     return;
 
-  uint64   sMax = _nKmersMax;   //  Save the current max value for each array, reallocate,
-  uint64   vMax = _nKmersMax;   //  then update when done.  This is to prevent resizeArray()
-  uint64   lMax = _nKmersMax;   //  from changing _nKmersMax on the first call.
-
-  resizeArray(_suffixes, 0, sMax, _nKmers, _raAct::doNothing);
-  resizeArray(_values,   0, vMax, _nKmers, _raAct::doNothing);
-  resizeArray(_labels,   0, lMax, _nKmers, _raAct::doNothing);
-
-  _nKmersMax = _nKmers;
+  resizeArray(_suffixes, _values, _labels, 0, _nKmersMax, _nKmers, _raAct::doNothing);
 
   decodeKmerFileBlockData(_suffixes);
   decodeKmerFileBlockValu(_values);

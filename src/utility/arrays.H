@@ -217,6 +217,48 @@ increaseArrayPair(T1*& array1, T2*& array2, uint64 idx, LL &arrayMax, uint64 mor
 }
 
 
+template<typename T1, typename T2, typename LL>
+void
+increaseArray(T1*& array1, T2*& array2, uint64 idx, LL &arrayMax, uint64 moreSpace, _raAct op=_raAct::copyData) {
+  uint64  newMax = idx + ((moreSpace == 0) ? 1 : moreSpace);
+
+  if (idx < arrayMax)
+    return;
+
+  setArraySize(array1, arrayMax, arrayMax, newMax, op);
+  setArraySize(array2, arrayMax, arrayMax, newMax, op);
+}
+
+
+template<typename T1, typename T2, typename T3, typename LL>
+void
+increaseArray(T1*& array1, T2*& array2, T3*& array3, uint64 idx, LL &arrayMax, uint64 moreSpace, _raAct op=_raAct::copyData) {
+  uint64  newMax = idx + ((moreSpace == 0) ? 1 : moreSpace);
+
+  if (idx < arrayMax)
+    return;
+
+  setArraySize(array1, arrayMax, arrayMax, newMax, op);
+  setArraySize(array2, arrayMax, arrayMax, newMax, op);
+  setArraySize(array3, arrayMax, arrayMax, newMax, op);
+}
+
+
+template<typename T1, typename T2, typename T3, typename T4, typename LL>
+void
+increaseArray(T1*& array1, T2*& array2, T3*& array3, T3*& array4, uint64 idx, LL &arrayMax, uint64 moreSpace, _raAct op=_raAct::copyData) {
+  uint64  newMax = idx + ((moreSpace == 0) ? 1 : moreSpace);
+
+  if (idx < arrayMax)
+    return;
+
+  setArraySize(array1, arrayMax, arrayMax, newMax, op);
+  setArraySize(array2, arrayMax, arrayMax, newMax, op);
+  setArraySize(array3, arrayMax, arrayMax, newMax, op);
+  setArraySize(array4, arrayMax, arrayMax, newMax, op);
+}
+
+
 //  Resize the array so that it is at least as big as new max.  Do nothing
 //  if the array is big enough already.
 
@@ -240,6 +282,45 @@ resizeArrayPair(T1*& array1, T2*& array2, uint64 arrayLen, LL &arrayMax, uint64 
 
   setArraySize(array1, arrayLen, arrayMax, newMax, op);
   setArraySize(array2, arrayLen, arrayMax, newMax, op);
+}
+
+
+template<typename T1, typename T2, typename LL>
+void
+resizeArray(T1*& array1, T2*& array2, uint64 arrayLen, LL &arrayMax, uint64 newMax, _raAct op=_raAct::copyData) {
+
+  if (newMax <= arrayMax)
+    return;
+
+  setArraySize(array1, arrayLen, arrayMax, newMax, op);
+  setArraySize(array2, arrayLen, arrayMax, newMax, op);
+}
+
+
+template<typename T1, typename T2, typename T3, typename LL>
+void
+resizeArray(T1*& array1, T2*& array2, T3*& array3, uint64 arrayLen, LL &arrayMax, uint64 newMax, _raAct op=_raAct::copyData) {
+
+  if (newMax <= arrayMax)
+    return;
+
+  setArraySize(array1, arrayLen, arrayMax, newMax, op);
+  setArraySize(array2, arrayLen, arrayMax, newMax, op);
+  setArraySize(array3, arrayLen, arrayMax, newMax, op);
+}
+
+
+template<typename T1, typename T2, typename T3, typename T4, typename LL>
+void
+resizeArray(T1*& array1, T2*& array2, T3*& array3, T4*& array4, uint64 arrayLen, LL &arrayMax, uint64 newMax, _raAct op=_raAct::copyData) {
+
+  if (newMax <= arrayMax)
+    return;
+
+  setArraySize(array1, arrayLen, arrayMax, newMax, op);
+  setArraySize(array2, arrayLen, arrayMax, newMax, op);
+  setArraySize(array3, arrayLen, arrayMax, newMax, op);
+  setArraySize(array4, arrayLen, arrayMax, newMax, op);
 }
 
 

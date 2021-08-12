@@ -26,31 +26,17 @@
 
 #include <map>
 
-
 //  Stores a histogram of kmer count values.
-
+//
+//  The representation allows updates at any time (v1, v2 and v3 did not)
+//  but has a slight penalty of using a map<> for large values.
 
 class merylHistogram {
 public:
-  merylHistogram();
+  merylHistogram(uint32 size = 32 * 1048576);
   ~merylHistogram();
 
-  void      addValue(kmvalu value) {
-
-    if (value == 0)
-      return;
-
-    if (value == 1)
-      _numUnique++;
-
-    _numDistinct += 1;
-    _numTotal    += value;
-
-    if (value < _histMax)
-      _hist[value]++;
-    else
-      _histBig[value]++;
-  };
+  void      addValue(kmvalu value, uint64 occur=1);
 
   void      clear(void);
 
@@ -62,27 +48,85 @@ public:
   void      load(stuffedBits *bits,    uint32 version);
   void      load(FILE        *inFile,  uint32 version);
 
+  void      insert(merylHistogram *that);
+  void      insert(merylHistogram &that)          { insert(&that);        };
+
   uint64    numUnique(void)                       { return(_numUnique);   };
   uint64    numDistinct(void)                     { return(_numDistinct); };
   uint64    numTotal(void)                        { return(_numTotal);    };
 
-  uint32    histogramLength(void)                 { return(_histLen);     };
-  uint64    histogramValue(uint32 i)              { return(_histVs[i]);   };
-  uint64    histogramOccurrences(uint32 i)        { return(_histOs[i]);   };
+  void      reportHistogram(FILE *F);
+  void      reportStatistics(FILE *F);
 
 private:
   uint64                   _numUnique;
   uint64                   _numDistinct;
   uint64                   _numTotal;
 
-  uint32                   _histMax;    //  Max value that can be stored in _hist.
-  uint64                  *_hist;
+  uint64                   _maxValue;
+
+  uint32                   _histMax;    //  Max value that can be stored in _histSml.
+  uint64                  *_histSml;    //  Values smaller than _histMax.
   std::map<uint64, uint64> _histBig;    //  Values bigger than _histMax; <value,occurrances>
 
-  uint64                   _histLen;    //  If loaded from disk, this is the unpacked histogram.
-  uint64                  *_histVs;     //  The value this histogram entry is counting.
-  uint64                  *_histOs;     //  The number of occurrences of that value.
+  friend class merylHistogramIterator;
 };
+
+
+//  Converts a merylHistogram into something that allows iteration over the
+//  histogram and excludes the values with no occurrences.
+
+class merylHistogramIterator {
+public:
+  merylHistogramIterator(merylHistogram &that)   { construct( that); }
+  merylHistogramIterator(merylHistogram *that)   { construct(*that); }
+
+  ~merylHistogramIterator() {
+    delete [] _val;
+    delete [] _occ;
+  }
+
+  uint64    maxValue(void) {
+    if (_len == 0)
+      return(0);
+    else
+      return(_val[_len-1]);
+  };
+
+  uint32    histogramLength(void)                 { return(_len);         };
+  uint64    histogramValue(uint32 i)              { return(_val[i]);      };
+  uint64    histogramOccurrences(uint32 i)        { return(_occ[i]);      };
+
+private:
+  void      construct(merylHistogram &that);
+
+private:
+  uint64   _len = 0;
+
+  uint64  *_val = nullptr;
+  uint64  *_occ = nullptr;
+};
+
+
+
+inline
+void
+merylHistogram::addValue(kmvalu value, uint64 occur) {
+
+  if (value == 0)
+    return;
+
+  if (value == 1)
+    _numUnique += occur;
+
+  _numDistinct += occur;
+  _numTotal    += occur * value;
+
+  if (value < _histMax)
+    _histSml[value] += occur;
+  else
+    _histBig[value] += occur;
+}
 
 
 #endif  //  MERYL_UTIL_KMER_HISTOGRAM_H

@@ -32,16 +32,17 @@ merylExactLookup::initialize(merylFileReader *input_, kmvalu minValue_, kmvalu m
 
   _input = input_;
 
+  //  Load and convert the histogram to something we can iterate over.
+
+  merylHistogramIterator  hit(_input->stats());
+
   //  Silently make minValue and maxValue be valid values.
 
   if (minValue_ == 0)
     minValue_ = 1;
 
-  if (maxValue_ == kmvalumax) {
-    uint32  nV = _input->stats()->histogramLength();
-
-    maxValue_ = _input->stats()->histogramValue(nV - 1);
-  }
+  if (maxValue_ == kmvalumax)
+    maxValue_ = hit.maxValue();
 
   //  Now initialize filtering!
 
@@ -72,12 +73,12 @@ merylExactLookup::initialize(merylFileReader *input_, kmvalu minValue_, kmvalu m
 
   //  Scan the histogram to count the number of kmers in range.
 
-  for (uint32 ii=0; ii<_input->stats()->histogramLength(); ii++) {
-    kmvalu  v = _input->stats()->histogramValue(ii);
+  for (uint32 ii=0; ii<hit.histogramLength(); ii++) {
+    kmvalu  v = hit.histogramValue(ii);
 
     if ((_minValue <= v) &&
         (v <= _maxValue))
-      _nSuffix += _input->stats()->histogramOccurrences(ii);
+      _nSuffix += hit.histogramOccurrences(ii);
   }
 
   _prePtrBits     = countNumberOfBits64(_nSuffix);   //  Width of an entry in the prefix table.

@@ -20,27 +20,21 @@
 #include "kmers.H"
 
 
-merylHistogram::merylHistogram() {
+merylHistogram::merylHistogram(uint32 size) {
   _numUnique     = 0;
   _numDistinct   = 0;
   _numTotal      = 0;
 
-  _histMax       = 32 * 1024 * 1024;      //  256 MB of histogram data.
-  _hist          = new uint64 [_histMax];
+  _histMax       = size;
+   _histSml       = new uint64 [_histMax];
 
   for (uint64 ii=0; ii<_histMax; ii++)
-    _hist[ii] = 0;
-
-  _histLen       = 0;
-  _histVs        = NULL;
-  _histOs        = NULL;
+    _histSml[ii] = 0;
 }
 
 
 merylHistogram::~merylHistogram() {
-  delete [] _hist;
-  delete [] _histVs;
-  delete [] _histOs;
+  delete [] _histSml;
 }
 
 
@@ -52,16 +46,9 @@ merylHistogram::clear(void) {
   _numTotal      = 0;
 
   for (uint64 ii=0; ii<_histMax; ii++)
-    _hist[ii] = 0;
+    _histSml[ii] = 0;
 
   _histBig.clear();
-
-  delete [] _histVs;
-  delete [] _histOs;
-
-  _histLen       = 0;
-  _histVs        = NULL;
-  _histOs        = NULL;
 }
 
 
@@ -81,7 +68,7 @@ merylHistogram::dump(stuffedBits *bits) {
   uint64   numValues = _histBig.size();
 
   for (uint32 ii=0; ii<_histMax; ii++)
-    if (_hist[ii] > 0)
+    if (_histSml[ii] > 0)
       numValues++;
 
   bits->setBinary(64, numValues);
@@ -89,9 +76,9 @@ merylHistogram::dump(stuffedBits *bits) {
   //  Now the data!
 
   for (uint32 ii=0; ii<_histMax; ii++) {
-    if (_hist[ii] > 0) {
-      bits->setBinary(64,       ii);     //  Value
-      bits->setBinary(64, _hist[ii]);    //  Number of occurrences
+    if (_histSml[ii] > 0) {
+      bits->setBinary(64,          ii);     //  Value
+      bits->setBinary(64, _histSml[ii]);    //  Number of occurrences
     }
   }
 
@@ -118,61 +105,19 @@ merylHistogram::dump(FILE        *outFile) {
 
 void
 merylHistogram::load_v01(stuffedBits *bits) {
-  uint32  histLast;
-  uint32  hbigLen;
 
   _numUnique   = bits->getBinary(64);
   _numDistinct = bits->getBinary(64);
   _numTotal    = bits->getBinary(64);
 
-  histLast     = bits->getBinary(32);
-  hbigLen      = bits->getBinary(32);
+  _histMax     = bits->getBinary(32);   //  Number of small values
+  uint64 big   = bits->getBinary(32);   //  Number of big values
 
-  //fprintf(stderr, "merylHistogram::load_v01()-- %lu %lu %lu %u %u\n",
-  //        _numUnique, _numDistinct, _numTotal, histLast, hbigLen);
+  //  Versions 1 and 2 failed to store the big histogram values.
 
-  //  Load the histogram values.
+  delete [] _histSml;
 
-  uint64  *hist = new uint64 [histLast + 1];
-
-  hist         = bits->getBinary(64, histLast, hist);
-
-  //  (over) allocate space for the histogram list.
-
-  _histVs = new uint64 [histLast + hbigLen + 1];
-  _histOs = new uint64 [histLast + hbigLen + 1];
-
-  //  Convert the loaded hist[] into _histVs and _histOs.
-
-  _histLen = 0;
-
-  for (uint32 ii=0; ii<histLast; ii++) {
-    if (_hist[ii] > 0) {
-      _histVs[_histLen] = ii;
-      _histOs[_histLen] = hist[ii];
-      _histLen++;
-    }
-  }
-
-  delete [] hist;
-
-#if 0
-  //  If hbigLen isn't zero, we have the intermediate format, that lived for
-  //  about a day, that stores large values too.
-
-  if (hbigLen > 0) {
-    for (uint64 ii=0; ii<hbigLen; ii++) {
-      _histVs[_histLen] = bits->getBinary(64);
-      _histOs[_histLen] = bits->getBinary(64);
-      _histLen++;
-    }
-  }
-#endif
-
-  //  Delete _hist to indicate we cannot accept new values.
-
-  delete [] _hist;
-  _hist = NULL;
+  _histSml = bits->getBinary(64, _histMax);
 }
 
 
@@ -183,27 +128,22 @@ merylHistogram::load_v03(stuffedBits *bits) {
   _numUnique   = bits->getBinary(64);
   _numDistinct = bits->getBinary(64);
   _numTotal    = bits->getBinary(64);
-  _histLen     = bits->getBinary(64);
 
-  //fprintf(stderr, "merylHistogram::load_v03()-- %lu %lu %lu %lu\n",
-  //        _numUnique, _numDistinct, _numTotal, _histLen);
+  uint64 hl    = bits->getBinary(64);
 
-  //  Allocate space.
+  //  Version 3 stores the histogram as 'hl' pairs of value,occurrence.  To
+  //  load, we read each pair, then insert into either the small or big
+  //  space.
 
-  _histVs = new uint64 [_histLen];
-  _histOs = new uint64 [_histLen];
+  for (uint64 ii=0; ii<hl; ii++) {
+    uint64  v = bits->getBinary(64);
+    uint64  o = bits->getBinary(64);
 
-  //  Load the values into our list.
-
-  for (uint64 ii=0; ii<_histLen; ii++) {
-    _histVs[ii] = bits->getBinary(64);
-    _histOs[ii] = bits->getBinary(64);
+    if (v < _histMax)
+      _histSml[v] = o;
+    else
+      _histBig[v] = o;
   }
-
-  //  Delete _hist to indicate we cannot accept new values.
-
-  delete [] _hist;
-  _hist = NULL;
 }
 
 
@@ -240,3 +180,103 @@ merylHistogram::load(FILE        *inFile,
   delete bits;
 }
 
+
+
+//  The insert() function does not need to explicitly add in _numUnique,
+//  _numDistinct or _numTotal - they're implicilty updated by addValue().
+//
+void
+merylHistogram::insert(merylHistogram *that) {
+
+  if (that == nullptr)
+    return;
+
+  for (uint64 val=0; val<that->_histMax; val++)
+    addValue(val, that->_histSml[val]);
+
+  for (auto it=that->_histBig.begin(); it != that->_histBig.end(); it++)
+    addValue(it->first, it->second);
+}
+
+
+
+void
+merylHistogram::reportHistogram(FILE *F) {
+
+  for (uint64 val=0; val<_histMax; val++)
+    if (_histSml[val] > 0)
+      fprintf(F, F_U64 "\t" F_U64 "\n", val, _histSml[val]);
+
+  for (auto it=_histBig.begin(); it != _histBig.end(); it++)
+    fprintf(F, F_U64 "\t" F_U64 "\n", it->first, it->second);
+}
+
+
+
+void
+merylHistogram::reportStatistics(FILE *F) {
+
+  uint64  nUniverse = buildLowBitMask<uint64>(kmer::merSize() * 2) + 1;
+  uint64  sDistinct = 0;
+  uint64  sTotal    = 0;
+
+  fprintf(F, "Number of %u-mers that are:\n", kmer::merSize());
+  fprintf(F, "  unique   %20" F_U64P "  (exactly one instance of the kmer is in the input)\n", _numUnique);
+  fprintf(F, "  distinct %20" F_U64P "  (non-redundant kmer sequences in the input)\n", _numDistinct);
+  fprintf(F, "  present  %20" F_U64P "  (...)\n", _numTotal);
+  fprintf(F, "  missing  %20" F_U64P "  (non-redundant kmer sequences not in the input)\n", nUniverse - _numDistinct);
+  fprintf(F, "\n");
+  fprintf(F, "             number of   cumulative   cumulative     presence\n");
+  fprintf(F, "              distinct     fraction     fraction   in dataset\n");
+  fprintf(F, "frequency        kmers     distinct        total       (1e-6)\n");
+  fprintf(F, "--------- ------------ ------------ ------------ ------------\n");
+
+  auto emitLine = [&] (uint64 value, uint64 occur) {
+                    sDistinct  += occur;
+                    sTotal     += occur * value;
+
+                    fprintf(F, "%9" F_U64P " %12" F_U64P " %12.4f %12.4f %12.6f\n",
+                            value,
+                            occur,
+                            (double)sDistinct / _numDistinct,
+                            (double)sTotal    / _numTotal,
+                            (double)value     / _numTotal * 1000000.0);
+                  };
+
+  for (uint64 val=0; val<_histMax; val++)
+    if (_histSml[val] > 0)
+      emitLine(val, _histSml[val]);
+
+  for (auto it=_histBig.begin(); it != _histBig.end(); it++)
+    emitLine(it->first, it->second);
+}
+
+
+
+void
+merylHistogramIterator::construct(merylHistogram &that) {
+  uint32  nV = that._histBig.size();
+
+  for (uint64 val=0; val<that._histMax; val++)
+    if (that._histSml[val] > 0)
+      nV++;
+
+  _val = new uint64 [nV];
+  _occ = new uint64 [nV];
+
+  for (uint64 val=0; val<that._histMax; val++) {
+    if (that._histSml[val] > 0) {
+      _val[_len] = val;
+      _occ[_len] = that._histSml[val];
+      _len++;
+    }
+  }
+
+  for (auto it=that._histBig.begin(); it != that._histBig.end(); it++) {
+    _val[_len] = it->first;
+    _occ[_len] = it->second;
+    _len++;
+  }
+
+  assert(_len == nV);
+}

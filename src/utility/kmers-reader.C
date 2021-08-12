@@ -222,6 +222,7 @@ merylFileReader::~merylFileReader() {
 
   delete [] _suffixes;
   delete [] _values;
+  delete [] _labels;
 
   delete    _stats;
 
@@ -288,7 +289,7 @@ merylFileReader::nextMer(void) {
 
   if (_activeMer < _nKmers) {
     _kmer.setPrefixSuffix(_prefix, _suffixes[_activeMer], _suffixSize);
-    _value = _values[_activeMer];
+    _kmer._val = _values[_activeMer];
     return(true);
   }
 
@@ -331,7 +332,7 @@ merylFileReader::nextMer(void) {
 
   //  Make sure we have space for the decoded data
 
-  resizeArrayPair(_suffixes, _values, 0, _nKmersMax, _nKmers, _raAct::doNothing);
+  resizeArray(_suffixes, _values, _labels, 0, _nKmersMax, _nKmers, _raAct::doNothing);
 
   //  Decode the block into _OUR_ space.
   //
@@ -353,8 +354,8 @@ merylFileReader::nextMer(void) {
   _activeMer = 0;
 
   _kmer.setPrefixSuffix(_prefix, _suffixes[_activeMer], _suffixSize);
-  _value = _values[_activeMer];
-  _label = _labels[_activeMer];
+  _kmer._val = _values[_activeMer];
+  _kmer._lab = _labels[_activeMer];
 
   return(true);
 }

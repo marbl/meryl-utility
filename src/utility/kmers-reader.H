@@ -71,10 +71,12 @@ public:
   bool    nextMer(void);
 
   kmer    theFMer(void)        { return(_kmer);        };
-  kmvalu  theValue(void)       { return(_value);       };
-  kmlabl  theLabel(void)       { return(_label);       };
 
-  bool    isMultiSet(void)     { return(_isMultiSet);  };
+  //#warning OBSOLETE theValue() and theLabel()
+  kmvalu  theValue(void)       { return(_kmer._val);   };
+  kmlabl  theLabel(void)       { return(_kmer._lab);   };
+
+  //bool    isMultiSet(void)     { return(_isMultiSet);  };
 
   char   *filename(void)       { return(_inName);      };
 
@@ -128,8 +130,6 @@ private:
   merylFileIndex            *_blockIndex    = nullptr;
 
   kmer                       _kmer          = kmer();
-  kmvalu                     _value         = 0;
-  kmlabl                     _label         = 0;
 
   uint64                     _prefix        = 0;
 

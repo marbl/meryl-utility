@@ -196,6 +196,8 @@ private:
 private:
 public:
   kmdata         _mer = 0;
+  kmvalu         _val = 0;
+  kmlabl         _lab = 0;
 
   static uint32  _merSize;     //  number of bases in a mer
   static uint32  _labelSize;   //  number of bits in a label

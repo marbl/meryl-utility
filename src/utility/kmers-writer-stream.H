@@ -35,6 +35,9 @@ public:
 
 public:
   void    addMer(kmer k, kmvalu c, kmlabl l);
+  void    addMer(kmer k) {
+    addMer(k, k._val, k._lab);
+  };
 
 private:
   void    dumpBlock(kmpref nextPrefix=~((kmpref)0));

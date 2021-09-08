@@ -294,8 +294,6 @@ merylFileWriter::writeBlockToFile(FILE            *datFile,
   assert(lcode == 1);
 
   if (kmer::labelSize() > 0) {
-    fprintf(stderr, "WRITE labels %p const %lx\n", labels, label);
-
     if (labels)
       for (uint32 kk=0; kk<nKmers; kk++)
         dumpData->setBinary(kmer::labelSize(), labels[kk]);

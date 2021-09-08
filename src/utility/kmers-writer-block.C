@@ -101,6 +101,7 @@ merylBlockWriter::addCountedBlock(kmpref  prefix,
                                   uint64  nKmers,
                                   kmdata *suffixes,
                                   kmvalu *values,
+                                  kmlabl *labels,
                                   kmlabl  label) {
 
   //  Open a new file, if needed.
@@ -117,7 +118,7 @@ merylBlockWriter::addCountedBlock(kmpref  prefix,
                             nKmers,
                             suffixes,
                             values,
-                            nullptr,
+                            labels,
                             label);
 
   //  Insert values into the histogram.

@@ -41,6 +41,7 @@ public:
                           uint64 nKmers,
                           kmdata *suffixes,
                           kmvalu *values,
+                          kmlabl *labels,
                           kmlabl  label);
 
   void    finishBatch(void);

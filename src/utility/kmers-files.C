@@ -93,6 +93,11 @@ merylFileBlockReader::loadKmerFileBlock(FILE *inFile, uint32 activeFile, uint32 
     _cCode       = _data->getBinary(8);
     _c1          = _data->getBinary(64);
     _c2          = _data->getBinary(64);
+
+    _lCode       = 0;
+    _labelBits   = 0;
+    _l1          = 0;
+    _l2          = 0;
   }
 
   //  Version merylDataFile01 added support for labels.

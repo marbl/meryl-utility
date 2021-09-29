@@ -27,6 +27,8 @@ SOURCES      := utility/runtime.C \
                 \
                 utility/types.C \
                 \
+                utility/sampledDistribution.C \
+                \
                 utility/kmers-exact.C \
                 utility/kmers-files.C \
                 utility/kmers-histogram.C \

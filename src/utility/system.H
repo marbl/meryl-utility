@@ -47,10 +47,10 @@ uint64   getMaxMemoryAllowed(void);
 //  variety of environment variables specifying a thread limit.  It does NOT
 //  configure OpenMP to use that many threads.
 //
-//  AS_configure() (runtime.H) will call setNumThreads(getMaxThreadsAllowed()),
-//  unless it is passed a thread limit.  User code is then free to parse args
-//  and call setNumThreads() to change the number of threads to whatever it
-//  desires.
+//  AS_configure() (runtime.H) calls:
+//    setNumThreads(getMaxThreadsAllowed(limit))
+//  User code is then free to parse args and call setNumThreads() to change
+//  the number of threads to whatever is specified on the command line.
 //
 //  getNumThreads() and getNumThreadsActive() return the current limit on the
 //  number of threads and the current number of threads running, respectively.

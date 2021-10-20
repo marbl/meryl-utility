@@ -28,6 +28,19 @@
 #include <atomic>
 
 
+
+extern uint64 __fibNumV[93];
+
+inline
+uint64
+fibonacciNumber(uint32 f) {
+  assert(f < 93);
+  return(__fibNumV[f]);
+}
+
+
+
+
 //  Writing in the middle of data is toublesome.
 //  This code currently will not split an object across two allocated blocks,
 //  so if you want to rewrite in the middle, you need to make sure it

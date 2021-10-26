@@ -23,6 +23,7 @@
 #include "types.H"
 #include "arrays.H"
 #include "files.H"
+#include "system.H"
 
 #include <algorithm>
 #include <atomic>
@@ -498,7 +499,6 @@ public:
   stuffedBits(const char *inputName);
   stuffedBits(FILE *inFile);
   stuffedBits(readBuffer *B);
-  //stuffedBits(stuffedBits &that);   //  Untested.
   ~stuffedBits();
 
   //  Debugging.
@@ -509,15 +509,17 @@ public:
 
   //  Files.
 
-  void     dumpToBuffer(writeBuffer *B);
-  bool     loadFromBuffer(readBuffer *B);
+  void     dump(FILE *F, writeBuffer *B);
+  void     dumpToBuffer(writeBuffer *B)   {        dump(nullptr, B);  }
+  void     dumpToFile(FILE *F)            {        dump(F, nullptr);  }
 
-  void     dumpToFile(FILE *F);
-  bool     loadFromFile(FILE *F);
+  bool     load(FILE *F, readBuffer *B);
+  bool     loadFromBuffer(readBuffer *B)  { return(load(nullptr, B)); }
+  bool     loadFromFile(FILE *F)          { return(load(F, nullptr)); }
 
   //  Management of the read/write head.
 
-  void     setPosition(uint64 position, uint64 length = 0);
+  void     setPosition(uint64 position);
   uint64   getPosition(void);
 
   uint64   getLength(void);
@@ -639,13 +641,15 @@ public:
 
 private:
 
-  //  For writing, update the length of the block to the maximum of where we're at now and the existing length.
+  //  For writing, update the length of the block to the maximum of where
+  //  we're at now and the existing length.
   //
   void      updateLen(void) {
-    _dataBlockLen[_dataBlk] = std::max(_dataPos, _dataBlockLen[_dataBlk]);
+    _blocks[_dataBlk]._len = std::max(_dataPos, _blocks[_dataBlk]._len);
   };
 
-  //  For both reading and writing, move to the next word if we're at the end of the current one.
+  //  For both reading and writing, move to the next word if we're at the end
+  //  of the current one.
   //
   void      updateBit(void) {
     if (_dataBit == 0) {
@@ -654,112 +658,176 @@ private:
     }
   };
 
-  //  For reading operations, move to the next block if we're at the end of the current one.
-  //  For writing operations, this is done before the write, in ensureSpace().
-  //
-  //  Should be done before any reading operation.  It isn't (strictly) needed at the end
-  //  of a read.  The next read will just do it at the start, and the next write
-  //  only cares that there is enough space in the current block for the write.
-  //
-  void      updateBlk(uint64 readLength) {
 
+  //  Ensure that a read of the next sub-word of length readLength is present
+  //  entirely in the current block.  Move to the next block if not.
+  //
+  void      moveToNextBlock(uint64 wordLen) {
     assert(_dataBit != 0);
     assert(_dataBit <= 64);
+    assert(_blocksMax > 0);
+    assert(_dataBlk < _blocksMax);
 
-    //  If in this block, nothing to do.
+    //  The word is in this block, we need to do nothing.
 
-    //fprintf(stderr, "updateBlk()--  at _dataPos " F_U64 "  _dataBlockLen[%u] = " F_U64 "\n", _dataPos, _dataBlk, _dataBlockLen[_dataBlk]);
-
-    if (_dataPos + readLength <= _dataBlockLen[_dataBlk])
+    if (_dataPos + wordLen <= _blocks[_dataBlk]._len)
       return;
 
-    //  Otherwise, we MUST be at the end of the current block.  If not,
-    //  whatever we're trying to read is in the next block (or we're trying
-    //  to read something longer than what is here).
+    //  If we're not at the end of the current block, something is amiss;
+    //  words do not span blocks.
 
-    assert(_dataPos == _dataBlockLen[_dataBlk]);
+    if (_dataPos != _blocks[_dataBlk]._len)
+      fprintf(stderr, "stuffedBits()--  ERROR: _dataPos=%lu != _blocks[%u]._len=%lu\n",
+              _dataPos, _dataBlk, _blocks[_dataBlk]._len);
+    assert(_dataPos == _blocks[_dataBlk]._len);
+
+    //  Move to the next block, failing if there are no more blocks with data
 
     _dataBlk += 1;
 
-    if (_dataBlk >= _dataBlocksLen)
-      fprintf(stderr, "ERROR: _dataBlk = %lu  _dataBlocksLen = %u\n", _dataBlk, _dataBlocksLen);
-    assert(_dataBlk < _dataBlocksLen);
+    if (_dataBlk >= _blocksMax)
+      fprintf(stderr, "ERROR: _dataBlk = %u  _blocksMax = %u\n", _dataBlk, _blocksMax);
+    assert(_dataBlk < _blocksMax);
+
+    if (_blocks[_dataBlk]._len == 0)
+      fprintf(stderr, "stuffedBits()-- ERROR: no data in block at _dataBlk=%u\n", _dataBlk);
+    assert(_blocks[_dataBlk]._len != 0);
+
+    if (_blocks[_dataBlk]._dat == nullptr)
+      fprintf(stderr, "stuffedBits()-- ERROR: no data block at _dataBlk=%u\n", _dataBlk);
+    assert(_blocks[_dataBlk]._dat != nullptr);
+
+    //  Reset the various pointers to the start of the current block.
 
     _dataPos  = 0;
-    _data     = _dataBlocks[_dataBlk];
+    _data     = _blocks[_dataBlk]._dat;
 
     _dataWrd  = 0;
     _dataBit  = 64;
   }
 
-  void     clearBlock(void) {
-    for (uint64 ii=0; ii<_dataBlockLenMaxW; ii++)
-      _data[ii] = 0;
-  };
-  
-  //  For writing operations, make sure there is enough space for the write in this block.
-  //
-  void     ensureSpace(uint64 spaceNeeded) {
 
+  //  Ensure that a write of a sub-word of length wordLen will occur entirely
+  //  in the current block.  Move to the next block if not.
+  //
+  //  Assumes the current block exists.
+  //
+  void     ensureSpaceInCurrentBlock(uint64 wordLen) {
     assert(_dataBit != 0);
     assert(_dataBit <= 64);
+    assert(_blocksMax > 0);
+    assert(_dataBlk < _blocksMax);
 
-    //  If enough space in the current block, just return.
+    //  The word will fit in this block, we need to do nothing.
 
-    if (_dataPos + spaceNeeded < _dataBlockLenMaxB)
+    if (_dataPos + wordLen <= _blocks[_dataBlk]._max)
       return;
 
-    //  Othwerwise, terminate the current block.
+    //  Otherwise, there isn't enough space in the current block for a write
+    //  of 'wordLen' bits.  Terminate the current block and move to the next.
 
-    _dataBlockLen[_dataBlocksLen - 1] = _dataPos;
+    _blocks[_dataBlk]._len = _dataPos;
 
-    //  Move to the new block.
+    _dataBlk++;
 
-    _dataBlocksLen++;
+    allocateBlock();
+  };
 
-    if (_dataBlocksLen >= _dataBlocksMax) {
-      setArraySize(_dataBlocks,   _dataBlocksLen, _dataBlocksMax, _dataBlocksLen + 128);
-      setArraySize(_dataBlockBgn, _dataBlocksLen, _dataBlocksMax, _dataBlocksLen + 128);
-      setArraySize(_dataBlockLen, _dataBlocksLen, _dataBlocksMax, _dataBlocksLen + 128);
+
+  //  The allocated blocks (_dat and _max) need to be a multiple of 64 so we
+  //  can use a simple shift to get the number of words to allocate.  This function
+  //  will round up to the next multiple, with a special case for zero.
+  //
+  uint64   roundMaxSizeUp(uint64 numbits) {
+
+    if (numbits == 0)                           //  If zero, set it to a few pages minus a
+      numbits = (8 * getPageSize() - 32) * 8;   //  few pointers for the allocator to use.
+
+    if ((numbits & 0x3fllu) != 0)               //  If not a multiple of 64, bump
+      numbits = (numbits | 0x3fllu) + 1;        //  up to the next multiple.
+
+    assert(numbits % 64 == 0);                  //  Be paranoid.  Be very paranoid.
+
+    return(numbits);
+  }
+
+
+  //  Allocate a new block and initialize it, if needed.
+  //
+  void     allocateBlock(void) {
+
+    //  Allocate another 32 blocks if _dataBlk >= _blocksMax.
+    increaseArray(_blocks, _dataBlk, _blocksMax, 32, _raAct::copyData | _raAct::clearNew);
+
+    //  Initialize the position and length of the block.
+    _blocks[_dataBlk]._bgn = (_dataBlk == 0) ? 0 : _blocks[_dataBlk - 1]._bgn + _blocks[_dataBlk - 1]._len;
+    _blocks[_dataBlk]._len =                   0;
+
+    //  Allocate space for the data, if needed.
+    if (_blocks[_dataBlk]._dat == nullptr) {
+      _blocks[_dataBlk]._max = _maxBits;
+      _blocks[_dataBlk]._dat = new uint64 [ _blocks[_dataBlk]._max / 64 ];
     }
 
-    assert(spaceNeeded <= _dataBlockLenMaxB);
+    assert(_blocks[_dataBlk]._max % 64 == 0);
 
-    _dataPos = 0;
-    _data    = _dataBlocks[_dataBlocksLen - 1] = new uint64 [_dataBlockLenMaxW];
+    //  Clear it.
+    memset(_blocks[_dataBlk]._dat, 0, sizeof(uint64) * _blocks[_dataBlk]._max / 64);
 
-    clearBlock();
+    //  Set the various pointers to the start of the current block.
+    _dataPos  = 0;
+    _data     = _blocks[_dataBlk]._dat;
 
-    _dataBlockBgn[_dataBlocksLen - 1] = _dataBlockBgn[_dataBlocksLen - 2] + _dataBlockLen[_dataBlocksLen - 2];
-    _dataBlockLen[_dataBlocksLen - 1] = 0;
+    assert(_data != nullptr);
 
-    _dataBlk += 1;
     _dataWrd  = 0;
     _dataBit  = 64;
   };
 
-  uint64    bitsToWords(uint64 bits) {
-    return(bits / 64 + ((bits % 64) ? 1 : 0));
+
+  //  Resets any allocated blocks to have size zero.
+  //
+  void     eraseBlocks(void) {
+
+    if (_blocksMax == 0)
+      return;
+
+    for (uint32 ii=0; (ii < _blocksMax); ii++)
+      _blocks[ii]._len = 0;
+
+    //  Set the various pointers to the start of the current block.
+    _dataPos  = 0;
+    _data     = _blocks[_dataBlk]._dat;
+
+    assert(_data != nullptr);
+
+    _dataWrd  = 0;
+    _dataBit  = 64;
+  }
+
+
+
+
+
+  struct _dBlock {
+    uint64  _bgn = 0;        //  Starting position, in the global file, of this block.
+    uint64  _len = 0;        //  Length of the data in this block, in BITS.
+    uint64  _max = 0;        //  Allocated size of this block, in WORDS.
+    uint64 *_dat = nullptr;  //  Just piles of bits.  Nothing interesting here.
   };
 
-  uint64   _dataBlockLenMaxB;  //  Allocated length of each block (in BITS).
-  uint64   _dataBlockLenMaxW;  //  Allocated length of each block (in WORDS). 
 
-  uint32   _dataBlocksLen;     //  Number of allocated data blocks.
-  uint32   _dataBlocksMax;     //  Number of blocks we can allocate.
+  uint64    _maxBits = 0;             //  Allocated length of each block (in BITS).
 
-  uint64  *_dataBlockBgn;      //  Starting position, in the global file, of this block.
-  uint64  *_dataBlockLen;      //  Length of this block.
-  uint64 **_dataBlocks;        //  Just piles of bits.  Nothing interesting here.
+  uint32    _blocksMax = 0;           //  Number of blocks we can allocate.
+  _dBlock  *_blocks    = nullptr;     //  Blocks!
 
-  uint64   _dataPos;           //  Position in this block, in BITS.
-  uint64  *_data;              //  Pointer to the currently active data block.
+  uint64    _dataPos    = 0;          //  Position in this block, in BITS.
+  uint64   *_data       = nullptr;    //  Pointer to the data in the currently active data block.
 
-  uint64   _dataBlk;           //  Active data block.
-  uint64   _dataWrd;           //  Active word in the active data block.
-  uint64   _dataBit;           //  Active bit in the active word in the active data block (aka, number of bits left in this word)
-
-  uint64   _fibData[93];       //  A pile of Fibonacci numbers.
+  uint32    _dataBlk    = 0;          //  Active data block.
+  uint64    _dataWrd    = 0;          //  Active word in the active data block.
+  uint64    _dataBit    = 64;         //  Active bit in the active word in the active data block (aka, number of bits left in this word)
 };
 
 

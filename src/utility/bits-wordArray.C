@@ -31,6 +31,14 @@
 
 wordArray::wordArray(uint32 valueWidth, uint64 segmentSizeInBits, bool useLocks) {
 
+  if (valueWidth == 0)
+    fprintf(stderr, "wordArray::wordArray()-- valueWidth=%u too large; must greater than zero.\n", valueWidth), exit(1);
+  assert(valueWidth > 0);
+
+  if (valueWidth > 128)
+    fprintf(stderr, "wordArray::wordArray()-- valueWidth=%u too large; must be at most 128.\n", valueWidth), exit(1);
+  assert(valueWidth <= 128);
+
   _valueWidth       = valueWidth;          //  In bits.
   _valueMask        = buildLowBitMask<uint128>(_valueWidth);
   _segmentSize      = segmentSizeInBits;   //  In bits.
@@ -53,10 +61,6 @@ wordArray::wordArray(uint32 valueWidth, uint64 segmentSizeInBits, bool useLocks)
     _segments[ss] = nullptr;
     _segLocks[ss] = nullptr;
   }
-
-  if (_valueWidth > 128)
-    fprintf(stderr, "wordArray::wordArray()-- valueWidth=%lu too large; must be at most 128.\n", _valueWidth), exit(1);
-  assert(_valueWidth <= 128);
 }
 
 

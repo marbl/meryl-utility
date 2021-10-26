@@ -389,9 +389,6 @@ public:
     uint64   b = 63 - (position % 64);
     uint64   m = ((uint64)1) << b;
 
-    //fprintf(stderr, "SET pos %9" F_U64P " word %2" F_U64P " bit %2" F_U64P " value %c  0x%016" F_X64P " -> ",
-    //        position, w, b, (value) ? '1' : '0', _bits[w]);
-
     if (_maxBitAvail <= position)
       fprintf(stderr, "setBit()--  ERROR: position=" F_U64 " > maximum available=" F_U64 "\n",
               position, _maxBitAvail);
@@ -399,8 +396,6 @@ public:
 
     _bits[w] &= ~m;
     _bits[w] |= ((uint64)value) << b;
-
-    //fprintf(stderr, "0x%016" F_X64P "\n", _bits[w]);
   };
 
   //  Returns state of bit before flipping.
@@ -416,11 +411,7 @@ public:
 
     uint64   v = _bits[w] & m;
 
-    //fprintf(stderr, "FLIP w %lu b %lu m 0x%016lx v 0x%016lx FROM 0x%016lx", w, b, m, v, _bits[w]);
-
     _bits[w] ^= m;
-
-    //fprintf(stderr, " TO 0x%016lx\n", _bits[w]);
 
     return(v >> b);
   };

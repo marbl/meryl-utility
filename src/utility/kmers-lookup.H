@@ -24,30 +24,82 @@
 #error "include kmers.H, not this."
 #endif
 
+
+class merylExactLookupProgress {
+public:
+  merylExactLookupProgress(char const *format, bool enabled=false) {
+    if (enabled)
+      strncpy(_formatString, format, 128);
+  }
+
+public:
+  void     tick(uint32 ff) {
+    _progressCounter[ff]++;
+  }
+
+  void     show(void) {
+    if (_formatString[0] == 0)
+      return;
+
+    for (uint32 bb=0; bb<64;bb++) {
+      if      (_progressCounter[bb] == 0)
+        _progressString[bb] = '.';
+      else if (_progressCounter[bb] == uint64max)
+        _progressString[bb] = '*';
+      else
+        _progressString[bb] = (char [4]){ '|', '/', '-', '\\' } [ _progressCounter[bb] & 0x03 ];
+    }
+
+    _progressString[64] = 0;
+
+    fprintf(stderr, _formatString, _progressString);
+  }
+
+  void     stop(uint32 ff) {
+    _progressCounter[ff] = uint64max;
+
+    for (uint32 ii=0; ii<64; ii++)
+      if (_progressCounter[ii] != uint64max)
+        return;
+
+    if (_formatString[0] == 0) {
+      show();
+      fprintf(stderr, "\n");
+    }
+  }
+
+private:
+  uint64  _progressCounter[64] = {0};
+  char    _progressString[65]  = {0};
+  char    _formatString[128]   = {0};
+};
+
+
+
 class merylExactLookup {
 public:
   merylExactLookup() {
   };
   ~merylExactLookup() {
-    delete [] _suffixBgn;
-    delete [] _suffixLen;
-    delete [] _suffixEnd;
+    delete    _sufPointer;
     delete    _sufData;
     delete    _valData;
   };
 
 public:
-  //  Optional.  Quickly analyze the input kmers and compute the minimum and
-  //  'optimal' memory needed for the lookup tables.
+  //  Optional.  Quickly analyze the input kmers and compute the minimum
+  //  memory needed for the lookup tables.  The size returned is in GB.
   //
-  //  maxMemInGB is used as an upper limit on minMem and optMem.
+  //  maxMemInGB is used as an upper limit.
   //
-  void     estimateMemoryUsage(merylFileReader *input_,
+  double   estimateMemoryUsage(merylFileReader *input_,
                                double           maxMemInGB_,
-                               double          &minMemInGB_,
-                               double          &optMemInGB_,
+                               uint32           prefixSize_,
                                kmvalu           minValue_ = 0,
-                               kmvalu           maxValue_ = kmvalumax);
+                               kmvalu           maxValue_ = kmvalumax) {
+    initialize(input_, minValue_, maxValue_);
+    return(configure(maxMemInGB_, prefixSize_, true, true));
+  };
 
 public:
   //  Load a new meryl database into the lookup table.
@@ -60,13 +112,12 @@ public:
   //  with 'minimal' memory will be slower than with 'optimal' memory;
   //  however, it isn't known how significant this is.
   //
-  //  The return value is the actual memory used, in GB, or 0.0 if loading
-  //  failed.  (I think)
+  //  The return value is the actual memory used, in GB, or -1 if loading
+  //  failed.
   //
   double   load(merylFileReader *input_,
                 double           maxMemInGB_,
-                bool             useMinimalMemory,
-                bool             useOptimalMemory,
+                uint32           prefixSize,
                 kmvalu           minValue_      = 0,
                 kmvalu           maxValue_      = kmvalumax);
 
@@ -94,11 +145,12 @@ private:
   //  initialize() or configure() directly, you can't.
   //
   void     initialize(merylFileReader *input_, kmvalu minValue_, kmvalu maxValue_);
-  void     configure(double  memInGB,
-                     double &memInGBmin,
-                     double &memInGBmax,
-                     bool    useMinimalMemory,
-                     bool    useOptimalMemory,
+  void     computeSpace(bool reportMemory,
+                        bool reportSizes,
+                        bool compute,
+                        uint32 &pbMin, uint64 &minSpace);
+  double   configure(double  memInGB,
+                     uint32  prefixSize,
                      bool    reportMemory,
                      bool    reportSizes);
   void     count(void);
@@ -121,23 +173,28 @@ private:
   uint64            _nKmersTooLow  = 0;
   uint64            _nKmersTooHigh = 0;
 
-  uint32            _Kbits;
+  uint32            _Kbits         = uint32max;
 
-  uint32            _prefixBits    = 0;    //  How many high-end bits of the kmer is an index into _suffixBgn.
-  uint32            _suffixBits    = 0;    //  How many bits of the kmer are in the suffix table.
+  uint32            _prefixBits    = 0;    //  How many high-end bits of the kmer are an index into _sufPointer.
+  uint32            _suffixBits    = 0;    //  How many low-end bits of the kmer are in the suffix table.
   uint32            _valueBits     = 0;    //  How many bits of the suffix entry are data.
 
   kmdata            _suffixMask    = 0;
   kmvalu            _valueMask     = 0;
 
-  uint64            _nPrefix       = 0;    //  How many entries in _suffixBgn  == 2 ^ _prefixBits.
-  uint64            _nSuffix       = 0;    //  How many entries in _suffixData == nDistinct in the input database.
+  uint64            _nPrefix       = 0;    //  How many entries in _sufPointer:  2 ^ _prefixBits.
+  uint64            _nSuffix       = 0;    //  How many entries in _suffixData:  nDistinct in the input database.
 
-  uint32            _prePtrBits    = 0;    //  How many bits wide is _suffixBgn (used only if _suffixBgn is a wordArray).
+  uint32            _blkPtrBits    = 0;    //  How many bits wide is the begin field.
+  uint64            _blkPtrMask    = 0;
+  uint32            _blkLenBits    = 0;    //  How many bits wide is the length field.
+  uint64            _blkLenMask    = 0;
 
-  uint64           *_suffixBgn = nullptr;  //  The start of a block of data in suffix Data.
-  uint64           *_suffixLen = nullptr;  //  The number of kmers to load in each block.
-  uint64           *_suffixEnd = nullptr;  //  The end of a block.  (NOTE: bgn + len != end)
+  void               setPointers(uint64 prefix, uint64  bgn, uint64  len);
+  void               getPointers(uint64 prefix, uint64 &bgn, uint64 &end);
+
+  wordArray        *_sufPointer= nullptr;  //  Pointer to start and length of each block.
+
   wordArray        *_sufData   = nullptr;  //  Finally, kmer suffix data!
   wordArray        *_valData   = nullptr;  //  Finally, value data!
 };
@@ -145,6 +202,22 @@ private:
 
 
 
+
+inline
+void
+merylExactLookup::setPointers(uint64 prefix, uint64  bgn, uint64  len) {
+  _sufPointer->set(prefix, (bgn << _blkLenBits) | len);
+}
+
+
+inline
+void
+merylExactLookup::getPointers(uint64 prefix, uint64 &bgn, uint64 &end) {
+  uint64  dat = _sufPointer->get(prefix);
+
+  bgn = (dat >> _blkLenBits);
+  end = (dat >> _blkLenBits) + (dat & _blkLenMask);
+}
 
 
 inline
@@ -167,12 +240,10 @@ merylExactLookup::exists(kmer k) {
   kmdata  kmer   = (kmdata)k;
   uint64  prefix = kmer >> _suffixBits;
   kmdata  suffix = kmer  & _suffixMask;
-
-  uint64  bgn = _suffixBgn[prefix];
-  uint64  mid;
-  uint64  end = _suffixEnd[prefix];
-
   kmdata  tag;
+  uint64  bgn, mid, end;
+
+  getPointers(prefix, bgn, end);
 
   //  Binary search for the matching tag.
 
@@ -213,12 +284,10 @@ merylExactLookup::exists(kmer k, kmvalu &value) {
   kmdata  kmer   = (kmdata)k;
   kmdata  prefix = kmer >> _suffixBits;
   kmdata  suffix = kmer  & _suffixMask;
-
-  uint64  bgn = _suffixBgn[prefix];
-  uint64  mid;
-  uint64  end = _suffixEnd[prefix];
-
   kmdata  tag;
+  uint64  bgn, mid, end;
+
+  getPointers(prefix, bgn, end);
 
   //  Binary search for the matching tag.
 
@@ -268,12 +337,10 @@ merylExactLookup::value(kmer k) {
   kmdata  kmer   = (kmdata)k;
   kmdata  prefix = kmer >> _suffixBits;
   kmdata  suffix = kmer  & _suffixMask;
-
-  uint64  bgn = _suffixBgn[prefix];
-  uint64  mid;
-  uint64  end = _suffixEnd[prefix];
-
   kmdata  tag;
+  uint64  bgn, mid, end;
+
+  getPointers(prefix, bgn, end);
 
   //  Binary search for the matching tag.
 

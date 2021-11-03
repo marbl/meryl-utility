@@ -459,7 +459,7 @@ public:
   wordArray(uint32 valueWidth, uint64 segmentsSizeInBits, bool useLocks);
   ~wordArray();
 
-  void     clear(void);                   //  Reset the array to zero, doesn't deallocate space.
+  void     erase(uint8 c, uint64 maxElt); //  Clear allocated space to c, set maxElement to maxElt.
 
   void     allocate(uint64 nElements);    //  Pre-allocate space for nElements.
 
@@ -470,6 +470,8 @@ public:
   void     show(void);                    //  Dump the wordArray to the screen; debugging.
 
 private:
+  void     setLock(void);
+  void     relLock(void);
   void     setLock(uint64 seg, uint64 lockW1, uint64 lockW2);
   void     relLock(uint64 seg, uint64 lockW1, uint64 lockW2);
   void     setNval(uint32 eIdx);
@@ -485,8 +487,10 @@ private:
   uint64              _wordsPerLock     = 0;         //  How many words are covered by each lock.
   uint64              _locksPerSegment  = 0;         //  Number of locks per segment
 
-  uint64              _numValues        = 0;         //  Number of values stored in the array.
-  std::atomic_flag    _numValuesLock;                //  Lock on the above.
+  uint64              _numValuesAlloc   = 0;
+  uint64              _validData        = 0;
+
+  std::atomic_flag    _lock;                         //  Global lock
 
   uint64              _segmentsLen      = 0;         //  Number of blocks in use.
   uint64              _segmentsMax      = 0;         //  Number of block pointers allocated.

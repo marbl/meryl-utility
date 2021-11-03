@@ -49,8 +49,10 @@ wordArray::wordArray(uint32 valueWidth, uint64 segmentSizeInBits, bool useLocks)
   _wordsPerLock     = (useLocks == false) ? (0) : (64);
   _locksPerSegment  = (useLocks == false) ? (0) : (_segmentSize / 128 / _wordsPerLock + 1);
 
-  _numValues        = 0;
-  _numValuesLock.clear();
+  _numValuesAlloc   = 0;
+  _validData        = 0;
+
+  _lock.clear();
 
   _segmentsLen      = 0;
   _segmentsMax      = 16;
@@ -77,39 +79,46 @@ wordArray::~wordArray() {
 
 
 
+//  Erase ALL allocated space to the given constant,
+//  then sets the array size to be maxElt.
+//
 void
-wordArray::clear(void) {
-  _numValues   = 0;
-  _segmentsLen = 0;
+wordArray::erase(uint8 c, uint64 maxElt) {
+
+  allocate(maxElt);
+
+  for (uint32 seg=0; seg<_segmentsLen; seg++)
+    memset(_segments[seg], c, sizeof(uint128) * _wordsPerSegment);
+
+  _validData = maxElt;
 }
 
 
 
+//  Allocate space for at least nElements.  Space will be allocated for an
+//  integer number of blocks, each block having _valuesPerSegment elements.
+//
+//  Does not ever shrink space or change the number of elements in the array.
+//
 void
 wordArray::allocate(uint64 nElements) {
   uint64 segmentsNeeded = nElements / _valuesPerSegment + 1;
 
-#pragma omp critical (wordArrayAllocate)
-  {
+  //  Allocate more space for segment pointers.  Does nothing
+  //  if segmentsNeeded <= _segmentsMax.
 
-  if (segmentsNeeded >= _segmentsMax)
-    resizeArrayPair(_segments,
-                    _segLocks,
-                    _segmentsLen, _segmentsMax, segmentsNeeded,
-                    _raAct::copyData | _raAct::clearNew);
+  resizeArrayPair(_segments,
+                  _segLocks,
+                  _segmentsLen, _segmentsMax, segmentsNeeded,
+                  _raAct::copyData | _raAct::clearNew);
+
+  //  Allocate segments and locks, then open the locks.
 
   for (uint32 seg=_segmentsLen; seg<segmentsNeeded; seg++) {
     if (_segments[seg] != nullptr)
       continue;
 
-    //  Allocate the segment and (optionally, for debug and test)
-    //  initialize to non-zero values.
-
     _segments[seg] = new uint128 [ _wordsPerSegment ];
-
-    //memset(_segments[seg], 0xff, sizeof(uint128) * _segmentSize / 128);
-
-    //  Allocate any needed locks, and open them.
 
     if (_locksPerSegment > 0) {
       _segLocks[seg] = new std::atomic_flag [ _locksPerSegment ];
@@ -119,19 +128,22 @@ wordArray::allocate(uint64 nElements) {
     }
   }
 
-  _segmentsLen = segmentsNeeded;
+  //  Update the number of values/segments we have allocated.
 
-  }  //  end critical
+  if (segmentsNeeded > _segmentsLen) {
+    _numValuesAlloc = segmentsNeeded * _valuesPerSegment;
+    _segmentsLen    = segmentsNeeded;
+  }
 }
 
 
 
 void
 wordArray::show(void) {
-  uint64  lastBit = _numValues * _valueWidth;
+  uint64  lastBit = _validData * _valueWidth;
 
   fprintf(stderr, "wordArray:\n");
-  fprintf(stderr, "  numValues        %10lu values\n", _numValues);
+  fprintf(stderr, "  validData        %10lu values\n", _validData);
   fprintf(stderr, "  valueWidth       %10lu bits\n",   _valueWidth);
   fprintf(stderr, "  segmentSize      %10lu bits\n",   _segmentSize);
   fprintf(stderr, "  valuesPerSegment %10lu values\n", _valuesPerSegment);

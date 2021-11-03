@@ -34,9 +34,9 @@ wordArray::get(uint64 eIdx) {
 
   uint128 val = 0;
 
-  if (eIdx >= _numValues)
-    fprintf(stderr, "wordArray::get()-- eIdx %lu >= _numValues %lu\n", eIdx, _numValues);
-  assert(eIdx < _numValues);
+  if (eIdx >= _validData)
+    fprintf(stderr, "wordArray::get()-- eIdx %lu >= _validData %lu\n", eIdx, _validData);
+  assert(eIdx < _validData);
 
   //  If the value is all in one word, just shift that word to the right to
   //  put the proper bits in the proper position.
@@ -72,6 +72,21 @@ wordArray::get(uint64 eIdx) {
 
 inline
 void
+wordArray::setLock(void) {
+  while (_lock.test_and_set(std::memory_order_relaxed) == true)
+    ;
+}
+
+
+inline
+void
+wordArray::relLock(void) {
+  _lock.clear();
+}
+
+
+inline
+void
 wordArray::setLock(uint64 seg, uint64 lockW1, uint64 lockW2) {
 
   if (lockW1 == lockW2) {
@@ -86,7 +101,6 @@ wordArray::setLock(uint64 seg, uint64 lockW1, uint64 lockW2) {
       ;
   }
 }
-
 
 
 inline
@@ -106,20 +120,6 @@ wordArray::relLock(uint64 seg, uint64 lockW1, uint64 lockW2) {
 
 inline
 void
-wordArray::setNval(uint32 eIdx) {
-
-  while (_numValuesLock.test_and_set(std::memory_order_relaxed) == true)
-    ;
-
-  if (eIdx >= _numValues)
-    _numValues = eIdx + 1;
-
-  _numValuesLock.clear();
-}
-
-
-inline
-void
 wordArray::set(uint64 eIdx, uint128 value) {
   uint64 seg =                eIdx / _valuesPerSegment;     //  Which segment are we in?
   uint64 pos = _valueWidth * (eIdx % _valuesPerSegment);    //  Which word in the segment?
@@ -132,12 +132,19 @@ wordArray::set(uint64 eIdx, uint128 value) {
 
   //  Allocate more segment pointers and any missing segments.
 
-  if (seg >= _segmentsLen)
+  if (eIdx >= _numValuesAlloc) {
+    setLock();
     allocate(eIdx);
+    relLock();
+  }
 
-  //  Mask the value, just in case.
+  //  Remember the largest element we've set.
 
-  value &= _valueMask;
+  if (eIdx >= _validData) {
+    setLock();
+    _validData = std::max(_validData, eIdx+1);
+    relLock();
+  }
 
   //  Grab the locks for the two words we're going to be accessing.
 
@@ -145,16 +152,6 @@ wordArray::set(uint64 eIdx, uint128 value) {
     setLock(seg,
             lockW1 = (wrd + 0) / _wordsPerLock,
             lockW2 = (wrd + 1) / _wordsPerLock);
-
-  //  Remember the largest element set.  Used for:
-  //   - failing if get() accesses something out of bounds....but doesn't
-  //     catch if we access something unset in the middle.
-  //   - debug usage in show()
-
-  if (_wordsPerLock > 0)
-    setNval(eIdx);
-  else if (eIdx >= _numValues)
-    _numValues = eIdx+1;
 
   //  Set the value in one word....
   //
@@ -168,6 +165,8 @@ wordArray::set(uint64 eIdx, uint128 value) {
   //  [--word--][--first-word--][--second-word--][--word--]
   //                     [----value---=]
   //                      lSize  rSize
+
+  value &= _valueMask;  //  Mask to width we can store, just in case.
 
   if (bit + _valueWidth <= 128) {
     uint32   lSave = bit;

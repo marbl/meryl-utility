@@ -70,6 +70,8 @@ public:
   uint64    histogramValue(uint32 i)              { return(_histVs[i]);   };
   uint64    histogramOccurrences(uint32 i)        { return(_histOs[i]);   };
 
+  uint64    maxValue(void)                        { return(_histVs[_histLen-1]); };
+
 private:
   uint64                   _numUnique;
   uint64                   _numDistinct;

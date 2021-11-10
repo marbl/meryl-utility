@@ -267,7 +267,7 @@ homopolyCompress(char *bases, uint32 basesLen, char *compr, uint32 *ntoc, char s
 
 
 void
-decode2bitSequence(uint8 *chunk, uint32 chunkLen, char *seq, uint32 seqLen) {
+decode2bitSequence(uint8 const *chunk, uint32 chunkLen, char *seq, uint32 seqLen) {
   uint32       chunkPos = 0;
 
   assert(seq != NULL);
@@ -302,16 +302,24 @@ decode2bitSequence(uint8 *chunk, uint32 chunkLen, char *seq, uint32 seqLen) {
 
 
 uint32
-encode2bitSequence(uint8 *&chunk, char *seq, uint32 seqLen) {
+encode2bitSequence(uint8 *&chunk, char const *seq, uint32 seqLen) {
+
+  assert(seq[seqLen-1] != 0);
+  assert(seq[seqLen]   == 0);
 
   for (uint32 ii=0; ii<seqLen; ii++) {       //  If non-ACGT present, return
     char  base = seq[ii];                    //  0 to indicate we can't encode.
+
+    if ((base < 0x20) ||
+        (base > 0x7e)) {
+      fprintf(stderr, "Invalid base 0x%02x detected at position %u\n", base, ii);
+      return(0);
+    }
 
     if ((base != 'a') && (base != 'A') &&
         (base != 'c') && (base != 'C') &&
         (base != 'g') && (base != 'G') &&
         (base != 't') && (base != 'T')) {
-      fprintf(stderr, "Invalid base %c detected at position %u\n", base, ii);
       return(0);
     }
   }
@@ -347,7 +355,7 @@ encode2bitSequence(uint8 *&chunk, char *seq, uint32 seqLen) {
 
 
 void
-decode3bitSequence(uint8 *chunk, uint32 chunkLen, char *seq, uint32 seqLen) {
+decode3bitSequence(uint8 const *chunk, uint32 chunkLen, char *seq, uint32 seqLen) {
   uint32       chunkPos = 0;
 
   assert(seq != NULL);
@@ -391,17 +399,25 @@ decode3bitSequence(uint8 *chunk, uint32 chunkLen, char *seq, uint32 seqLen) {
 
 
 uint32
-encode3bitSequence(uint8 *&chunk, char *seq, uint32 seqLen) {
+encode3bitSequence(uint8 *&chunk, char const *seq, uint32 seqLen) {
+
+  assert(seq[seqLen-1] != 0);
+  assert(seq[seqLen]   == 0);
 
   for (uint32 ii=0; ii<seqLen; ii++) {       //  If non-ACGTN present, return
     char  base = seq[ii];                    //  0 to indicate we can't encode.
+
+    if ((base < 0x20) ||
+        (base > 0x7e)) {
+      fprintf(stderr, "Invalid base 0x%02x detected at position %u\n", base, ii);
+      return(0);
+    }
 
     if ((base != 'a') && (base != 'A') &&
         (base != 'c') && (base != 'C') &&
         (base != 'g') && (base != 'G') &&
         (base != 't') && (base != 'T') &&
         (base != 'n') && (base != 'N')) {
-      fprintf(stderr, "Invalid base %c detected at position %u\n", base, ii);
       return(0);
     }
   }
@@ -435,7 +451,7 @@ encode3bitSequence(uint8 *&chunk, char *seq, uint32 seqLen) {
 
 
 void
-decode8bitSequence(uint8 *chunk, uint32 chunkLen, char *seq, uint32 seqLen) {
+decode8bitSequence(uint8 const *chunk, uint32 chunkLen, char *seq, uint32 seqLen) {
 
   assert(seq != NULL);
 
@@ -448,7 +464,7 @@ decode8bitSequence(uint8 *chunk, uint32 chunkLen, char *seq, uint32 seqLen) {
 
 
 uint32
-encode8bitSequence(uint8 *&chunk, char *seq, uint32 seqLen) {
+encode8bitSequence(uint8 *&chunk, char const *seq, uint32 seqLen) {
 
   if (chunk == NULL)
     chunk = new uint8 [ seqLen ];

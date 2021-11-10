@@ -37,17 +37,17 @@ uint32 homopolyCompress(char *bases, uint32 basesLen, char *compr=NULL, uint32 *
 //  Encode a sequence into chunk.  The length of the chunk in bytes is returned.
 //  If the chunk is NULL, it is allocated.  Otherwise, it must be
 //  at least seqLen bytes in length.
-uint32 encode2bitSequence(uint8 *&chunk, char *seq, uint32 seqLen);
-uint32 encode3bitSequence(uint8 *&chunk, char *seq, uint32 seqLen);
-uint32 encode8bitSequence(uint8 *&chunk, char *seq, uint32 seqLen);
+uint32 encode2bitSequence(uint8 *&chunk, char const *seq, uint32 seqLen);
+uint32 encode3bitSequence(uint8 *&chunk, char const *seq, uint32 seqLen);
+uint32 encode8bitSequence(uint8 *&chunk, char const *seq, uint32 seqLen);
 
 
 //  Decode an encoded sequence (in chunk) of length chunkLen.
 //  seq must be allocated to have seqLen+1 bytes.
 //  seqLen must be the length of the sequence to decode.
-void   decode2bitSequence(uint8 *chunk, uint32 chunkLen, char *seq, uint32 seqLen);
-void   decode3bitSequence(uint8 *chunk, uint32 chunkLen, char *seq, uint32 seqLen);
-void   decode8bitSequence(uint8 *chunk, uint32 chunkLen, char *seq, uint32 seqLen);
+void   decode2bitSequence(uint8 const *chunk, uint32 chunkLen, char *seq, uint32 seqLen);
+void   decode3bitSequence(uint8 const *chunk, uint32 chunkLen, char *seq, uint32 seqLen);
+void   decode8bitSequence(uint8 const *chunk, uint32 chunkLen, char *seq, uint32 seqLen);
 
 
 //  Encode/decode an ACGT base to 0132.  Relies on the ASCII encoding:

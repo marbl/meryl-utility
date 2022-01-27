@@ -145,6 +145,9 @@ void    AS_UTL_saveFile(char const *prefix, OBJ *objects, uint64 numberToWrite) 
 //  pointer itself, you'll get unexpected results (but you shouldn't be
 //  writing pointers to files anyway!).
 //
+//  If 'exact' is true, the load will fail unless exactly the correct number
+//  of objects is loaded.
+//
 uint64
 loadFromFile(void        *objects,
              char const  *description,

@@ -71,9 +71,6 @@ void    AS_UTL_fseek(FILE *stream, off_t offset, int whence);
 //  Search CANU_INSTALL_PATH, MERYL_INSTALL_PATH and PATH for a data file.
 char const *findSharedFile(char const *relpath, char const *filename);
 
-//  Read a file-of-files into a vector
-void    AS_UTL_loadFileList(char const *fileName, std::vector<char const *> &FILE);
-
 FILE   *AS_UTL_openInputFile (char const *prefix, char separator='.', char const *suffix=NULL, bool doOpen=true);
 FILE   *AS_UTL_openOutputFile(char const *prefix, char separator='.', char const *suffix=NULL, bool doOpen=true);
 

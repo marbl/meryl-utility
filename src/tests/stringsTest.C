@@ -231,6 +231,13 @@ main(int argc, char **argv) {
       pass &= p;
     }
 
+    else if (strcmp(argv[arg], "-f") == 0) {
+      stringList sl(argv[++arg]);
+
+      for (uint32 ii=0; sl[ii]; ii++)
+        fprintf(stdout, "%s\n", sl[ii]);
+    }
+
     else {
       char *s = new char [1024];
       snprintf(s, 1024, "Unknown option '%s'.\n", argv[arg]);
@@ -247,9 +254,11 @@ main(int argc, char **argv) {
     fprintf(stderr, " -c n splitnatnletter   - show splitToWords operating on a specific letter\n");
     fprintf(stderr, " -s [] split[at]letters - show splitToWrords operating on specific letters\n");
     fprintf(stderr, "\n");
-    fprintf(stderr, " -k key=value         - show KeyAndValue operating on a key=value pair\n");
+    fprintf(stderr, " -k key=value           - show KeyAndValue operating on a key=value pair\n");
     fprintf(stderr, "\n");
-    fprintf(stderr, " -K                   - run tests on keyAndValue\n");
+    fprintf(stderr, " -K                     - run tests on keyAndValue\n");
+    fprintf(stderr, "\n");
+    fprintf(stderr, " -f <file>              - use stringList to print a file to stdout\n");
     fprintf(stderr, "\n");
 
     for (uint32 ii=0; ii<err.size(); ii++)

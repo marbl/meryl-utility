@@ -712,29 +712,6 @@ findSharedFile(char const *relpath, char const *filename) {
 
 
 
-void
-AS_UTL_loadFileList(char const *fileName, std::vector<char const *> &fileList) {
-
-  FILE *F = AS_UTL_openInputFile(fileName);
-
-  char *line = new char [FILENAME_MAX];
-
-  fgets(line, FILENAME_MAX, F);
-
-  while (!feof(F)) {
-    chomp(line);
-    fileList.push_back(line);
-    line = new char [FILENAME_MAX];
-    fgets(line, FILENAME_MAX, F);
-  }
-
-  delete [] line;
-
-  AS_UTL_closeFile(F);
-}
-
-
-
 FILE *
 AS_UTL_openInputFile(char const *prefix,
                      char        separator,

@@ -237,15 +237,20 @@ decodeInteger(char const *str, uint64 bgn, uint64 end,
 
 //  Test if a character or string is of the desired encoding.
 
-inline bool   isNUL(char c)        { return(c == 0); }
+inline bool   isNUL(char c)        { return((c ==  0));   }
+inline bool   isSpace(char c)      { return((c == ' '));  }
+inline bool   isTab(char c)        { return((c == '\t')); }
+inline bool   isEndOfLine(char c)  { return((c == '\n') ||
+                                            (c == '\r')); }
 
 inline bool   isVisible(char c)    { return(('!' <= c) && (c <= '~')); }
 
 inline bool   isLetter(char c)     { return((('a' <= c) && (c <= 'z')) ||
                                             (('A' <= c) && (c <= 'Z')));  }
 
-inline bool   isWhiteSpace(char c) { return((c == ' ')  || (c == '\n') ||
-                                            (c == '\t') || (c == '\r')); };
+inline bool   isWhiteSpace(char c) { return(isSpace(c) ||
+                                            isTab(c) ||
+                                            isEndOfLine(c)); };
 
 inline bool   isComment(char c)    { return((c == '!') || (c == '#') || (c == 0));        };
 inline bool   isDelimiter(char c)  { return((c == ':') || (c == '='));                    };

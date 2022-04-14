@@ -158,8 +158,13 @@ constexpr  int8      int8max    = std::numeric_limits<int8>::max();
 //  floating-point argument to an integer value, using the current rounding
 //  mode.  This mode can be set with std::fesetround().
 
+#if !defined(__clang__)
 inline  int64  doubletoint64(double d)   { return(std::llrint(d)); }
 inline  int32  doubletoint32(double d)   { return(std:: lrint(d)); }
+#else
+inline  int64  doubletoint64(double d)   { return(llrint(d)); }
+inline  int32  doubletoint32(double d)   { return(lrint(d)); }
+#endif
 
 //  Decoding stings into numbers (and a boolean).
 //   - The first set simply convert the string to a number and return that

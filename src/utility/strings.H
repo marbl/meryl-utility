@@ -174,10 +174,9 @@ public:
   }
 
   void            load(char const *filename, splitType st=splitLines);
+  void            add(char const *line) {  _pointers.push_back(line);  }
 
-  uint64          size(void) {
-    return(_pointers.size());
-  };
+  uint64          size(void)            {  return(_pointers.size());   }
 
   char const *    operator[](uint64 ii) {
     if (ii < _pointers.size())
@@ -185,6 +184,9 @@ public:
     else
       return(nullptr);
   }
+
+  std::vector<char const *>  &getVector(void) { return(_pointers); }
+
 
 private:
   std::vector<char const *>  _pointers;

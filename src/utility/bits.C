@@ -229,6 +229,9 @@ stuffedBits::load(FILE *F, readBuffer *B) {
     memset(_blocks[ii]._dat + nWordsToRead, 0, nWordsToClear);
   }
 
+  if (inLen == 0)        //  If the input is empty, no blocks are loaded.
+    allocateBlock();     //  Initialize one just so we have something.
+
   setPosition(0);
 
   return(true);
@@ -258,12 +261,23 @@ stuffedBits::setPosition(uint64 position) {
          (_blocks[_dataBlk]._len > 0))
     _dataBlk++;
 
+  //  If there are no blocks, clear our position.  This really shouldn't
+  //  occur, but did before load() above allocated a block for completely
+  //  empty inputs.
+  if      (_blocksMax == 0) {
+    fprintf(stderr, "WARNING: setPosition() called on empty stuffedBits.\n");
+    _dataPos = 0;
+    _data    = nullptr;
+    _dataWrd = 0;
+    _dataBit = 64;
+    return;
+  }
+
   //  If we've run off the end of the array, all we can do is set the
   //  position to the actual end.
   //
   if (_dataBlk == _blocksMax) {
     assert(_dataBlk > 0);
-    //_dataBlk = _blocksMax-1;
     _dataPos = _blocks[--_dataBlk]._len;
   }
 

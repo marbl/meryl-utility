@@ -76,41 +76,39 @@ private:
 //  components.
 
 enum splitType {
-  splitWords  = 0,
-  splitPaths  = 1,
-  splitLetter = 2
+  splitWords   = 0,
+  splitPaths   = 1,
+  splitAsIs    = 2
 };
 
 class splitToWords {
 public:
-  splitToWords(const char *string=nullptr, splitType type=splitWords, char sep=0) {
-    split(string, type, sep);
-  };
+  splitToWords(const char *string=nullptr, splitType type=splitWords) { split(string, type); };
+  splitToWords(const char *string,         char sep)                  { split(string, sep);  };
+  splitToWords(const char *string,         char const *sep)           { split(string, sep);  };
 
   ~splitToWords() {
     erase();
   };
 
-  void    split(const char *line, splitType type=splitWords, char sep=0);
+  void    split(const char *line, splitType type=splitWords);
+  void    split(const char *line, char        sep);
+  void    split(const char *line, char const *sep);
+
   void    clear(void);   //  Remove the words, but leave memory intact.
   void    erase(void);   //  Remove words and free memory.
 
 private:
-  bool   isPath(char c) {
-    return(c == '/');
-  };
+  void   clearsc(void) {
+    _sc[0] = _sc[1] = _sc[2] = _sc[3] = 0;
+  }
 
-  bool   isSpace(char c) {
-    return((c == ' ')  ||
-           (c == '\t') ||
-           (c == '\n') ||
-           (c == '\r'));
-  };
+  void   setsc(uint8 c) {
+    _sc[(c & 0xc0) >> 6] |= (uint64one << (c & 0x3f));
+  }
 
-  bool   isSeparator(char c, splitType type, char sep) {
-    return(((type == splitWords)  && (isSpace(c))) ||
-           ((type == splitPaths)  && (isPath (c))) ||
-           ((type == splitLetter) && (sep  == c)));
+  bool   issc(uint8 c) {
+    return(_sc[(c & 0xc0) >> 6] >> (c & 0x3f) & 0x01);
   };
 
 public:
@@ -138,6 +136,8 @@ public:
   double  todouble(uint32 i)    { return(strtodouble(_words[i])); };
 
 private:
+  uint64    _sc[4]    = {0};
+
   uint32    _wordsLen = 0;         //  An array of pointers into _chars
   uint32    _wordsMax = 0;         //  for the words in the string.
   char    **_words    = nullptr;

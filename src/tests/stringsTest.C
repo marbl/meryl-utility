@@ -32,6 +32,32 @@ showSplit(char *str, splitType type) {
 }
 
 
+void
+showSplit(char  sep, char *str) {
+  splitToWords  W;
+
+  W.split(str, sep);
+
+  fprintf(stderr, "SPLIT: '%s'  (on letter '%c')\n", str, sep);
+
+  for (uint32 ii=0; ii<W.numWords(); ii++)
+    fprintf(stderr, "%02u - '%s'\n", ii, W[ii]);
+}
+
+
+void
+showSplit(char *sep, char *str) {
+  splitToWords  W;
+
+  W.split(str, sep);
+
+  fprintf(stderr, "SPLIT: '%s'  (on letters '%s')\n", str, sep);
+
+  for (uint32 ii=0; ii<W.numWords(); ii++)
+    fprintf(stderr, "%02u - '%s'\n", ii, W[ii]);
+}
+
+
 
 void
 showKeyValue(char const *str) {
@@ -172,12 +198,22 @@ main(int argc, char **argv) {
 
   std::vector<char const *>  err;
   for (int32 arg=1; arg < argc; arg++) {
-    if (strcmp(argv[arg], "-p") == 0) {
+    if      (strcmp(argv[arg], "-p") == 0) {
       showSplit(argv[++arg], splitPaths);
     }
 
     else if (strcmp(argv[arg], "-w") == 0) {
       showSplit(argv[++arg], splitWords);
+    }
+
+    else if (strcmp(argv[arg], "-c") == 0) {
+      showSplit(argv[arg+1][0], argv[arg+2]);
+      arg += 2;
+    }
+
+    else if (strcmp(argv[arg], "-s") == 0) {
+      showSplit(argv[arg+1], argv[arg+2]);
+      arg += 2;
     }
 
     else if (strcmp(argv[arg], "-k") == 0) {
@@ -206,8 +242,10 @@ main(int argc, char **argv) {
   if ((argc == 1) || (err.size() > 0)) {
     fprintf(stderr, "usage: %s [...]\n", argv[0]);
     fprintf(stderr, "\n");
-    fprintf(stderr, " -p /path/to/split    - show splitToWords operating on a path\n");
-    fprintf(stderr, " -w 'string to split' - show splitToWords operating on a string\n");
+    fprintf(stderr, " -p /path/to/split      - show splitToWords operating on a path\n");
+    fprintf(stderr, " -w 'string to split'   - show splitToWords operating on a string\n");
+    fprintf(stderr, " -c n splitnatnletter   - show splitToWords operating on a specific letter\n");
+    fprintf(stderr, " -s [] split[at]letters - show splitToWrords operating on specific letters\n");
     fprintf(stderr, "\n");
     fprintf(stderr, " -k key=value         - show KeyAndValue operating on a key=value pair\n");
     fprintf(stderr, "\n");

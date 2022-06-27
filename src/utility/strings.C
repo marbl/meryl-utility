@@ -165,7 +165,27 @@ KeyAndValue::find(const char *line) {
 //  components.
 
 void
-splitToWords::split(const char *line, splitType type, char sep) {
+splitToWords::split(const char *line, char sep) {
+
+  clearsc();
+  setsc(sep);
+
+  split(line, splitAsIs);
+}
+
+void
+splitToWords::split(const char *line, char const *sep) {
+
+  clearsc();
+  for (uint32 ii=0; sep[ii]; ii++)
+    setsc(sep[ii]);
+
+  split(line, splitAsIs);
+}
+
+
+void
+splitToWords::split(const char *line, splitType type) {
 
   //  Initialize to no words and no characters.
   //  Then return if the input line is empty.
@@ -176,11 +196,28 @@ splitToWords::split(const char *line, splitType type, char sep) {
   if (isEmptyString(line) == true)
     return;
 
+  //  Initialize the separator array based on splitType, if needed.
+
+  if (type == splitWords) {
+    _sc[0] = _sc[1] = _sc[2] = _sc[3] = 0;
+
+    setsc(' ');
+    setsc('\t');
+    setsc('\n');
+    setsc('\r');
+  }
+
+  if (type == splitPaths) {
+    _sc[0] = _sc[1] = _sc[2] = _sc[3] = 0;
+
+    setsc('/');
+  }
+
   //  Count the number of words and chars in the input line, then make
   //  sure there is space for us to store them.
 
   while (line[_charsLen] != 0)
-    if (isSeparator(line[_charsLen++], type, sep))
+    if (issc(line[_charsLen++]))
       _wordsLen++;
 
   resizeArray(_words, 0, _wordsMax, _wordsLen + 1);
@@ -199,7 +236,7 @@ splitToWords::split(const char *line, splitType type, char sep) {
   _wordsLen = 0;
 
   for (uint32 st=1, ii=0; ii < _charsLen; ii++) {
-    if (isSeparator(line[ii], type, sep)) {   //  If the character is a word
+    if (issc(line[ii])) {                     //  If the character is a word
       _chars[ii] = 0;                         //  separator, convert to NUL,
       st         = true;                      //  and flag the next character
     }                                         //  as the start of a new word.

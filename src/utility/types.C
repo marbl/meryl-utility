@@ -449,6 +449,12 @@ toDec(uintType v, char *ret, uint32 w) {
   uint32   p = 1;
   uint32   e = 0;
 
+  if (v < 0) {                            //  Add a negative sign, and make
+    ret[0] = '-';                         //  the number positive.
+    p++;
+    v = -v;
+  }
+
   for (uintType t=v/10; t > 0; t /= 10)   //  Count how long the output string will
     p++;                                  //  be; we build backwards, right-to-left.
 
@@ -460,7 +466,10 @@ toDec(uintType v, char *ret, uint32 w) {
   for (uintType t=v/10; t > 0; t /= 10)   //  Convert the next low order digit to
     ret[--p] = alpha[ t % 10 ];           //  an ASCII letter, repeat.
 
-  assert(p == 0);
+  if (ret[0] == '-')                      //  If a negative number, the last
+    assert(p == 1);                       //  digit we added will be in [1],
+  else                                    //  otherwise, it is in [0].
+    assert(p == 0);
 
   return(ret + e);
 }
@@ -474,16 +483,26 @@ toDec(uintType v, uint32 w) {
 }
 
 template char       *toDec<uint128>(uint128 v, char *out, uint32 width);
+template char       *toDec< int128>( int128 v, char *out, uint32 width);
 template char       *toDec<uint64> (uint64  v, char *out, uint32 width);
+template char       *toDec< int64> ( int64  v, char *out, uint32 width);
 template char       *toDec<uint32> (uint32  v, char *out, uint32 width);
+template char       *toDec< int32> ( int32  v, char *out, uint32 width);
 template char       *toDec<uint16> (uint16  v, char *out, uint32 width);
+template char       *toDec< int16> ( int16  v, char *out, uint32 width);
 template char       *toDec<uint8>  (uint8   v, char *out, uint32 width);
+template char       *toDec< int8>  ( int8   v, char *out, uint32 width);
 
 template char const *toDec<uint128>(uint128 v, uint32 width);
+template char const *toDec< int128>( int128 v, uint32 width);
 template char const *toDec<uint64> (uint64  v, uint32 width);
+template char const *toDec< int64> ( int64  v, uint32 width);
 template char const *toDec<uint32> (uint32  v, uint32 width);
+template char const *toDec< int32> ( int32  v, uint32 width);
 template char const *toDec<uint16> (uint16  v, uint32 width);
+template char const *toDec< int16> ( int16  v, uint32 width);
 template char const *toDec<uint8>  (uint8   v, uint32 width);
+template char const *toDec< int8>  ( int8   v, uint32 width);
 
 
 

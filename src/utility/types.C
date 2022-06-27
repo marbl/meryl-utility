@@ -20,6 +20,8 @@
 #include "types.H"
 #include "strings.H"
 
+#include <vector>
+#include <tuple>
 
 ////////////////////////////////////////////////////////////
 //
@@ -92,6 +94,247 @@ strtollll(char const *nptr, char **endptr) {
   return(res);
 }
 
+
+////////////////////////////////////////////////////////////
+//
+//  Convert a string to an integer type.
+//
+//  Decodes an integer constant in str[bgn...end-1] to a supplied 'result'
+//  which is also returned from the function.
+//
+//  Whitespace at the begin or end of the string is ignored.
+//
+//  The constant can begin with minus sign in which case the value is negated
+//  before being returned.
+//
+//  The constant can end in an optional single letter base indentifier:
+//    'b' - base  2, binary
+//    'o' - base  8, octal
+//    'd' - base 10, decimal
+//    'h' - base 16, hexadecimal
+//  If no base is specified, decimal is assumed.
+//
+//  Some SI suffixes are also accepted instead of the base letter.  The
+//  number is assumed to be decimal in this case.  A further 'i' can be added
+//  to indicate a binary multiplier (2^10, etc).
+//     k - 1e3    ki - 2^10   kilo
+//     m - 1e6    mi - 2^20   mega
+//     g - 1e9    gi - 2^30   giga
+//     t - 1e12   ti - 2^40   tera
+//     p - 1e15   pi - 2^50   peta
+//     e - 1e18   ei - 2^60   exa
+//  (see also https://physics.nist.gov/cuu/Units/binary.html)
+//
+//  If letters not in the base are encountered in the string, an error
+//  message is pushed onto the err vector.
+//
+template<typename X>
+X
+decodeInteger(char const *str, uint64 bgn, uint64 end,
+              X &result,
+              std::vector<char const *> &err) {
+  uint8  decode[256];
+  bool   negate = false;
+  uint64 scale  = 1000;
+
+  //  Clear the result so we can return early.
+
+  result = 0;
+
+  //  Initialize the ASCII-to-value decoding table to all invalid values.
+
+  for (uint32 qq=0; qq<256; qq++)
+    decode[qq] = 0xff;
+
+  //  We don't want to / can't use the normal decoding functions
+  //  (strtouint64, atoi, strtoul, etc) as those will simply stop on the
+  //  first non-decimal letter, and we want to declare that an error.
+  //  So we rolled our own that also handles any base.
+  //
+  auto convertNumber = [&] (char const *str, uint64 b, uint64 e, uint8 shift) -> std::pair<uint64, bool> {
+                         uint64  val = 0;
+                         bool    inv = false;
+
+                         for (uint64 ii=b; ii<e; ii++) {
+                           uint8 num = decode[str[ii]];
+
+                           if (num == 0xff)
+                             inv = true;
+
+                           val *= shift;
+                           val += num;
+                         }
+
+                         return(std::make_pair(val, inv));
+                       };
+
+  //  Find the end?
+
+  if (end == 0)
+    for (end=bgn; str[end]; end++)
+      ;
+
+  //  Ignore spaces at the start and end.
+
+  while ((bgn < end) && (isWhiteSpace(str[bgn]) == true))
+    bgn++;
+  while ((bgn < end) && (isWhiteSpace(str[end-1]) == true))
+    end--;
+
+  //  Remember and skip any negative sign.
+
+  if (str[bgn] == '-') {
+    negate = true;
+    bgn++;
+  }
+
+  //  Remember and strip off the binary SI indicator.
+
+  if (str[end-1] == 'i') {
+    scale = 1024;
+    end--;
+  }
+
+  //  Return if there is no number to decode.
+
+  if (bgn == end)
+    return(result);
+
+  //  Find the base, decode the integer.  Or make errors.
+
+  uint64      value = 0;
+  bool        invalidNumber = false;
+  char const *expectedType  = nullptr;
+
+  if      (str[end-1] == 'b') {
+    expectedType = "binary";
+
+    decode['0'] = 0x00;   decode['1'] = 0x01;
+
+    std::tie(value, invalidNumber) = convertNumber(str, bgn, end-1, 2);
+  }
+
+  else if (str[end-1] == 'o') {
+    expectedType = "octal";
+
+    decode['0'] = 0x00;   decode['1'] = 0x01;   decode['2'] = 0x02;   decode['3'] = 0x03;
+    decode['4'] = 0x04;   decode['5'] = 0x05;   decode['6'] = 0x06;   decode['7'] = 0x07;
+
+    std::tie(value, invalidNumber) = convertNumber(str, bgn, end-1, 8);
+  }
+
+  else if (str[end-1] == 'h') {
+    expectedType = "hexadecimal";
+
+    decode['0'] = 0x00;   decode['1'] = 0x01;   decode['2'] = 0x02;   decode['3'] = 0x03;   decode['4'] = 0x04;
+    decode['5'] = 0x05;   decode['6'] = 0x06;   decode['7'] = 0x07;   decode['8'] = 0x08;   decode['9'] = 0x09;
+    decode['a'] = 0x0a;   decode['b'] = 0x0b;   decode['c'] = 0x0c;   decode['d'] = 0x0d;   decode['e'] = 0x0e;   decode['f'] = 0x0f;
+    decode['A'] = 0x0a;   decode['B'] = 0x0b;   decode['C'] = 0x0c;   decode['D'] = 0x0d;   decode['E'] = 0x0e;   decode['F'] = 0x0f;
+
+    std::tie(value, invalidNumber) = convertNumber(str, bgn, end-1, 16);
+  }
+
+  else if ((str[end-1] == 'k') ||
+           (str[end-1] == 'm') ||
+           (str[end-1] == 'g') ||
+           (str[end-1] == 't') ||
+           (str[end-1] == 'p') ||
+           (str[end-1] == 'e') ||
+           (str[end-1] == 'd')) {
+    expectedType = "decimal";
+
+    decode['0'] = 0x00;   decode['1'] = 0x01;   decode['2'] = 0x02;   decode['3'] = 0x03;   decode['4'] = 0x04;
+    decode['5'] = 0x05;   decode['6'] = 0x06;   decode['7'] = 0x07;   decode['8'] = 0x08;   decode['9'] = 0x09;
+
+    std::tie(value, invalidNumber) = convertNumber(str, bgn, end-1, 10);
+
+    switch (str[end-1]) {
+      case 'e':   value *= scale;  [[fallthrough]];   //  Scale the value by 1000 or 1024 for
+      case 'p':   value *= scale;  [[fallthrough]];   //  each multiplier increment.
+      case 't':   value *= scale;  [[fallthrough]];   //
+      case 'g':   value *= scale;  [[fallthrough]];   //  A 'g' will multiply by 'scale' three times.
+      case 'm':   value *= scale;  [[fallthrough]];   //
+      case 'k':   value *= scale;  [[fallthrough]];   //  (thank -Wimplicit-fallthrough for this)
+      default:
+        break;
+    }
+  }
+
+  else if (('0' <= str[end-1]) &&
+           (str[end-1] <= '9')) {
+    expectedType = "decimal";
+
+    decode['0'] = 0x00;   decode['1'] = 0x01;   decode['2'] = 0x02;   decode['3'] = 0x03;   decode['4'] = 0x04;
+    decode['5'] = 0x05;   decode['6'] = 0x06;   decode['7'] = 0x07;   decode['8'] = 0x08;   decode['9'] = 0x09;
+
+    std::tie(value, invalidNumber) = convertNumber(str, bgn, end, 10);
+  }
+
+  else {
+    char *a    = new char [1024];
+    char *b    = new char [1024];
+    int32 bpos = 0;
+
+    snprintf(a, 1024, "Can't decode '%s': didn't find type of number ('b', 'o', 'd' or 'h') at end.", str);
+    snprintf(b, 1024, "              ");
+
+    bpos = strlen(b);
+
+    for (uint64 ii=0; ii<bgn; ii++)
+      b[bpos++] = ' ';
+
+    for (uint64 ii=bgn; ii<end; ii++)
+      b[bpos++] = '^';
+
+    b[bpos] = 0;
+
+    err.push_back(a);
+    err.push_back(b);
+  }
+
+  if (invalidNumber == true) {
+    char *a    = new char [1024];
+    char *b    = new char [1024];
+    int32 bpos = 0;
+
+    snprintf(a, 1024, "Can't decode '%s': %s number has invalid letters.", str, expectedType);
+    snprintf(b, 1024, "              ");
+
+    bpos = strlen(b);
+
+    for (uint64 ii=0; ii<bgn; ii++)
+      b[bpos++] = ' ';
+
+    for (uint64 ii=bgn; ii<end; ii++)
+      b[bpos++] = '^';
+
+    b[bpos] = 0;
+
+    err.push_back(a);
+    err.push_back(b);
+  }
+
+  //  Copy the (negated) value to the result and return.
+
+  if (invalidNumber)
+    value = 0;
+
+  if (negate)
+    result = -value;
+  else
+    result =  value;
+
+  return(result);
+}
+
+template  int8  decodeInteger(char const *str, uint64 bgn, uint64 end,  int8  &result, std::vector<char const *> &err);
+template uint8  decodeInteger(char const *str, uint64 bgn, uint64 end, uint8  &result, std::vector<char const *> &err);
+template  int16 decodeInteger(char const *str, uint64 bgn, uint64 end,  int16 &result, std::vector<char const *> &err);
+template uint16 decodeInteger(char const *str, uint64 bgn, uint64 end, uint16 &result, std::vector<char const *> &err);
+template  int32 decodeInteger(char const *str, uint64 bgn, uint64 end,  int32 &result, std::vector<char const *> &err);
+template uint32 decodeInteger(char const *str, uint64 bgn, uint64 end, uint32 &result, std::vector<char const *> &err);
+template  int64 decodeInteger(char const *str, uint64 bgn, uint64 end,  int64 &result, std::vector<char const *> &err);
+template uint64 decodeInteger(char const *str, uint64 bgn, uint64 end, uint64 &result, std::vector<char const *> &err);
 
 
 ////////////////////////////////////////////////////////////

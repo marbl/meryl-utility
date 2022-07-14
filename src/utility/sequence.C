@@ -701,11 +701,12 @@ dnaSeqFile::loadIndex(void) {
 
     if ((size == AS_UTL_sizeOfFile(_filename)) &&
         (date == AS_UTL_timeOfFile(_filename))) {
-      _index = new dnaSeqIndexEntry [_indexLen];
+      _indexMax = _indexLen;
+      _index    = new dnaSeqIndexEntry [_indexMax];
 
       loadFromFile(_index, "dnaSeqFile::index", _indexLen, indexFile);
-
-    } else {
+    }
+    else {
       fprintf(stderr, "WARNING: file '%s' disagrees with index; recreating index.\n", _filename);
 
       _index    = nullptr;

@@ -59,12 +59,15 @@ pigzAvailable(void) {
 
 
 
-compressedFileReader::compressedFileReader(const char *filename) {
+compressedFileReader::compressedFileReader(const char *filename, cftType type) {
 
   _file     = NULL;
   _filename = duplicateString(filename);
 
-  _type     = compressedFileType(_filename);
+  if (type == cftType::cftNONE)                //  If no type is supplied, guess it
+    _type   = compressedFileType(_filename);   //  based on the extension (the default),
+  else                                         //  otherwise, trust what the user told
+    _type   = type;                            //  us (mostly for compressed pipe input).
 
   _pipe     = false;
   _stdi     = false;

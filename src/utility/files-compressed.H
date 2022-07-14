@@ -36,7 +36,7 @@ cftType  compressedFileType(char const *filename);
 
 class compressedFileReader {
 public:
-  compressedFileReader(char const *filename);
+  compressedFileReader(char const *filename, cftType type=cftType::cftNONE);
   ~compressedFileReader();
 
   void  reopen(void);

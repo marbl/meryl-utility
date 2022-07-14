@@ -211,10 +211,11 @@ public:
   bool   isFASTQ(void)      { return(_isFASTQ); };
 
   //  Return the sequence index of the last loaded sequence.
-  uint32 seqIdx(void)       { return(_seqIdx-1); };
+  uint64 seqIdx(void)       { return(_seqIdx-1); };
 
   //  True if the input file is compressed (gzip, xz, etc).
-  bool   isCompressed(void) { return(_file->isCompressed()); };
+  bool   isCompressed(void) { return(_file->isCompressed() == true); };
+  bool   isIndexable(void)  { return(_file->isNormal()     == true); };
 
 public:
   bool   loadSequence(char   *&name, uint32 &nameMax,

@@ -92,8 +92,6 @@ setSequentialSorting(void) {
 
 
 
-
-
 int
 AS_configure(int argc, char **argv, uint32 maxThreads) {
 
@@ -120,4 +118,18 @@ AS_configure(int argc, char **argv, uint32 maxThreads) {
   }
 
   return(argc);
+}
+
+
+
+int
+sprintf(std::vector<char const *> &ev, char const *fmt, ...) {
+  char    *str = new char [1024];
+  va_list  ap;
+
+  va_start(ap, fmt);
+  vsnprintf(str, 1024, fmt, ap);
+  va_end(ap);
+
+  ev.push_back(str);
 }

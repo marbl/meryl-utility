@@ -37,4 +37,12 @@
 //
 int AS_configure(int argc, char **argv, uint32 maxThreads=uint32max);
 
+
+//  A helper for, usually, processing command line errors.
+//  Lines longer than 1024 are truncated.
+//
+int
+sprintf(std::vector<char const *> &ev, char const *fmt, ...);
+
+
 #endif

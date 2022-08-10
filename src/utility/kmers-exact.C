@@ -244,6 +244,38 @@ merylExactLookup::configure(double  memInGB,
 
 
 
+void
+merylExactLookup::setPointers(uint64 ii, uint64 bgn, uint32 len) {
+  uint64  b, e;
+
+  bool    l = (_verbose == true) && ((ii & 0xfffffff) == 0xfffffff);   //  Logging enabled?
+  bool    c = false;                                                   //  Checking enabled?
+
+  _sufPointer->set(ii, (bgn << _blkLenBits) | len);
+
+  if ((l == false) && (c == false))
+    return;
+
+  getPointers(ii, b, e);
+
+  if ((b != bgn) ||
+      (e != bgn + len))
+    fprintf(stderr, "merylExactLookup::setPointers()- FAIL bgn=%lu len=%u != b=%lu e=%lu\n", bgn, len, b, e);
+
+  assert(b == bgn);
+  assert(e == bgn + len);
+
+  if (l) {
+    fprintf(stderr, " %11lu [%06u] -> %11lu [%06lu]    progress: %11lu / %-11lu\r",
+            bgn, len, b, e-b, ii, _nPrefix);
+
+    if (ii + 0xfffffff > _nPrefix)   //  If this is the last progress report,
+      fprintf(stderr, "\n");         //  advance the line.
+  }
+}
+
+
+
 //  Make one pass through the file to count how many kmers per prefix we will end
 //  up with.  This is needed only if kmers are filtered, but does
 //  make the rest of the loading a little easier.
@@ -263,19 +295,23 @@ merylExactLookup::count(void) {
 
   merylExactLookupProgress   progress(" Counting: [%s]  (* - complete)\r");
 
-  //  Scan all kmer files, counting the number of kmers per prefix.
-  //  This is thread safe when _prefixBits is more than 6 (the number of files).
-
+  //  If the min/max prefix for each input file intersect, we've got a
+  //  problem somewhere.  Each 'prefix' will map to exactly one file, and
+  //  they're supposed to map consecutively.  Good luck figuring out what
+  //  broke if this triggers.  This will fail with prefixBits < 6 (see also
+  //  line ~150) as we don't have enough different prefixes to assigned them
+  //  to different files.
 #ifdef TEST_MAXP
-  uint64   minp[nf];
-  uint64   maxp[nf];
+  uint64   minp[2 * nf];
 
   for (uint32 ii=0; ii<nf; ii++) {
-    minp[ii] = uint64max;
-    maxp[ii] = uint64min;
+    minp[2*ii+0] = uint64max;
+    maxp[2*ii+1] = uint64min;
   }
 #endif
 
+  //  Scan all kmer files, counting the number of kmers per prefix.
+  //  This is thread safe when _prefixBits is more than 6 (the number of files).
 #pragma omp parallel for schedule(dynamic, 1)
   for (uint32 ff=0; ff<nf; ff++) {
     FILE                  *blockFile = _input->blockFile(ff);
@@ -340,124 +376,82 @@ merylExactLookup::count(void) {
     progress.stop(ff);
   }
 
-  //  If the min/max prefix for each input file intersect, we've got a
-  //  problem somewhere.  Each 'prefix' will map to exactly one file, and
-  //  they're supposed to map consecutively.  Good luck figuring out what
-  //  broke if this triggers.
-  //
-  //  This triggered with prefixBits < 6 (see also line ~150).  What happened
-  //  is that we didn't have enough different prefixes to assign them to
-  //  different files....so I guess I just figured out what broke if this
-  //  triggers.
 #ifdef TEST_MAXP
   for (uint32 ii=1; ii<nf; ii++)
     assert(maxp[ii-1] < minp[ii]);
 #endif
 
-  //  The goal here is to build an array of (bgn,len) with the location and
-  //  length of the data for each kmer prefix.
+  //  Build an array (bgn,len) - the begin location and length of data - for
+  //  each kmer prefix
   //
-  //  A complication caused by using wordArray is that we need to guarantee
-  //  that no two threads will change the same word in the array.  We do this
-  //  by increasing the begin pointer of the first prefix in each file by
-  //  some amount.
-  //                                          --- prefix ---|-suffix-
+  //  While wordArray does have locks to prevent multiple threads from writing
+  //  to the same block, they're a bit slow here, especially given that we know
+  //  ahead of time where the collisions will occur.  To prevent collisions,
+  //  we can insert some empty values between each block.
+  //
   //  A single thread will process all kmers [ffffffpppppppp|ssssssss] that
-  //  have the same ffffff bits.
+  //  have the same ffffff bits.              --- prefix ---|-suffix-
   //
-  //  The number of bits in p and s are _prefixBits and _suffixBits,
-  //  respectively.
-  //
-  //  So, in the loops below, whenever we enounter kmers with all the p bits
-  //  set to 1, we advance the begin pointer by some amount, ensuring that
-  //  the start of the next block if data is nowhere near the last block of
-  //  data.
-
+  //  The ffffff bits are the file id bits, currently (and almost certainly
+  //  always) 6 bits wide.  'prefix' is _prefixBits wide; 'suffix' is
+  //  _suffixBits wide.  The end of a block occurs when all the p bits are 1,
+  //  so when we encounter a prefix with those set, we advance the begin
+  //  pointer by a goodly amount to prevent thread A from writing to
+  //  ffffff1111 and another from writing to the next word (ffffff+1)0000.
 
   if (_verbose) {
     fprintf(stderr, "\n");
     fprintf(stderr, "Summing bucket sizes.\n");
   }
 
-  uint64 amask = (_nPrefix - 1) >> 6;  //  Mask covering p bits.
-  uint64 maxp  = 64 * 256;             //  Maximum begin pointer.
-  uint64 maxl  = 0;                    //  Maximum block length.
+  uint64 bgnp = 0;
+  uint64 maxp = 63 * 256;   //  Maximum index, including the adjustments.
+  uint64 maxl = 0;          //  Maximum length of any block.
 
-  for (uint64 bgn=0, ii=0; ii<_nPrefix; ii++) {
+  uint64 amask = buildLowBitMask<uint64>(_prefixBits - 6);  //  Mask covering the p bits of prefix.
+
+  for (uint64 ii=0; ii<_nPrefix; ii++) {
     maxp +=          (uint64)blockLength[ii];
     maxl  = std::max((uint64)blockLength[ii], maxl);
   }
 
-  //  Reset pointer and length bit sizes based on actual data.
+  _blkPtrBits = countNumberOfBits64(maxp);   _blkPtrMask = buildLowBitMask<uint64>(_blkPtrBits);
+  _blkLenBits = countNumberOfBits64(maxl);   _blkLenMask = buildLowBitMask<uint64>(_blkLenBits);
 
-  _blkPtrBits = countNumberOfBits64(maxp);
-  _blkPtrMask = buildLowBitMask<uint64>(_blkPtrBits);
-  _blkLenBits = countNumberOfBits64(maxl);
-  _blkLenMask = buildLowBitMask<uint64>(_blkLenBits);
-
-  fprintf(stderr, "  block indices are %u bits wide -- sum lengths %lu (including 16384 empty pointers)\n", _blkPtrBits, maxp);
+  fprintf(stderr, "  block indices are %u bits wide -- sum lengths %lu (including %d empty pointers)\n", _blkPtrBits, maxp, 63 * 256);
   fprintf(stderr, "  block lengths are %u bits wide -- max length  %lu\n", _blkLenBits, maxl);
 
-  //  Allocate a wordArray to store pointers (bgn,len) to the data block for each prefix.
-
-  _sufPointer = new wordArray(_blkPtrBits + _blkLenBits, 32llu * 1024 * 1024 * 8, false);
-  _sufPointer->allocate(_nPrefix);
-
-  //  Compute the start of each block, and store the block and length
-  //  together in the word array.
+  //  Allocate a wordArray (disabling locking) to store the pointers to the
+  //  data block for each prefix.  Then compute the start of each block and
+  //  store it and the length of the block in the array.
 
   fprintf(stderr, "\n");
   fprintf(stderr, "Setting pointers.\n");
 
-  for (uint64 bgn=0, ii=0; ii<_nPrefix; ii++) {
-    setPointers(ii, bgn, blockLength[ii]);
+  _sufPointer = new wordArray(_blkPtrBits + _blkLenBits, 32llu * 1024 * 1024 * 8, false);
+  _sufPointer->allocate(maxp + 1);
 
-#ifdef CHECK_POINTERS
-    {
-      uint64  b, e;
+  for (uint64 ii=0; ii<_nPrefix; ii++) {
+    setPointers(ii, bgnp, blockLength[ii]);
 
-      getPointers(ii, b, e);
-
-      if ((b != bgn) ||
-          (e != bgn + blockLength[ii]))
-        fprintf(stderr, "FAIL bgn=%lu len=%u  b=%lu e=%lu\n", bgn, blockLength[ii], b, e);
-
-      assert(b == bgn);
-      assert(e == bgn + blockLength[ii]);
-    }
-#endif
-
-    if ((_verbose) && ((ii & 0xfffffff) == 0xfffffff)) {
-      uint64 bgnr, endr;
-      getPointers(ii, bgnr, endr);
-      fprintf(stderr, " %11lu [%06u] -> %11lu [%06lu]    progress: %11lu / %-11lu\r",
-              bgn, blockLength[ii], bgnr, endr-bgnr, ii, _nPrefix);
-
-      assert(bgnr == bgn);
-      assert(endr == bgn+blockLength[ii]);
-    }
-
-    bgn += blockLength[ii];
+    bgnp += blockLength[ii];
+    assert(bgnp <= maxp);
 
     if ((ii & amask) == amask)   //  Move ahead a goodly amount so we don't collide
-      bgn += 256;                //  on thread boundaries.
+      bgnp += 256;               //  on thread boundaries.
   }
 
-  if ((_verbose) && (_nPrefix > 0xfffffff))   //  If we printed progress, terminate the line.
-    fprintf(stderr, "\n");
+  assert(bgnp - 256 == maxp);
 
-  //  We're techically all done with the temporary blockLength array, though
-  //  we want to use something like it again when we fill the table with data.
+  _nIndex = maxp;
 
   delete [] blockLength;
 
   //  Log.
 
-  if (_verbose) {
-    fprintf(stderr, "\n");
-    fprintf(stderr, "Will load " F_U64 " kmers.  Skipping " F_U64 " (too low) and " F_U64 " (too high) kmers.\n",
-            _nKmersLoaded, _nKmersTooLow, _nKmersTooHigh);
-  }
+  fprintf(stderr, "\n");
+  fprintf(stderr, "Will load " F_U64 " kmers.  Skipping " F_U64 " (too low) and " F_U64 " (too high) kmers.\n",
+          _nKmersLoaded, _nKmersTooLow, _nKmersTooHigh);
 }
 
 
@@ -475,16 +469,13 @@ merylExactLookup::allocate(void) {
   uint64  arrayBlockMin;
   double  memInGBused = 0.0;
 
-  uint64  bgn, nsuf;
-  getPointers(_nPrefix-1, bgn, nsuf);
-
   if (_verbose) {
     fprintf(stderr, "\n");
-    fprintf(stderr, "Allocating space for %lu kmers.\n", nsuf);
+    fprintf(stderr, "Allocating space for %lu kmer positions.\n", _nIndex);
   }
 
   if (_suffixBits > 0) {
-    arraySize      = nsuf * _suffixBits;
+    arraySize      = _nIndex * _suffixBits;
     arrayBlockMin  = std::max(arraySize / 1024llu, 32llu * 1024 * 1024 * 8);   //  In bits, 32MB per block.
     memInGBused   += bitsToGB(arraySize);
 
@@ -495,12 +486,12 @@ merylExactLookup::allocate(void) {
     assert(_suffixBits <= 128);
 
     _sufData = new wordArray(_suffixBits, arrayBlockMin, false);
-    _sufData->allocate(nsuf);
-    _sufData->erase(0, nsuf);
+    _sufData->allocate(_nIndex);
+    _sufData->erase(0, _nIndex);
   }
 
   if (_valueBits > 0) {
-    arraySize      = nsuf * _valueBits;
+    arraySize      = _nIndex * _valueBits;
     arrayBlockMin  = std::max(arraySize / 1024llu, 32llu * 1024 * 1024 * 8);   //  In bits, 32MB per block.
     memInGBused   += bitsToGB(arraySize);
 
@@ -511,8 +502,8 @@ merylExactLookup::allocate(void) {
     assert(_valueBits <= 64);
 
     _valData = new wordArray(_valueBits, arrayBlockMin, false);
-    _valData->allocate(nsuf);
-    _valData->erase(0, nsuf);
+    _valData->allocate(_nIndex);
+    _valData->erase(0, _nIndex);
   }
 
   return(memInGBused);
@@ -672,7 +663,162 @@ merylExactLookup::load(merylFileReader *input_,
 
 
 
+//  Populates two arrays to hold position data for each kmer.
+//    uint64       *positionList;
+//    stuffedBits  *positions;
+//
+//    positionList[i] is the start of the position data in 'positions' for
+//    kmer with merylExactLookup index() i.
+//
+//    There are 'count()' positions for that kmer starting there.
+//
+//    Each position encodes a sequence index and a position in that sequence.
+//
+//    For human, there will be approximately 2.1 billion index()es and 3.2 billion
+//    positions; seqIdx will need 5 bits and position itself will by 29 bits.
+//    This will require
+//      64 * 2.1e9 / 8 = 16.8 GB for positionList (half that if we use 32-bit ints)
+//      34 * 3.2e9 / 8 = 12.7 GB for position data
+//
+void
+merylExactLookup::loadPositions(dnaSeqFile *seqFile) {
 
+  //  Load the sequences.  This doesn't need to be in memory, but we'd need
+  //  to (possibly) make two passes otherwise, one to count the number of
+  //  sequences (so we know how many bits to allocate for the sequence index)
+  //  and one to process the sequence.
+
+  fprintf(stderr, "Loading sequences from '%s'\n", seqFile->filename());
+
+  std::vector<dnaSeq *>  sequences;
+
+  uint64  nSequences = 0;   //  Number of sequences in the input
+  uint64  nPositions = 0;   //  Longest sequence length
+  uint64  nPosEntry  = 0;   //  Number of position entries we need to store
+
+  {
+    dnaSeq  *seq = new dnaSeq;
+
+    while (seqFile->loadSequence(*seq) == true) {
+      sequences.push_back(seq);
+
+      nSequences += 1;
+      nPositions  = std::max(nPositions, seq->length());
+      nPosEntry  += seq->length();
+
+      seq = new dnaSeq;
+    }
+
+    delete seq;
+  }
+
+  //  Allocate space for a position index and the actual position data.
+
+  nSequencesBits = countNumberOfBits64(nSequences);
+  nPositionsBits = countNumberOfBits64(nPositions);
+  nPosEntryBits  = countNumberOfBits64(nPosEntry);
+
+  posEntryIDMask  = buildLowBitMask<uint64>(nSequencesBits);
+  posEntryPosMask = buildLowBitMask<uint64>(nPositionsBits);
+
+  fprintf(stderr, "Allocate space:\n");
+  fprintf(stderr, "  %12lu %2u-bit wide index pointers.\n", nIndex(), nPosEntryBits);
+  fprintf(stderr, "  %12lu %2u-bit + %2u-bit wide locations\n", nPosEntry, nSequencesBits, nPositionsBits);
+
+  _posStart = new wordArray(nPosEntryBits, 131072, false);
+  _posData  = new wordArray(nSequencesBits + nPositionsBits, 131072, false);
+
+  //  Set the posStart based on the number of each kmer we have in the database.
+
+  fprintf(stderr, "Create initial index.\n");
+  for (uint64 pp=0, ii=0; ii<_nIndex; ii++) {
+    _posStart->set(ii, pp);
+    assert(_posStart->get(ii) == pp);
+    pp += valueAtIndex(ii);
+  }
+
+  //  Lookup each kmer in the sequences and add a position entry.
+
+  for (uint32 ii=0; ii<sequences.size(); ii++) {
+    dnaSeq *seq = sequences[ii];
+
+    fprintf(stderr, "Scan %9lubp from '%s'\n", seq->length(), seq->ident());
+
+    kmerIterator kiter(seq->bases(), seq->length());
+
+    while (kiter.nextMer()) {
+      kmer    cmer  = std::min(kiter.fmer(), kiter.rmer());
+      uint64  idx   = index(cmer);
+
+      if ((kiter.position() % 10000000) == 0)
+        fprintf(stderr, "  %9lu / %9lu\r", kiter.position(), seq->length());
+      if (idx == uint64max)   //  Not a kmer we care about.
+        continue;
+
+      //  Add a position entry for the kmer instance.
+      uint64 ps = _posStart->get(idx);
+      _posStart->set(idx, ps + 1);
+      assert(_posStart->get(idx) == ps + 1);
+
+      uint64 pos   = (ii << nPositionsBits) | (kiter.bgnPosition());
+      _posData->set(ps, pos);
+      assert(pos == _posData->get(ps));
+    }
+
+    fprintf(stderr, "  %9lu / %9lu\n", kiter.position(), seq->length());
+  }
+
+  //  Reset index.
+
+  fprintf(stderr, "Reset index.\n");
+  for (uint64 pp=0, ii=0; ii<_nIndex; ii++) {
+    _posStart->set(ii, pp);
+    assert(_posStart->get(ii) == pp);
+    pp += valueAtIndex(ii);
+  }
+
+  //  Test it.
+#if 1
+  char ks[65];
+
+  for (uint32 ii=0; ii<sequences.size(); ii++) {
+    dnaSeq *seq = sequences[ii];
+
+    fprintf(stderr, "Test %9lubp from '%s'\n", seq->length(), seq->ident());
+
+    kmerIterator kiter(seq->bases(), seq->length());
+
+    while (kiter.nextMer()) {
+      kmer    cmer  = std::min(kiter.fmer(), kiter.rmer());
+      uint64  idx   = index(cmer);
+
+      if ((kiter.position() % 10000000) == 0)
+        fprintf(stderr, "  %9lu / %9lu\r", kiter.position(), seq->length());
+      if (idx == uint64max)   //  Not a kmer we care about.
+        continue;
+
+      uint64  base = _posStart->get(idx);
+      uint32  nmax = valueAtIndex(idx);
+      uint64  pos  = (ii << nPositionsBits) | (kiter.bgnPosition());
+
+      bool found = false;
+      for (uint32 nn=0; nn<nmax; nn++) {
+        if (_posData->get(base + nn) == pos)
+          found = true;
+      }
+
+      if (found == false)
+        fprintf(stderr, "kmer at %9lu %s has index %9lu %6u hits, found = %s\n",
+                kiter.position(), cmer.toString(ks), idx, nmax, found ? "true" : "false");
+    }
+  }
+#endif
+
+  //  Cleanup.
+
+  for (uint32 ii=0; ii<sequences.size(); ii++)
+    delete sequences[ii];
+}
 
 
 bool

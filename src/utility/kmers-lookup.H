@@ -24,6 +24,8 @@
 #error "include kmers.H, not this."
 #endif
 
+#include "sequence.H"
+
 
 class merylExactLookupProgress {
 public:
@@ -81,9 +83,12 @@ public:
   merylExactLookup() {
   };
   ~merylExactLookup() {
-    delete    _sufPointer;
-    delete    _sufData;
-    delete    _valData;
+    delete _sufPointer;
+    delete _sufData;
+    delete _valData;
+
+    delete _posStart;
+    delete _posData;
   };
 
 public:
@@ -118,13 +123,16 @@ public:
   double   load(merylFileReader *input_,
                 double           maxMemInGB_,
                 uint32           prefixSize,
-                kmvalu           minValue_      = 0,
-                kmvalu           maxValue_      = kmvalumax);
+                kmvalu           minValue_ = 0,
+                kmvalu           maxValue_ = kmvalumax);
+
+  void     loadPositions(dnaSeqFile *sequence);
 
 public:
   //  For describing what we've loaded.
   //
   uint64   nKmers(void)  {  return(_nKmersLoaded);  };
+  uint64   nIndex(void)  {  return(_nPrefix);       };   //  The number of prefixes/indexes in the table
 
   //  The accessors.
   //
@@ -133,8 +141,19 @@ public:
   //  Return the value of the kmer, or zero if it doesn't exist.
   //
   bool     exists(kmer k);
+  uint64   index(kmer k);
   bool     exists(kmer k, kmvalu &value);
   kmvalu   value(kmer k);
+
+  //kmer     kmerAtIndex(uint64 idx)   {
+  //  return(kmer());
+  //}
+  kmvalu   valueAtIndex(uint64 idx)  {
+    if (_valueBits == 0)
+      return(1);
+    else
+      return(_valData->get(idx));
+  }
 
   //  For testing the implementation.
   //
@@ -183,31 +202,40 @@ private:
   kmvalu            _valueMask     = 0;
 
   uint64            _nPrefix       = 0;    //  How many entries in _sufPointer:  2 ^ _prefixBits.
-  uint64            _nSuffix       = 0;    //  How many entries in _suffixData:  nDistinct in the input database.
+  uint64            _nSuffix       = 0;    //  How many entries in _sufData:  nDistinct in the input database.
+  uint64            _nIndex        = 0;    //  How many indexes are there
 
   uint32            _blkPtrBits    = 0;    //  How many bits wide is the begin field.
   uint64            _blkPtrMask    = 0;
   uint32            _blkLenBits    = 0;    //  How many bits wide is the length field.
   uint64            _blkLenMask    = 0;
 
-  void               setPointers(uint64 prefix, uint64  bgn, uint64  len);
+  void               setPointers(uint64 prefix, uint64  bgn, uint32  len);
   void               getPointers(uint64 prefix, uint64 &bgn, uint64 &end);
 
   wordArray        *_sufPointer= nullptr;  //  Pointer to start and length of each block.
 
   wordArray        *_sufData   = nullptr;  //  Finally, kmer suffix data!
   wordArray        *_valData   = nullptr;  //  Finally, value data!
+
+public:
+  wordArray        *_posStart  = nullptr;
+  wordArray        *_posData   = nullptr;
+
+  uint32             nSequencesBits = 0;
+  uint32             nPositionsBits = 0;
+  uint32             nPosEntryBits  = 0;
+
+  uint64             posEntryIDMask = 0;
+  uint64             posEntryPosMask = 0;
+
+  uint64             decodeID(uint64 code)   { return(code >> nPositionsBits); }
+  uint64             decodePos(uint64 code)  { return(code & posEntryPosMask); }
 };
 
 
 
 
-
-inline
-void
-merylExactLookup::setPointers(uint64 prefix, uint64  bgn, uint64  len) {
-  _sufPointer->set(prefix, (bgn << _blkLenBits) | len);
-}
 
 
 inline
@@ -272,6 +300,49 @@ merylExactLookup::exists(kmer k) {
   }
 
   return(false);
+}
+
+
+
+//  Return the (internal) index of the kmer, or uint64max if the kmer doesn't exist.
+inline
+uint64
+merylExactLookup::index(kmer k) {
+  kmdata  kmer   = (kmdata)k;
+  uint64  prefix = kmer >> _suffixBits;
+  kmdata  suffix = kmer  & _suffixMask;
+  kmdata  tag;
+  uint64  bgn, mid, end;
+
+  getPointers(prefix, bgn, end);
+
+  //  Binary search for the matching tag.
+
+  while (bgn + 8 < end) {
+    mid = bgn + (end - bgn) / 2;
+
+    tag = _sufData->get(mid);
+
+    if (tag == suffix)
+      return(mid);
+
+    if (suffix < tag)
+      end = mid;
+
+    else
+      bgn = mid + 1;
+  }
+
+  //  Switch to linear search when we're down to just a few candidates.
+
+  for (mid=bgn; mid < end; mid++) {
+    tag = _sufData->get(mid);
+
+    if (tag == suffix)
+      return(mid);
+  }
+
+  return(uint64max);
 }
 
 

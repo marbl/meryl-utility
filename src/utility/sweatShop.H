@@ -32,7 +32,8 @@ class sweatShop {
 public:
   sweatShop(void*(*loaderfcn)(void *G),
             void (*workerfcn)(void *G, void *T, void *S),
-            void (*writerfcn)(void *G, void *S));
+            void (*writerfcn)(void *G, void *S),
+            void (*statusfcn)(void *G, uint64 numberLoaded, uint64 numberComputed, uint64 numberOutput) = nullptr);
   ~sweatShop();
 
   void        setNumberOfWorkers(uint32 x) {
@@ -78,6 +79,7 @@ private:
   void                *(*_userLoader)(void *global);
   void                 (*_userWorker)(void *global, void *thread, void *thing);
   void                 (*_userWriter)(void *global, void *thing);
+  void                 (*_userStatus)(void *global, uint64 numberLoaded, uint64 numberComputed, uint64 numberOutput);
 
   void                  *_globalUserData;
 

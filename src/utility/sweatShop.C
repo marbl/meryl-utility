@@ -94,11 +94,13 @@ _sweatshop_statusThread(void *ss_) {
 
 sweatShop::sweatShop(void*(*loaderfcn)(void *G),
                      void (*workerfcn)(void *G, void *T, void *S),
-                     void (*writerfcn)(void *G, void *S)) {
+                     void (*writerfcn)(void *G, void *S),
+                     void (*statusfcn)(void *G, uint64 numberLoaded, uint64 numberComputed, uint64 numberOutput)) {
 
   _userLoader       = loaderfcn;
   _userWorker       = workerfcn;
   _userWriter       = writerfcn;
+  _userStatus       = statusfcn;
 
   _globalUserData   = 0L;
 
@@ -394,21 +396,34 @@ sweatShop::writer(void) {
 //  _numberComputed.  Worker threads use this to throttle themselves.  Thus, even if _showStatus is
 //  not set, and this thread doesn't _appear_ to be doing anything useful....it is.
 //
+
+void
+sweatShopStatus(double startTime, uint64 numberLoaded, uint64 numberComputed, uint64 numberOutput) {
+  double thisTime  = getTime();
+  uint64 deltaOut  = 0;
+  uint64 deltaCPU  = 0;
+  double cpuPerSec = 0;
+
+  if (numberComputed > numberOutput)
+    deltaOut = numberComputed - numberOutput;
+  if (numberLoaded > numberComputed)
+    deltaCPU = numberLoaded - numberComputed;
+
+  cpuPerSec = numberComputed / (thisTime - startTime);
+
+  fprintf(stderr, " %6.1f/s - %8" F_U64P " loaded; %8" F_U64P " queued for compute; %8" F_U64P " finished; %8" F_U64P " written; %8" F_U64P " queued for output)\r",
+          cpuPerSec, numberLoaded, deltaCPU, numberComputed, numberOutput, deltaOut);
+}
+
+
+
 void*
 sweatShop::status(void) {
-
   struct timespec   naptime;
   naptime.tv_sec      = 0;
   naptime.tv_nsec     = 250000000ULL;
 
-  double  startTime = getTime() - 0.001;
-  double  thisTime  = 0;
-
-  uint64  deltaOut = 0;
-  uint64  deltaCPU = 0;
-
-  double  cpuPerSec = 0;
-
+  double  startTime  = getTime() - 0.001;
   uint64  readjustAt = 16384;
 
   while (_writerP) {
@@ -417,20 +432,12 @@ sweatShop::status(void) {
       nc += _workerData[i].numComputed;
     _numberComputed = nc;
 
-    deltaOut = deltaCPU = 0;
-
-    thisTime = getTime();
-
-    if (_numberComputed > _numberOutput)
-      deltaOut = _numberComputed - _numberOutput;
-    if (_numberLoaded > _numberComputed)
-      deltaCPU = _numberLoaded - _numberComputed;
-
-    cpuPerSec = _numberComputed / (thisTime - startTime);
-
     if (_showStatus) {
-      fprintf(stderr, " %6.1f/s - %8" F_U64P " loaded; %8" F_U64P " queued for compute; %8" F_U64P " finished; %8" F_U64P " written; %8" F_U64P " queued for output)\r",
-              cpuPerSec, _numberLoaded, deltaCPU, _numberComputed, _numberOutput, deltaOut);
+      if (_userStatus)
+        (*_userStatus)(_globalUserData, _numberLoaded, _numberComputed, _numberOutput);
+      else
+        sweatShopStatus(startTime, _numberLoaded, _numberComputed, _numberOutput);
+
       fflush(stderr);
     }
 
@@ -438,6 +445,8 @@ sweatShop::status(void) {
     //  In particular, don't let it get below 2*numberOfWorkers.
     //
      if (_numberComputed > readjustAt) {
+       double cpuPerSec = _numberComputed / (getTime() - startTime);
+
        readjustAt       += (uint64)(2 * cpuPerSec);
        _loaderQueueSize  = (uint32)(5 * cpuPerSec);
      }
@@ -454,18 +463,19 @@ sweatShop::status(void) {
     nanosleep(&naptime, 0L);
   }
 
+  //  Call the status function, giving it:
+  //    numberLoaded
+  //    numberComputed
+  //    numberOutput
+
   if (_showStatus) {
-    thisTime = getTime();
+    if (_userStatus)
+      (*_userStatus)(_globalUserData, _numberLoaded, _numberComputed, _numberOutput);
+    else
+      sweatShopStatus(startTime, _numberLoaded, _numberComputed, _numberOutput);
 
-    if (_numberComputed > _numberOutput)
-      deltaOut = _numberComputed - _numberOutput;
-    if (_numberLoaded > _numberComputed)
-      deltaCPU = _numberLoaded - _numberComputed;
-
-    cpuPerSec = _numberComputed / (thisTime - startTime);
-
-    fprintf(stderr, " %6.1f/s - %08" F_U64P " queued for compute; %08" F_U64P " finished; %08" F_U64P " queued for output)\n",
-            cpuPerSec, deltaCPU, _numberComputed, deltaOut);
+    fprintf(stderr, "\n");
+    fflush(stderr);
   }
 
   //fprintf(stderr, "sweatShop::status exits.\n");

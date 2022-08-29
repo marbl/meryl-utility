@@ -19,48 +19,27 @@
 
 #include "types.H"
 
+class md5sum {
+public:
+  md5sum();
+  md5sum(uint8 const *b, uint32 bLen);
+  ~md5sum();
 
+  char const *toString(void);
+  void        toString(char *str);
 
-typedef struct {
-  uint64  a;
-  uint64  b;
-  uint32  i;    //  the iid, used in leaff
-  uint32  pad;  //  keep us size compatible between 32- and 64-bit machines.
-} md5_s;
+  //void        addByte(uint8 b);
+  void        addBlock(uint8 *b, uint64 bLen);
 
-#define MD5_BUFFER_SIZE   32*1024
+  void        finalize(void);
 
-typedef struct {
-  uint64           a;
-  uint64           b;
-  void            *context;
-  int              bufferPos;
-  unsigned char    buffer[MD5_BUFFER_SIZE];
-} md5_increment_s;
+private:
+  uint8       digest[33] = {0};
+  char        dascii[33] = {0};
 
+  uint8      *buffer    = nullptr;
+  uint8       bufferLen = 0;
+  uint8       bufferMax = 0;
 
-//  Returns -1, 0, 1 depending on if a <, ==, > b.  Suitable for
-//  qsort().
-//
-int     md5_compare(void const *a, void const *b);
-
-
-//  Converts an md5_s into a character string.  s must be at least
-//  33 bytes long.
-//
-char   *md5_toascii(md5_s *m, char *s);
-
-
-//  Computes the md5 checksum on the string s.
-//
-md5_s  *md5_string(md5_s *m, char *s, uint32 l);
-
-
-//  Computes an md5 checksum piece by piece.
-//
-//  If m is NULL, a new md5_increment_s is allocated and returned.
-//
-md5_increment_s  *md5_increment_char(md5_increment_s *m, char s);
-md5_increment_s  *md5_increment_block(md5_increment_s *m, char *s, uint32 l);
-void              md5_increment_finalize(md5_increment_s *m);
-void              md5_increment_destroy(md5_increment_s *m);
+  void       *context;
+};

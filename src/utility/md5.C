@@ -299,153 +299,60 @@ static void Decode (uint32 *output, unsigned char const *input, unsigned int len
 
 ////////////////////////////////////////////////////////////////////////////////
 //
-//  kmer glue functions
+//  meryl-utility glue functions
 //
 ////////////////////////////////////////////////////////////////////////////////
 
 
-int
-md5_compare(void const *a, void const *b) {
-  md5_s const *A = (md5_s const *)a;
-  md5_s const *B = (md5_s const *)b;
+md5sum::md5sum() {
+  context = new MD5_CTX;
 
-  if (A->a < B->a) return(-1);
-  if (A->a > B->a) return(1);
-  if (A->b < B->b) return(-1);
-  if (A->b > B->b) return(1);
-  return(0);
+  MD5Init((MD5_CTX *)context);
 }
 
-static const char *md5_letters = "0123456789abcdef";
+md5sum::md5sum(uint8 const *b, uint32 bLen) {
+  context = new MD5_CTX;
 
-char*
-md5_toascii(md5_s *m, char *s) {
-  int i;
-  for (i=0; i<16; i++) {
-    s[15-i   ] = md5_letters[(m->a >> 4*i) & 0x0f];
-    s[15-i+16] = md5_letters[(m->b >> 4*i) & 0x0f];
-  }
-  s[32] = 0;
-
-  return(s);
+  MD5Init((MD5_CTX *)context);
+  MD5Update((MD5_CTX *)context, b, bLen);
+  finalize();
 }
 
-md5_s*
-md5_string(md5_s *m, char *s, uint32 l) {
-  MD5_CTX         ctx;
-  unsigned char   dig[16];
-  int             i = 0;
-
-  if (m == NULL) {
-    errno = 0;
-    m = new md5_s;
-    if (errno) {
-      fprintf(stderr, "md5_string()-- Can't allocate a md5_s.\n%s\n", strerror(errno));
-      exit(1);
-    }
-  }
-
-  MD5Init(&ctx);
-  MD5Update(&ctx, (unsigned char*)s, l);
-  MD5Final(dig, &ctx);
-
-  m->a = dig[0];
-  while (i<8) {
-    m->a <<= 8;
-    m->a |= dig[i++];
-  }
-
-  m->b  = dig[i++];
-  while (i<16) {
-    m->b <<= 8;
-    m->b |= dig[i++];
-  }
-
-  return(m);
+md5sum::~md5sum() {
+  delete (MD5_CTX *)context;
+  delete buffer;
 }
 
-static
-md5_increment_s*
-md5_increment_initialize(void) {
-  md5_increment_s *m;
-
-  errno = 0;
-  m = new md5_increment_s;
-  if (errno) {
-    fprintf(stderr, "md5_increment_*()-- Can't allocate a md5_increment_s.\n%s\n", strerror(errno));
-    exit(1);
-  }
-
-  m->context = new MD5_CTX;
-  if (errno) {
-    fprintf(stderr, "md5_increment_*()-- Can't allocate a md5 context.\n%s\n", strerror(errno));
-    exit(1);
-  }
-  MD5Init((MD5_CTX *)m->context);
-
-  m->bufferPos = 0;
-
-  return(m);
-}
-
-md5_increment_s*
-md5_increment_char(md5_increment_s *m, char s) {
-
-  if (m == NULL)
-    m = md5_increment_initialize();
-
-  m->buffer[m->bufferPos++] = s;
-
-  if (m->bufferPos == MD5_BUFFER_SIZE) {
-    MD5Update((MD5_CTX *)m->context, m->buffer, m->bufferPos);
-    m->bufferPos = 0;
-  }
-
-  return(m);
-}
-
-md5_increment_s*
-md5_increment_block(md5_increment_s *m, char *s, uint32 l) {
-
-  if (m == NULL)
-    m = md5_increment_initialize();
-
-  MD5Update((MD5_CTX *)m->context, (unsigned char*)s, l);
-
-  return(m);
-}
+char const *
+md5sum::toString(void) {
+  return(dascii);
+};
 
 void
-md5_increment_finalize(md5_increment_s *m) {
-  MD5_CTX        *ctx = (MD5_CTX *)m->context;
-  unsigned char   dig[16];
-  int             i = 0;
+md5sum::toString(char *str) {
+  memcpy(str, dascii, 32);
+};
 
-  if (m->bufferPos > 0) {
-    MD5Update((MD5_CTX *)m->context, m->buffer, m->bufferPos);
-    m->bufferPos = 0;
-  }
-
-  MD5Final(dig, ctx);
-
-  m->a = dig[0];
-  while (i<8) {
-    m->a <<= 8;
-    m->a |= dig[i++];
-  }
-
-  m->b  = dig[i++];
-  while (i<16) {
-    m->b <<= 8;
-    m->b |= dig[i++];
-  }
-
-  m->context = 0L;
-
-  delete ctx;
-}
+//void
+//md5sum::addByte(uint8 b) {
+//};
 
 void
-md5_increment_destroy(md5_increment_s *m) {
-  delete m;
+md5sum::addBlock(uint8 *b, uint64 bLen) {
+  MD5Update((MD5_CTX *)context, b, bLen);
+};
+
+void
+md5sum::finalize(void) {
+  MD5Final(digest, (MD5_CTX *)context);
+
+  for (uint32 ii=0; ii<16; ii++) {
+    dascii[2*ii+0] = (digest[ii] >> 4) & 0x0f;
+    dascii[2*ii+1] = (digest[ii]     ) & 0x0f;
+  }
+
+  for (uint32 ii=0; ii<32; ii++)
+    dascii[ii] += (dascii[ii] < 10) ? '0' : 'a'-10;
+
+  dascii[32] = 0;
 }

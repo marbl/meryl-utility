@@ -79,7 +79,7 @@ SRC_INCDIRS  := . \
                 utility \
                 parasail
 
-SUBMAKEFILES := 
+SUBMAKEFILES := pccp/pccp.mk
 
 ifeq ($(BUILDTESTS), 1)
 SUBMAKEFILES += tests/alignTest-ssw.mk \

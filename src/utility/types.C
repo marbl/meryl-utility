@@ -254,7 +254,7 @@ decodeInteger(char const *str, uint64 bgn, uint64 end,
       case 't':   value *= scale;  [[fallthrough]];   //
       case 'g':   value *= scale;  [[fallthrough]];   //  A 'g' will multiply by 'scale' three times.
       case 'm':   value *= scale;  [[fallthrough]];   //
-      case 'k':   value *= scale;  [[fallthrough]];   //  (thank -Wimplicit-fallthrough for this) 
+      case 'k':   value *= scale;  [[fallthrough]];   //  (thank -Wimplicit-fallthrough for this)
       default:
         break;
     }
@@ -709,9 +709,9 @@ toDec(uintType v, char *ret, uint32 w) {
   for (uintType t=v/10; t > 0; t /= 10)   //  Convert the next low order digit to
     ret[--p] = alpha[ t % 10 ];           //  an ASCII letter, repeat.
 
-  if (ret[0] == '-')
-    assert(p == 1);
-  else
+  if (ret[0] == '-')                      //  If a negative number, the last
+    assert(p == 1);                       //  digit we added will be in [1],
+  else                                    //  otherwise, it is in [0].
     assert(p == 0);
 
   return(ret + e);

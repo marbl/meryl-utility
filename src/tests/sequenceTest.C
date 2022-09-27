@@ -19,11 +19,13 @@
 
 #include "sequence.H"
 
+using namespace merylutil::sequence;
+
 int
 main(int argc, char **argv) {
   FILE *O;
 
-  O = AS_UTL_openOutputFile("sequenceTest.data.fasta");
+  O = merylutil::openOutputFile("sequenceTest.data.fasta");
   fprintf(O, ">name\n");
   fprintf(O, "ACGT\n");
   fprintf(O, ">  name   \n");
@@ -32,7 +34,7 @@ main(int argc, char **argv) {
   fprintf(O, "ACGT\n");
   fprintf(O, ">  name   f l a g s    \n");
   fprintf(O, "ACGT\n");
-  AS_UTL_closeFile(O);
+  merylutil::closeFile(O);
 
   dnaSeqFile  F("sequenceTest.data.fasta");
   dnaSeq      S;
@@ -57,7 +59,7 @@ main(int argc, char **argv) {
   assert(strcmp(S.flags(), "f l a g s") == 0);
   assert(strcmp(S.bases(), "ACGT")      == 0);
 
-  AS_UTL_unlink("sequenceTest.data.fasta");
+  merylutil::unlink("sequenceTest.data.fasta");
 
   fprintf(stderr, "Success!\n");
 

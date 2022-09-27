@@ -1,21 +1,20 @@
-#include "runtime.H"
-#include "system.H"
 #include "types.H"
 #include "files.H"
-#include "md5.H"
-
-#include "sweatShop.H"
+#include "system.H"
+#include "math.H"
 
 #include <fcntl.h>
 #include <sys/stat.h>
 #include <vector>
+
+//using namespace merylutil;
 
 
 class cpBuf {
 public:
   cpBuf(FILE *F, uint32 max) {
     _b    = new uint8 [max];
-    _bLen = loadFromFile(_b, "stuff", max, F, false);
+    _bLen = merylutil::loadFromFile(_b, "stuff", max, F, false);
   }
 
   ~cpBuf() {
@@ -34,18 +33,18 @@ public:
     snprintf(inPath, FILENAME_MAX, "%s", inname);
     snprintf(otPath, FILENAME_MAX, "%s/%s", otpath, basename(inname));
 
-    fileSize = AS_UTL_sizeOfFile(inname);
+    fileSize = merylutil::sizeOfFile(inname);
 
-    inFile = AS_UTL_openInputFile(inPath);
-    otFile = AS_UTL_openOutputFile(otPath);
+    inFile = merylutil::openInputFile(inPath);
+    otFile = merylutil::openOutputFile(otPath);
   };
 
   ~cpBufState() {
     struct stat     st;
     struct timespec times[2];   // access, modification
 
-    AS_UTL_closeFile(inFile);
-    AS_UTL_closeFile(otFile);
+    merylutil::closeFile(inFile);
+    merylutil::closeFile(otFile);
 
     errno = 0;
     if (stat(inPath, &st)) {
@@ -97,7 +96,7 @@ public:
     otStart = std::min(otStart, n);
     otEnd   = std::max(otEnd,   n);
 
-    writeToFile(b->_b, "stuff", b->_bLen, otFile);
+    merylutil::writeToFile(b->_b, "stuff", b->_bLen, otFile);
 
     delete b;
   }
@@ -114,7 +113,7 @@ public:
   double     inStart=DBL_MAX, inEnd=0;
   double     otStart=DBL_MAX, otEnd=0;
 
-  md5sum     md5;
+  merylutil::md5sum  md5;
 };
 
 
@@ -175,10 +174,10 @@ main(int argc, char **argv) {
   char const                 *otpath  = nullptr;
 
   for (int arg=1; arg<argc; arg++) {
-    if      (fileExists(argv[arg]))
+    if      (merylutil::fileExists(argv[arg]))
       infiles.push_back(argv[arg]);
 
-    else if (directoryExists(argv[arg]) && (arg == argc-1))
+    else if (merylutil::directoryExists(argv[arg]) && (arg == argc-1))
       otpath = argv[arg];
 
     else

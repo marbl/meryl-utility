@@ -21,6 +21,9 @@
 
 #include "files.H"
 
+using merylutil::compressedFileReader;
+using merylutil::compressedFileWriter;
+
 typedef  uint8   TYPE;
 
 
@@ -44,20 +47,20 @@ main(int32 argc, char **argv) {
 
     fprintf(stderr, "Writing.\n");
 
-    FILE *OUT = AS_UTL_openOutputFile("./filesTest.dat");
+    FILE *OUT = merylutil::openOutputFile("./filesTest.dat");
 
-    writeToFile(array, "array", nObj, OUT);
+    merylutil::writeToFile(array, "array", nObj, OUT);
 
-    AS_UTL_closeFile(OUT);
+    merylutil::closeFile(OUT);
   }
 
 
   if (1) {
     fprintf(stderr, "Reading - as one block.\n");
 
-    FILE *IN = AS_UTL_openInputFile("./filesTest.dat");
-    loadFromFile(array, "array", nObj, IN);
-    AS_UTL_closeFile(IN);
+    FILE *IN = merylutil::openInputFile("./filesTest.dat");
+    merylutil::loadFromFile(array, "array", nObj, IN);
+    merylutil::closeFile(IN);
 
     for (uint64 ii=0; ii<nObj; ii++)
       assert(array[ii] == (TYPE)ii);
@@ -67,19 +70,19 @@ main(int32 argc, char **argv) {
   if (1) {
     fprintf(stderr, "Reading.\n");
 
-    FILE *IN = AS_UTL_openInputFile("./filesTest.dat");
+    FILE *IN = merylutil::openInputFile("./filesTest.dat");
 
     for (uint64 ii=0; ii<nObj; ii++) {
-      loadFromFile(value, "value", IN);
+      merylutil::loadFromFile(value, "value", IN);
 
       assert(value == (TYPE)ii);
     }
 
     fprintf(stderr, "Reading - one after eof.\n");
-    loadFromFile(value, "value", IN, false);
-    loadFromFile(value, "value", IN, true);
+    merylutil::loadFromFile(value, "value", IN, false);
+    merylutil::loadFromFile(value, "value", IN, true);
 
-    AS_UTL_closeFile(IN);
+    merylutil::closeFile(IN);
   }
 
 

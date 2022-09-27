@@ -1,51 +1,73 @@
 MODULE       :=    meryl-utility
 TARGET       := libmeryl-utility.a
-SOURCES      := utility/runtime.C \
+SOURCES      := \
                 \
-                utility/align-ksw2-extz.C \
-                utility/align-ksw2-extz2-sse.C \
-                utility/align-ksw2-driver.C \
-                utility/align-ssw.C \
-                utility/align-ssw-driver.C \
-                utility/align-parasail-driver.C \
-                utility/edlib.C \
+                align/align-ksw2-driver.C \
+                align/align-ksw2-extz.C \
+                align/align-ksw2-extz2-sse.C \
+                align/align-parasail-driver.C \
+                align/align-ssw-driver.C \
+                align/align-ssw.C \
+                align/edlib.C \
                 \
-                utility/files.C \
-                utility/files-buffered.C \
-                utility/files-compressed.C \
-                utility/files-fasta-fastq.C \
-                utility/files-memoryMapped.C \
+                bits/fibonacci-v1.C \
+                bits/hexDump-v1.C \
+                bits/stuffedBits-v1.C \
+                bits/stuffedBits-v1-binary.C \
+                bits/stuffedBits-v1-bits.C \
+                bits/stuffedBits-v1-delta.C \
+                bits/stuffedBits-v1-gamma.C \
+                bits/stuffedBits-v1-golomb.C \
+                bits/stuffedBits-v1-omega.C \
+                bits/stuffedBits-v1-unary.C \
+                bits/stuffedBits-v1-zeckendorf.C \
+                bits/wordArray-v1.C \
                 \
-                utility/logging.C \
+                datastructures/strings-v1.C \
+                datastructures/keyAndValue-v1.C \
+                datastructures/splitToWords-v1.C \
+                datastructures/stringList-v1.C \
+                datastructures/types-v1.C \
                 \
-                utility/strings.C \
+                files/accessing-v1.C \
+                files/buffered-v1-reading.C \
+                files/buffered-v1-writing.C \
+                files/compressed-v1.C \
+                files/compressed-v1-reading.C \
+                files/compressed-v1-writing.C \
+                files/fasta-fastq-v1.C \
+                files/memoryMapped-v1.C \
+                files/reading-v1.C \
+                files/files-v1.C \
+                files/writing-v1.C \
+                files/readLine-v0.C \
+                files/readLine-v1.C \
                 \
-                utility/system.C \
-                utility/system-stackTrace.C \
+                kmers-v1/kmers-exact.C \
+                kmers-v1/kmers-files.C \
+                kmers-v1/kmers-histogram.C \
+                kmers-v1/kmers-reader.C \
+                kmers-v1/kmers-writer-block.C \
+                kmers-v1/kmers-writer-stream.C \
+                kmers-v1/kmers-writer.C \
+                kmers-v1/kmers.C \
                 \
-                utility/sequence.C \
+                math/md5-v1.C \
+                math/mt19937ar-v1.C \
+                math/sampledDistribution-v1.C \
                 \
-                utility/types.C \
+                system/logging-v1.C \
+                system/runtime-v1.C \
+                system/speedCounter-v1.C \
+                system/sweatShop-v1.C \
+                system/system-stackTrace-v1.C \
+                system/system-v1.C \
                 \
-                utility/sampledDistribution.C \
+                sequence/dnaSeq-v1.C \
+                sequence/dnaSeqFile-v1.C \
+                sequence/sequence-v1.C \
                 \
-                utility/kmers-exact.C \
-                utility/kmers-files.C \
-                utility/kmers-histogram.C \
-                utility/kmers-reader.C \
-                utility/kmers-writer-block.C \
-                utility/kmers-writer-stream.C \
-                utility/kmers-writer.C \
-                utility/kmers.C \
                 \
-                utility/bits.C \
-                utility/bits-wordArray.C \
-                \
-                utility/hexDump.C \
-                utility/md5.C \
-                utility/mt19937ar.C \
-                utility/speedCounter.C \
-                utility/sweatShop.C \
                 \
                 parasail/cpuid.c \
                 parasail/memory.c \
@@ -76,7 +98,6 @@ endif
 
 
 SRC_INCDIRS  := . \
-                utility \
                 parasail
 
 SUBMAKEFILES := pccp/pccp.mk
@@ -85,6 +106,7 @@ ifeq ($(BUILDTESTS), 1)
 SUBMAKEFILES += tests/alignTest-ssw.mk \
                 tests/alignTest-ksw2.mk \
                 tests/bitsTest.mk \
+                tests/commandAvailableTest.mk \
                 tests/decodeIntegerTest.mk \
                 tests/fasta-fastq.mk \
                 tests/filesTest.mk \

@@ -21,9 +21,9 @@
 #include "types.H"
 #include "files.H"
 #include "sequence.H"
+#include "align.H"
 
-#include "align-ksw2-driver.H"
-
+using namespace merylutil;
 
 
 #if 0

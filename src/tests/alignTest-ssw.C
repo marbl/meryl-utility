@@ -21,10 +21,9 @@
 #include "types.H"
 #include "files.H"
 #include "sequence.H"
+#include "align.H"
 
-#include "align-ssw.H"
-#include "align-ssw-driver.H"
-
+using namespace merylutil;
 
 void
 native_interface(char *seqA,

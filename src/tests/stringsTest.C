@@ -19,8 +19,12 @@
  
 #include "strings.H"
 
+using merylutil::splitToWords;
+using merylutil::KeyAndValue;
+using merylutil::stringList;
+
 void
-showSplit(char *str, splitType type) {
+showSplit(char *str, merylutil::splitType type) {
   splitToWords  W;
 
   W.split(str, type);
@@ -199,11 +203,11 @@ main(int argc, char **argv) {
   std::vector<char const *>  err;
   for (int32 arg=1; arg < argc; arg++) {
     if      (strcmp(argv[arg], "-p") == 0) {
-      showSplit(argv[++arg], splitPaths);
+      showSplit(argv[++arg], merylutil::splitPaths);
     }
 
     else if (strcmp(argv[arg], "-w") == 0) {
-      showSplit(argv[++arg], splitWords);
+      showSplit(argv[++arg], merylutil::splitWords);
     }
 
     else if (strcmp(argv[arg], "-c") == 0) {

@@ -17,24 +17,25 @@
  *  contains full conditions and disclaimers.
  */
 
-#include "kmers.H"
-
 #include <vector>
 #include <algorithm>
+
+#include "kmers.H"
 
 //  Some sanity checking.
 #undef  TEST_MAXP
 #undef  CHECK_POINTERS
 #undef  CHECK_STORE
 
+namespace merylutil::inline kmers::inline v1 {
 
 
 //  Set some basic boring stuff.
 //
 void
-merylutil::kmers::v1::merylExactLookup::initialize(merylFileReader *input_,
-                                                   kmvalu minValue_,
-                                                   kmvalu maxValue_) {
+merylExactLookup::initialize(merylFileReader *input_,
+                             kmvalu minValue_,
+                             kmvalu maxValue_) {
 
   //  Save a pointer to the input data.
 
@@ -76,10 +77,10 @@ merylutil::kmers::v1::merylExactLookup::initialize(merylFileReader *input_,
 
 
 void
-merylutil::kmers::v1::merylExactLookup::computeSpace(bool reportMemory,
-                                                     bool reportSizes,
-                                                     bool compute,
-                                                     uint32 &pbMin, uint64 &minSpace) {
+merylExactLookup::computeSpace(bool reportMemory,
+                               bool reportSizes,
+                               bool compute,
+                               uint32 &pbMin, uint64 &minSpace) {
   uint32  pbbgn;
   uint32  pbend;
 
@@ -199,10 +200,10 @@ merylutil::kmers::v1::merylExactLookup::computeSpace(bool reportMemory,
 //  to store explicitly (suffixBits and valueBits).
 //
 double
-merylutil::kmers::v1::merylExactLookup::configure(double  memInGB,
-                                                  uint32  prefixSize,
-                                                  bool    reportMemory,
-                                                  bool    reportSizes) {
+merylExactLookup::configure(double  memInGB,
+                            uint32  prefixSize,
+                            bool    reportMemory,
+                            bool    reportSizes) {
 
   //  Convert the memory in GB to memory in BITS.  If no memory
   //  size is supplied, as the OS how big we can get.
@@ -247,7 +248,7 @@ merylutil::kmers::v1::merylExactLookup::configure(double  memInGB,
 
 
 void
-merylutil::kmers::v1::merylExactLookup::setPointers(uint64 ii, uint64 bgn, uint32 len) {
+merylExactLookup::setPointers(uint64 ii, uint64 bgn, uint32 len) {
   uint64  b, e;
 
   bool    l = (_verbose == true) && ((ii & 0xfffffff) == 0xfffffff);   //  Logging enabled?
@@ -284,7 +285,7 @@ merylutil::kmers::v1::merylExactLookup::setPointers(uint64 ii, uint64 bgn, uint3
 //
 //  The loop control and kmer loading is the same in the two loops.
 void
-merylutil::kmers::v1::merylExactLookup::count(void) {
+merylExactLookup::count(void) {
   uint32   nf = _input->numFiles();
 
   if (_verbose) {
@@ -373,7 +374,7 @@ merylutil::kmers::v1::merylExactLookup::count(void) {
 
     delete block;
 
-    merylutil::closeFile(blockFile);
+    closeFile(blockFile);
 
     progress.stop(ff);
   }
@@ -466,7 +467,7 @@ merylutil::kmers::v1::merylExactLookup::count(void) {
 //  array.
 //
 double
-merylutil::kmers::v1::merylExactLookup::allocate(void) {
+merylExactLookup::allocate(void) {
   uint64  arraySize;
   uint64  arrayBlockMin;
   double  memInGBused = 0.0;
@@ -518,7 +519,7 @@ merylutil::kmers::v1::merylExactLookup::allocate(void) {
 //  We don't, actually, know that if we're filtering out low/high count kmers.
 //  In this case, we overallocate, but cannot cleanup at the end.
 void
-merylutil::kmers::v1::merylExactLookup::load(void) {
+merylExactLookup::load(void) {
   uint32   nf      = _input->numFiles();
 
   if (_verbose) {
@@ -620,7 +621,7 @@ merylutil::kmers::v1::merylExactLookup::load(void) {
 
     delete block;
 
-    merylutil::closeFile(blockFile);
+    closeFile(blockFile);
 
     progress.stop(ff);
   }
@@ -639,11 +640,11 @@ merylutil::kmers::v1::merylExactLookup::load(void) {
 
 
 double
-merylutil::kmers::v1::merylExactLookup::load(merylFileReader *input_,
-                                             double           maxMemInGB_,
-                                             uint32           prefixSize_,
-                                             kmvalu           minValue_,
-                                             kmvalu           maxValue_) {
+merylExactLookup::load(merylFileReader *input_,
+                       double           maxMemInGB_,
+                       uint32           prefixSize_,
+                       kmvalu           minValue_,
+                       kmvalu           maxValue_) {
 
   initialize(input_, minValue_, maxValue_);            //  Initialize ourself.
 
@@ -683,7 +684,7 @@ merylutil::kmers::v1::merylExactLookup::load(merylFileReader *input_,
 //      34 * 3.2e9 / 8 = 12.7 GB for position data
 //
 void
-merylutil::kmers::v1::merylExactLookup::loadPositions(dnaSeqFile *seqFile) {
+merylExactLookup::loadPositions(dnaSeqFile *seqFile) {
 
   //  Load the sequences.  This doesn't need to be in memory, but we'd need
   //  to (possibly) make two passes otherwise, one to count the number of
@@ -824,7 +825,7 @@ merylutil::kmers::v1::merylExactLookup::loadPositions(dnaSeqFile *seqFile) {
 
 
 bool
-merylutil::kmers::v1::merylExactLookup::exists_test(kmer k) {
+merylExactLookup::exists_test(kmer k) {
   kmdata  kmer   = (kmdata)k;
   kmdata  prefix = kmer >> _suffixBits;
   kmdata  suffix = kmer  & _suffixMask;
@@ -911,4 +912,6 @@ merylutil::kmers::v1::merylExactLookup::exists_test(kmer k) {
   fprintf(stderr, "\n");
 
   assert(0);
-};
+}
+
+}  //  namespace merylutil::kmers::v1

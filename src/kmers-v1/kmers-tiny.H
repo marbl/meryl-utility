@@ -17,12 +17,16 @@
  *  contains full conditions and disclaimers.
  */
 
-#ifndef MERYL_UTIL_KMER_KMER_TINY_H
-#define MERYL_UTIL_KMER_KMER_TINY_H
+#ifndef MERYLUTIL_KMERS_KMER_TINY_V1_H
+#define MERYLUTIL_KMERS_KMER_TINY_V1_H
 
-#ifndef MERYL_UTIL_KMER_H
+#ifndef MERYLUTIL_KMERS_H
 #error "include kmers.H, not this."
 #endif
+
+#include "types.H"
+
+namespace merylutil::inline kmers::inline v1 {
 
 //  Definition of a 'small' kmer.
 
@@ -200,5 +204,6 @@ public:
 
 typedef kmerTiny kmer;
 
+}  //  namespace merylutil::kmers::v1
 
-#endif  //  MERYL_UTIL_KMER_KMER_TINY_H
+#endif  //  MERYLUTIL_KMERS_KMER_TINY_V1_H

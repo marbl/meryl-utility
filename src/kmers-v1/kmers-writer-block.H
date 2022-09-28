@@ -17,20 +17,19 @@
  *  contains full conditions and disclaimers.
  */
 
-#ifndef MERYL_UTIL_KMER_WRITER_BLOCK_H
-#define MERYL_UTIL_KMER_WRITER_BLOCK_H
+#ifndef MERYLUTIL_KMERS_WRITER_BLOCK_V1_H
+#define MERYLUTIL_KMERS_WRITER_BLOCK_V1_H
 
-#ifndef MERYL_UTIL_KMER_H
+#ifndef MERYLUTIL_KMERS_H
 #error "include kmers.H, not this."
 #endif
 
 //  Responsible for taking a block of sorted kmers
 //  and writing them to the appropriate file.
 
-namespace merylutil::kmers::v1 {
+namespace merylutil::inline kmers::inline v1 {
 
-  //class merylutil::kmers::v1::merylFileWriter;
-  class merylFileWriter;
+class merylFileWriter;
 
 class merylBlockWriter {
 public:
@@ -72,6 +71,7 @@ private:
 
   uint32                 _iteration;
 };
-}
 
-#endif  //   MERYL_UTIL_KMER_WRITER_BLOCK_H
+}  //  namespace merylutil::kmers::v1
+
+#endif  //   MERYLUTIL_KMERS_WRITER_BLOCK_V1_H

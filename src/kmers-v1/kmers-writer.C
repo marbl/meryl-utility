@@ -19,9 +19,10 @@
 
 #include "kmers.H"
 
+namespace merylutil::inline kmers::inline v1 {
 
 void
-merylutil::kmers::v1::merylFileWriter::initialize(uint32 prefixSize, bool isMultiSet) {
+merylFileWriter::initialize(uint32 prefixSize, bool isMultiSet) {
 
   //  Fail if we're already initialized and asked to change the prefix size.
   //  But just ignore the re-init request if the prefix size is the same.
@@ -81,8 +82,8 @@ merylutil::kmers::v1::merylFileWriter::initialize(uint32 prefixSize, bool isMult
 
 
 
-merylutil::kmers::v1::merylFileWriter::merylFileWriter(const char *outputName,
-                                                       uint32      prefixSize) {
+merylFileWriter::merylFileWriter(const char *outputName,
+                                 uint32      prefixSize) {
 
   //  Note that we're not really initialized yet.  We could call initialize() in some cases,
   //  but the interesting one can't initialized() until the first meryl input file is opened,
@@ -114,7 +115,7 @@ merylutil::kmers::v1::merylFileWriter::merylFileWriter(const char *outputName,
 
 
 
-merylutil::kmers::v1::merylFileWriter::~merylFileWriter() {
+merylFileWriter::~merylFileWriter() {
   uint32   flags = (uint32)0x0000;
 
   //  Set flags.
@@ -153,7 +154,7 @@ merylutil::kmers::v1::merylFileWriter::~merylFileWriter() {
 
 
 uint32
-merylutil::kmers::v1::merylFileWriter::fileNumber(uint64  prefix) {
+merylFileWriter::fileNumber(uint64  prefix) {
 
   assert(_initialized);
 
@@ -179,12 +180,12 @@ merylutil::kmers::v1::merylFileWriter::fileNumber(uint64  prefix) {
 
 
 void
-merylutil::kmers::v1::merylFileWriter::writeBlockToFile(FILE            *datFile,
-                                                        merylFileIndex  *datFileIndex,
-                                                        kmpref           blockPrefix,
-                                                        uint64           nKmers,
-                                                        kmdata          *suffixes,
-                                                        kmvalu          *values) {
+merylFileWriter::writeBlockToFile(FILE            *datFile,
+                                  merylFileIndex  *datFileIndex,
+                                  kmpref           blockPrefix,
+                                  uint64           nKmers,
+                                  kmdata          *suffixes,
+                                  kmvalu          *values) {
 
   //  Figure out the optimal size of the Elias-Fano prefix.  It's just log2(N)-1.
 
@@ -286,3 +287,5 @@ merylutil::kmers::v1::merylFileWriter::writeBlockToFile(FILE            *datFile
 
   delete dumpData;
 }
+
+}  //  namespace merylutil::kmers::v1

@@ -17,14 +17,14 @@
  *  contains full conditions and disclaimers.
  */
 
-#ifndef MERYL_UTIL_KMER_FILES_H
-#define MERYL_UTIL_KMER_FILES_H
+#ifndef MERYLUTIL_KMER_FILES_V1_H
+#define MERYLUTIL_KMER_FILES_V1_H
 
-#ifndef MERYL_UTIL_KMER_H
+#ifndef MERYLUTIL_KMERS_H
 #error "include kmers.H, not this."
 #endif
 
-
+namespace merylutil::inline kmers::inline v1 {
 
 void
 dumpMerylDataFile(char *name);
@@ -53,8 +53,6 @@ openInputBlock(char   *nameprefix,
                uint32  numFiles,
                uint32  iteration=0);
 
-
-namespace merylutil::kmers::v1 {
 
 //  Read a block of kmer data from disk, and decode it into a list of kmers,
 //  counts and (eventually) colors.
@@ -98,11 +96,8 @@ private:
   kmdata       *_suffixes    = nullptr;   //  Decoded suffixes and values.
   kmvalu       *_values      = nullptr;   //
 };
-}
 
 
-
-namespace merylutil::kmers::v1 {
 
 //  An index to the binary encoded kmer data.  Provides:
 //    kmer prefix for each block
@@ -157,7 +152,7 @@ private:
   uint64    _blockPosition;   //  needs to be uint64 instead of the more correct
   uint64    _numKmers;        //  kmpref.
 };
-}
 
+}  //  namespace merylutil::kmers::v1
 
-#endif  //  MERYL_UTIL_KMER_FILES_H
+#endif  //  MERYLUTIL_KMER_FILES_V1_H

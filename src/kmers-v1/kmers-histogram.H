@@ -17,17 +17,19 @@
  *  contains full conditions and disclaimers.
  */
 
-#ifndef MERYL_UTIL_KMER_HISTOGRAM_H
-#define MERYL_UTIL_KMER_HISTOGRAM_H
+#ifndef MERYLUTIL_KMERS_HISTOGRAM_V1_H
+#define MERYLUTIL_KMERS_HISTOGRAM_V1_H
 
-#ifndef MERYL_UTIL_KMER_H
+#ifndef MERYLUTIL_KMERS_H
 #error "include kmers.H, not this."
 #endif
 
 #include <map>
 
-namespace merylutil::kmers::v1 {
-using namespace merylutil::bits;
+#include "types.H"
+#include "bits.H"
+
+namespace merylutil::inline kmers::inline v1 {
 
 //  Stores a histogram of kmer count values.
 
@@ -89,4 +91,4 @@ private:
 
 }  //  namespace merylutil::kmers::v1
 
-#endif  //  MERYL_UTIL_KMER_HISTOGRAM_H
+#endif  //  MERYLUTIL_KMERS_HISTOGRAM_V1_H

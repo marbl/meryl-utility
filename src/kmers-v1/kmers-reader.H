@@ -17,15 +17,14 @@
  *  contains full conditions and disclaimers.
  */
 
-#ifndef MERYL_UTIL_KMER_FILES_READER_H
-#define MERYL_UTIL_KMER_FILES_READER_H
+#ifndef MERYLUTIL_KMERS_READER_V1_H
+#define MERYLUTIL_KMERS_READER_V1_H
 
-#ifndef MERYL_UTIL_KMER_H
+#ifndef MERYLUTIL_KMERS_H
 #error "include kmers.H, not this."
 #endif
 
-namespace merylutil::kmers::v1 {
-using namespace merylutil::bits;
+namespace merylutil::inline kmers::inline v1 {
 
 class merylFileReader {
 private:
@@ -141,6 +140,7 @@ private:
   kmdata                    *_suffixes;
   kmvalu                    *_values;
 };
+
 }  //  namespace merylutil::kmers::v1
 
-#endif  //  MERYL_UTIL_KMER_FILES_READER_H
+#endif  //  MERYLUTIL_KMERS_READER_V1_H

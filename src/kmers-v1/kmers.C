@@ -19,11 +19,12 @@
 
 #include "kmers.H"
 
+namespace merylutil::inline kmers::inline v1 {
+
 uint32 kmerTiny::_merSize   = 0;
 kmdata kmerTiny::_fullMask  = 0;
 kmdata kmerTiny::_leftMask  = 0;
 uint32 kmerTiny::_leftShift = 0;
-
 
 
 char *
@@ -85,3 +86,5 @@ openInputBlock(char   *nameprefix,
 
   return(F);
 }
+
+}  //  namespace merylutil::kmers::v1

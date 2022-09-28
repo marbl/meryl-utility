@@ -19,10 +19,12 @@
 
 #include "kmers.H"
 
+namespace merylutil::inline kmers::inline v1 {
+
 
 //  Clear all members and allocate buffers.
 void
-merylutil::kmers::v1::merylFileReader::initializeFromMasterI_v00(void) {
+merylFileReader::initializeFromMasterI_v00(void) {
 
   _prefixSize    = 0;
   _suffixSize    = 0;
@@ -60,7 +62,7 @@ merylutil::kmers::v1::merylFileReader::initializeFromMasterI_v00(void) {
 
 //  Initialize for the original.
 void
-merylutil::kmers::v1::merylFileReader::initializeFromMasterI_v01(stuffedBits  *masterIndex,
+merylFileReader::initializeFromMasterI_v01(stuffedBits  *masterIndex,
                                                                  bool          doInitialize) {
 
   if (doInitialize == true) {
@@ -87,7 +89,7 @@ merylutil::kmers::v1::merylFileReader::initializeFromMasterI_v01(stuffedBits  *m
 
 //  Initialize for the format that includes multi sets.
 void
-merylutil::kmers::v1::merylFileReader::initializeFromMasterI_v02(stuffedBits  *masterIndex,
+merylFileReader::initializeFromMasterI_v02(stuffedBits  *masterIndex,
                                                                  bool          doInitialize) {
 
   if (doInitialize == true) {
@@ -117,7 +119,7 @@ merylutil::kmers::v1::merylFileReader::initializeFromMasterI_v02(stuffedBits  *m
 
 
 void
-merylutil::kmers::v1::merylFileReader::initializeFromMasterI_v03(stuffedBits  *masterIndex,
+merylFileReader::initializeFromMasterI_v03(stuffedBits  *masterIndex,
                                                                  bool          doInitialize) {
   initializeFromMasterI_v02(masterIndex, doInitialize);
 }
@@ -125,7 +127,7 @@ merylutil::kmers::v1::merylFileReader::initializeFromMasterI_v03(stuffedBits  *m
 
 
 void
-merylutil::kmers::v1::merylFileReader::initializeFromMasterIndex(bool  doInitialize,
+merylFileReader::initializeFromMasterIndex(bool  doInitialize,
                                                                  bool  loadStatistics,
                                                                  bool  beVerbose) {
   char   N[FILENAME_MAX+1];
@@ -207,7 +209,7 @@ merylutil::kmers::v1::merylFileReader::initializeFromMasterIndex(bool  doInitial
 
 
 
-merylutil::kmers::v1::merylFileReader::merylFileReader(const char *inputName,
+merylFileReader::merylFileReader(const char *inputName,
                                                        bool        beVerbose) {
   strncpy(_inName, inputName, FILENAME_MAX);
   initializeFromMasterIndex(true, false, beVerbose);
@@ -215,7 +217,7 @@ merylutil::kmers::v1::merylFileReader::merylFileReader(const char *inputName,
 
 
 
-merylutil::kmers::v1::merylFileReader::merylFileReader(const char *inputName,
+merylFileReader::merylFileReader(const char *inputName,
                                                        uint32      threadFile,
                                          bool        beVerbose) {
   strncpy(_inName, inputName, FILENAME_MAX);
@@ -225,7 +227,7 @@ merylutil::kmers::v1::merylFileReader::merylFileReader(const char *inputName,
 
 
 
-merylutil::kmers::v1::merylFileReader::~merylFileReader() {
+merylFileReader::~merylFileReader() {
 
   delete [] _blockIndex;
 
@@ -242,7 +244,7 @@ merylutil::kmers::v1::merylFileReader::~merylFileReader() {
 
 
 void
-merylutil::kmers::v1::merylFileReader::loadStatistics(void) {
+merylFileReader::loadStatistics(void) {
   if (_stats == NULL)
     initializeFromMasterIndex(false, true, false);
 }
@@ -250,7 +252,7 @@ merylutil::kmers::v1::merylFileReader::loadStatistics(void) {
 
 
 void
-merylutil::kmers::v1::merylFileReader::dropStatistics(void) {
+merylFileReader::dropStatistics(void) {
   delete _stats;
   _stats = NULL;
 }
@@ -258,7 +260,7 @@ merylutil::kmers::v1::merylFileReader::dropStatistics(void) {
 
 
 void
-merylutil::kmers::v1::merylFileReader::enableThreads(uint32 threadFile) {
+merylFileReader::enableThreads(uint32 threadFile) {
   _activeFile = threadFile;
   _threadFile = threadFile;
 }
@@ -266,7 +268,7 @@ merylutil::kmers::v1::merylFileReader::enableThreads(uint32 threadFile) {
 
 
 void
-merylutil::kmers::v1::merylFileReader::loadBlockIndex(void) {
+merylFileReader::loadBlockIndex(void) {
 
   if (_blockIndex != NULL)
     return;
@@ -451,7 +453,7 @@ dumpMerylDataFile(char *name) {
 
 
 bool
-merylutil::kmers::v1::merylFileReader::nextMer(void) {
+merylFileReader::nextMer(void) {
 
   _activeMer++;
 
@@ -528,3 +530,5 @@ merylutil::kmers::v1::merylFileReader::nextMer(void) {
 
   return(true);
 }
+
+}  //  namespace merylutil::kmers::v1

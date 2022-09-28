@@ -17,10 +17,10 @@
  *  contains full conditions and disclaimers.
  */
 
-#ifndef MERYL_UTIL_KMER_FILES_WRITER_H
-#define MERYL_UTIL_KMER_FILES_WRITER_H
+#ifndef MERYLUTIL_KMERS_WRITER_V1_H
+#define MERYLUTIL_KMERS_WRITER_V1_H
 
-#ifndef MERYL_UTIL_KMER_H
+#ifndef MERYLUTIL_KMERS_H
 #error "include kmers.H, not this."
 #endif
 
@@ -28,7 +28,7 @@
 #include "kmers-writer-block.H"
 #include "kmers-writer-stream.H"
 
-namespace merylutil::kmers::v1 {
+namespace merylutil::inline kmers::inline v1 {
 
 //  Responsible for writing data to a file.
 //
@@ -92,4 +92,4 @@ private:
 
 }  //  namespace merylutil::kmers::v1
 
-#endif  //  MERYL_UTIL_KMER_FILES_WRITER_H
+#endif  //  MERYLUTIL_KMERS_WRITER_V1_H

@@ -17,16 +17,14 @@
  *  contains full conditions and disclaimers.
  */
 
-#ifndef MERYL_UTIL_KMER_WRITER_STREAM_H
-#define MERYL_UTIL_KMER_WRITER_STREAM_H
+#ifndef MERYLUTIL_KMERS_WRITER_STREAM_V1_H
+#define MERYLUTIL_KMERS_WRITER_STREAM_V1_H
 
-#ifndef MERYL_UTIL_KMER_H
+#ifndef MERYLUTIL_KMERS_H
 #error "include kmers.H, not this."
 #endif
 
-//class merylutil::kmers::v1::merylFileWriter;
-
-namespace merylutil::kmers::v1 {
+namespace merylutil::inline kmers::inline v1 {
 
 class merylFileWriter;
 
@@ -72,6 +70,7 @@ private:
   kmdata                *_batchSuffixes;
   kmvalu                *_batchValues;
 };
-}
 
-#endif  //   MERYL_UTIL_KMER_WRITER_STREAM_H
+}  //  namespace merylutil::kmers::v1
+
+#endif  //  MERYLUTIL_KMERS_WRITER_STREAM_V1_H

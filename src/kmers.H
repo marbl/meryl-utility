@@ -17,28 +17,27 @@
  *  contains full conditions and disclaimers.
  */
 
-#ifndef MERYL_UTIL_KMER_H
-#define MERYL_UTIL_KMER_H
+#ifndef MERYLUTIL_KMERS_H
+#define MERYLUTIL_KMERS_H
 
-#include "system.H"
-#include "system.H"
-#include "files.H"
-#include "bits.H"
+//#include "system.H"
+//#include "system.H"
+//#include "files.H"
+//#include "bits.H"
 
 //  merSize 1 NOT supported.  Fails _leftShift.
 
 #undef  SHOW_LOAD
 
-#include "kmers-tiny.H"
-#include "kmers-histogram.H"
+#include "kmers-v1/kmers-tiny.H"
+#include "kmers-v1/kmers-histogram.H"
 
-#include "kmers-iterator.H"
+#include "kmers-v1/kmers-iterator.H"
 
-#include "kmers-writer.H"
-#include "kmers-reader.H"
+#include "kmers-v1/kmers-writer.H"
+#include "kmers-v1/kmers-reader.H"
 
-#include "kmers-iterator.H"
-#include "kmers-lookup.H"
+#include "kmers-v1/kmers-iterator.H"
+#include "kmers-v1/kmers-lookup.H"
 
-
-#endif  //  MERYL_UTIL_KMER
+#endif  //  MERYLUTIL_KMERS

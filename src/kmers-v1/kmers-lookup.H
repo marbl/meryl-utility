@@ -17,17 +17,17 @@
  *  contains full conditions and disclaimers.
  */
 
-#ifndef MERYL_UTIL_KMER_LOOKUP_H
-#define MERYL_UTIL_KMER_LOOKUP_H
+#ifndef MERYLUTIL_KMER_LOOKUP_H
+#define MERYLUTIL_KMER_LOOKUP_H
 
-#ifndef MERYL_UTIL_KMER_H
+#ifndef MERYLUTIL_KMERS_H
 #error "include kmers.H, not this."
 #endif
 
+#include "kmers.H"
 #include "sequence.H"
 
-namespace merylutil::kmers::v1 {
-using namespace merylutil::bits;
+namespace merylutil::inline kmers::inline v1 {
 
 class merylExactLookupProgress {
 public:
@@ -77,11 +77,8 @@ private:
   char    _progressString[65]  = {0};
   char    _formatString[128]   = {0};
 };
-}
 
 
-namespace merylutil::kmers::v1 {
-using namespace merylutil::sequence;
 
 class merylExactLookup {
 public:
@@ -237,13 +234,11 @@ public:
   uint64             decodeID(uint64 code)   { return(code >> nPositionsBits); }
   uint64             decodePos(uint64 code)  { return(code & posEntryPosMask); }
 };
-}
-
 
 
 inline
 void
-merylutil::kmers::v1::merylExactLookup::getPointers(uint64 prefix, uint64 &bgn, uint64 &end) {
+merylExactLookup::getPointers(uint64 prefix, uint64 &bgn, uint64 &end) {
   uint64  dat = _sufPointer->get(prefix);
 
   bgn = (dat >> _blkLenBits);
@@ -253,7 +248,7 @@ merylutil::kmers::v1::merylExactLookup::getPointers(uint64 prefix, uint64 &bgn, 
 
 inline
 kmvalu
-merylutil::kmers::v1::merylExactLookup::value_value(kmvalu value) {
+merylExactLookup::value_value(kmvalu value) {
   if (_valueBits == 0)               //  Return 'true' if no value
     return(1);                       //  is stored.
 
@@ -267,7 +262,7 @@ merylutil::kmers::v1::merylExactLookup::value_value(kmvalu value) {
 //  Return true/false if the kmer exists/does not.
 inline
 bool
-merylutil::kmers::v1::merylExactLookup::exists(kmer k) {
+merylExactLookup::exists(kmer k) {
   kmdata  kmer   = (kmdata)k;
   uint64  prefix = kmer >> _suffixBits;
   kmdata  suffix = kmer  & _suffixMask;
@@ -310,7 +305,7 @@ merylutil::kmers::v1::merylExactLookup::exists(kmer k) {
 //  Return the (internal) index of the kmer, or uint64max if the kmer doesn't exist.
 inline
 uint64
-merylutil::kmers::v1::merylExactLookup::index(kmer k) {
+merylExactLookup::index(kmer k) {
   kmdata  kmer   = (kmdata)k;
   uint64  prefix = kmer >> _suffixBits;
   kmdata  suffix = kmer  & _suffixMask;
@@ -354,7 +349,7 @@ merylutil::kmers::v1::merylExactLookup::index(kmer k) {
 //  And populate 'value' with the value of the kmer.
 inline
 bool
-merylutil::kmers::v1::merylExactLookup::exists(kmer k, kmvalu &value) {
+merylExactLookup::exists(kmer k, kmvalu &value) {
   kmdata  kmer   = (kmdata)k;
   kmdata  prefix = kmer >> _suffixBits;
   kmdata  suffix = kmer  & _suffixMask;
@@ -407,7 +402,7 @@ merylutil::kmers::v1::merylExactLookup::exists(kmer k, kmvalu &value) {
 //  Returns the value of the kmer, '0' if it doesn't exist.
 inline
 kmvalu
-merylutil::kmers::v1::merylExactLookup::value(kmer k) {
+merylExactLookup::value(kmer k) {
   kmdata  kmer   = (kmdata)k;
   kmdata  prefix = kmer >> _suffixBits;
   kmdata  suffix = kmer  & _suffixMask;
@@ -453,4 +448,6 @@ merylutil::kmers::v1::merylExactLookup::value(kmer k) {
   return(0);
 };
 
-#endif  //  MERYL_UTIL_KMER_LOOKUP_H
+}  //  namespace merylutil::kmers::v1
+
+#endif  //  MERYLUTIL_KMERS_LOOKUP_V1_H

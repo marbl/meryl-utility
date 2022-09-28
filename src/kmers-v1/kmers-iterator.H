@@ -17,13 +17,14 @@
  *  contains full conditions and disclaimers.
  */
 
-#ifndef MERYL_UTIL_KMER_ITERATOR_H
-#define MERYL_UTIL_KMER_ITERATOR_H
+#ifndef MERYLUTIL_KMERS_ITERATOR_V1_H
+#define MERYLUTIL_KMERS_ITERATOR_V1_H
 
-#ifndef MERYL_UTIL_KMER_H
+#ifndef MERYLUTIL_KMERS_H
 #error "include kmers.H, not this."
 #endif
 
+namespace merylutil::inline kmers::inline v1 {
 
 //  Converts a buffer of characters (or a file of characters) into kmers, one
 //  kmer at a time.
@@ -175,5 +176,6 @@ private:
   kmerTiny     _rmer;
 };
 
+}  //  namespace merylutil::kmers::v1
 
-#endif  //  MERYL_UTIL_KMER_ITERATOR_H
+#endif  //  MERYLUTIL_KMERS_ITERATOR_V1_H

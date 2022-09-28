@@ -19,7 +19,9 @@
 
 #include "kmers.H"
 
-merylutil::kmers::v1::merylBlockWriter::merylBlockWriter(merylFileWriter *writer) {
+namespace merylutil::inline kmers::inline v1 {
+
+merylBlockWriter::merylBlockWriter(merylFileWriter *writer) {
 
   _writer = writer;
 
@@ -54,7 +56,7 @@ merylutil::kmers::v1::merylBlockWriter::merylBlockWriter(merylFileWriter *writer
 
 
 
-merylutil::kmers::v1::merylBlockWriter::~merylBlockWriter() {
+merylBlockWriter::~merylBlockWriter() {
 
   //  Check that all output files are closed.  If not,
   //  finishIteration() was never called.  Since that's somewhat heavy-weight,
@@ -96,7 +98,7 @@ merylutil::kmers::v1::merylBlockWriter::~merylBlockWriter() {
 //  the call to it.
 //
 void
-merylutil::kmers::v1::merylBlockWriter::addBlock(kmpref  prefix,
+merylBlockWriter::addBlock(kmpref  prefix,
                                                  uint64  nKmers,
                                                  kmdata *suffixes,
                                                  kmvalu *values) {
@@ -129,7 +131,7 @@ merylutil::kmers::v1::merylBlockWriter::addBlock(kmpref  prefix,
 //  Write their merylIndex files.
 //  Clear the index data in memory.
 void
-merylutil::kmers::v1::merylBlockWriter::closeFileDumpIndex(uint32 oi, uint32 iteration) {
+merylBlockWriter::closeFileDumpIndex(uint32 oi, uint32 iteration) {
 
   //  Close all data files.
 
@@ -156,7 +158,7 @@ merylutil::kmers::v1::merylBlockWriter::closeFileDumpIndex(uint32 oi, uint32 ite
 
 
 void
-merylutil::kmers::v1::merylBlockWriter::finishBatch(void) {
+merylBlockWriter::finishBatch(void) {
 
   for (uint32 ii=0; ii<_numFiles; ii++)
     closeFileDumpIndex(ii);
@@ -167,7 +169,7 @@ merylutil::kmers::v1::merylBlockWriter::finishBatch(void) {
 
 
 void
-merylutil::kmers::v1::merylBlockWriter::finish(void) {
+merylBlockWriter::finish(void) {
 
   fprintf(stderr, "finishIteration()--\n");
 
@@ -216,7 +218,7 @@ merylutil::kmers::v1::merylBlockWriter::finish(void) {
 
 
 void
-merylutil::kmers::v1::merylBlockWriter::mergeBatches(uint32 oi) {
+merylBlockWriter::mergeBatches(uint32 oi) {
   merylFileBlockReader    inBlocks[_iteration + 1];
   FILE                   *inFiles [_iteration + 1];
 
@@ -383,3 +385,4 @@ merylutil::kmers::v1::merylBlockWriter::mergeBatches(uint32 oi) {
   }
 }
 
+}  //  namespace merylutil::kmers::v1

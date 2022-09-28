@@ -19,10 +19,10 @@
 
 #include "kmers.H"
 
-
+namespace merylutil::inline kmers::inline v1 {
 
 bool
-merylutil::kmers::v1::merylFileBlockReader::loadBlock(FILE *inFile, uint32 activeFile, uint32 activeIteration) {
+merylFileBlockReader::loadBlock(FILE *inFile, uint32 activeFile, uint32 activeIteration) {
 
   _blockPrefix = 0;
   _nKmers      = 0;
@@ -78,7 +78,7 @@ merylutil::kmers::v1::merylFileBlockReader::loadBlock(FILE *inFile, uint32 activ
 
 
 void
-merylutil::kmers::v1::merylFileBlockReader::decodeBlock(void) {
+merylFileBlockReader::decodeBlock(void) {
   resizeArrayPair(_suffixes, _values, 0, _nKmersMax, _nKmers, _raAct::doNothing);
   decodeBlock(_suffixes, _values);
 }
@@ -86,7 +86,7 @@ merylutil::kmers::v1::merylFileBlockReader::decodeBlock(void) {
 
 
 void
-merylutil::kmers::v1::merylFileBlockReader::decodeBlock(kmdata *suffixes, kmvalu *values) {
+merylFileBlockReader::decodeBlock(kmdata *suffixes, kmvalu *values) {
   kmdata  thisPrefix = 0;
 
   //  Decode the suffixes.
@@ -127,4 +127,4 @@ merylutil::kmers::v1::merylFileBlockReader::decodeBlock(kmdata *suffixes, kmvalu
   }
 }
 
-
+}  //  namespace merylutil::kmers::v1

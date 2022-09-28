@@ -19,8 +19,9 @@
 
 #include "kmers.H"
 
+namespace merylutil::inline kmers::inline v1 {
 
-merylutil::kmers::v1::merylStreamWriter::merylStreamWriter(merylFileWriter *writer, uint32 fileNumber) {
+merylStreamWriter::merylStreamWriter(merylFileWriter *writer, uint32 fileNumber) {
 
   _writer = writer;
 
@@ -56,7 +57,7 @@ merylutil::kmers::v1::merylStreamWriter::merylStreamWriter(merylFileWriter *writ
 
 
 
-merylutil::kmers::v1::merylStreamWriter::~merylStreamWriter() {
+merylStreamWriter::~merylStreamWriter() {
 
   //  If data in the batch, dump it.  Cleanup and close the data file.
 
@@ -85,7 +86,7 @@ merylutil::kmers::v1::merylStreamWriter::~merylStreamWriter() {
 
 
 void
-merylutil::kmers::v1::merylStreamWriter::dumpBlock(kmpref nextPrefix) {
+merylStreamWriter::dumpBlock(kmpref nextPrefix) {
 
   //fprintf(stderr, "merylStreamWriter::dumpBlock()-- write batch for prefix %lu with %lu kmers.\n",
   //        _batchPrefix, _batchNumKmers);
@@ -113,7 +114,7 @@ merylutil::kmers::v1::merylStreamWriter::dumpBlock(kmpref nextPrefix) {
 
 
 void
-merylutil::kmers::v1::merylStreamWriter::addMer(kmer k, kmvalu c) {
+merylStreamWriter::addMer(kmer k, kmvalu c) {
 
   kmpref  prefix = (kmdata)k >> _suffixSize;   //  Yes, cast to kmdata.
   kmdata  suffix = (kmdata)k  & _suffixMask;
@@ -154,3 +155,5 @@ merylutil::kmers::v1::merylStreamWriter::addMer(kmer k, kmvalu c) {
 
   _batchNumKmers++;
 }
+
+}  //  namespace merylutil::kmers::v1

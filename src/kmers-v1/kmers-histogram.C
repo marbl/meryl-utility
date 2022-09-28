@@ -19,8 +19,9 @@
 
 #include "kmers.H"
 
+namespace merylutil::inline kmers::inline v1 {
 
-merylutil::kmers::v1::merylHistogram::merylHistogram() {
+merylHistogram::merylHistogram() {
   _numUnique     = 0;
   _numDistinct   = 0;
   _numTotal      = 0;
@@ -37,7 +38,7 @@ merylutil::kmers::v1::merylHistogram::merylHistogram() {
 }
 
 
-merylutil::kmers::v1::merylHistogram::~merylHistogram() {
+merylHistogram::~merylHistogram() {
   delete [] _hist;
   delete [] _histVs;
   delete [] _histOs;
@@ -46,7 +47,7 @@ merylutil::kmers::v1::merylHistogram::~merylHistogram() {
 
 
 void
-merylutil::kmers::v1::merylHistogram::clear(void) {
+merylHistogram::clear(void) {
   _numUnique     = 0;
   _numDistinct   = 0;
   _numTotal      = 0;
@@ -67,7 +68,7 @@ merylutil::kmers::v1::merylHistogram::clear(void) {
 
 
 void
-merylutil::kmers::v1::merylHistogram::dump(stuffedBits *bits) {
+merylHistogram::dump(stuffedBits *bits) {
 
   //  This only writes the latest version.
 
@@ -104,7 +105,7 @@ merylutil::kmers::v1::merylHistogram::dump(stuffedBits *bits) {
 
 
 void
-merylutil::kmers::v1::merylHistogram::dump(FILE        *outFile) {
+merylHistogram::dump(FILE        *outFile) {
   stuffedBits  *bits = new stuffedBits;
 
   dump(bits);
@@ -117,7 +118,7 @@ merylutil::kmers::v1::merylHistogram::dump(FILE        *outFile) {
 
 
 void
-merylutil::kmers::v1::merylHistogram::load_v01(stuffedBits *bits) {
+merylHistogram::load_v01(stuffedBits *bits) {
   uint32  histLast;
   uint32  hbigLen;
 
@@ -178,7 +179,7 @@ merylutil::kmers::v1::merylHistogram::load_v01(stuffedBits *bits) {
 
 
 void
-merylutil::kmers::v1::merylHistogram::load_v03(stuffedBits *bits) {
+merylHistogram::load_v03(stuffedBits *bits) {
 
   _numUnique   = bits->getBinary(64);
   _numDistinct = bits->getBinary(64);
@@ -209,8 +210,8 @@ merylutil::kmers::v1::merylHistogram::load_v03(stuffedBits *bits) {
 
 
 void
-merylutil::kmers::v1::merylHistogram::load(stuffedBits *bits,
-                                           uint32       version) {
+merylHistogram::load(stuffedBits *bits,
+                     uint32       version) {
 
   switch (version) {
     case 1:
@@ -229,8 +230,8 @@ merylutil::kmers::v1::merylHistogram::load(stuffedBits *bits,
 
 
 void
-merylutil::kmers::v1::merylHistogram::load(FILE        *inFile,
-                                           uint32       version) {
+merylHistogram::load(FILE        *inFile,
+                     uint32       version) {
   stuffedBits  *bits = new stuffedBits;
 
   bits->loadFromFile(inFile);
@@ -240,3 +241,4 @@ merylutil::kmers::v1::merylHistogram::load(FILE        *inFile,
   delete bits;
 }
 
+}  //  namespace merylutil::kmers::v1

@@ -67,7 +67,8 @@
 //   - The returned sequence is NOT NUL terminated.
 //
 
-namespace merylutil::sequence::inline v1 {
+namespace merylutil::inline sequence::inline v1 {
+
 class dnaSeqFile {
 public:
   dnaSeqFile(char const *filename, bool indexed=false);
@@ -141,6 +142,7 @@ private:
   uint64                 _indexLen = 0;
   uint64                 _indexMax = 0;
 };
-}
+
+}  //  namespace merylutil::sequence::v1
 
 #endif  //  MERYLUTIL_SEQUENCE_V1_DNASEQFILE_H

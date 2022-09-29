@@ -22,16 +22,16 @@
 #include "arrays.H"
 #include "strings.H"
 
+namespace merylutil::sequence::inline v1 {
 
-merylutil::sequence::v1::dnaSeqFile::dnaSeqFile(char const *filename, bool indexed) {
+
+dnaSeqFile::dnaSeqFile(char const *filename, bool indexed) {
   _filename = duplicateString(filename);
 
   reopen(indexed);
 }
 
-
-
-merylutil::sequence::v1::dnaSeqFile::~dnaSeqFile() {
+dnaSeqFile::~dnaSeqFile() {
   delete [] _filename;
   delete    _file;
   delete    _buffer;
@@ -43,7 +43,7 @@ merylutil::sequence::v1::dnaSeqFile::~dnaSeqFile() {
 //  Open, or reopen, an input file.
 //
 void
-merylutil::sequence::v1::dnaSeqFile::reopen(bool indexed) {
+dnaSeqFile::reopen(bool indexed) {
 
   //  If a _file exists already, reopen it, otherwise, make a new one.
   if (_file)
@@ -68,7 +68,7 @@ merylutil::sequence::v1::dnaSeqFile::reopen(bool indexed) {
 
 
 bool
-merylutil::sequence::v1::dnaSeqFile::findSequence(uint64 i) {
+dnaSeqFile::findSequence(uint64 i) {
 
   if (_indexLen == 0)   return(false);
   if (_indexLen <= i)   return(false);
@@ -83,7 +83,7 @@ merylutil::sequence::v1::dnaSeqFile::findSequence(uint64 i) {
 
 
 uint64
-merylutil::sequence::v1::dnaSeqFile::sequenceLength(uint64 i) {
+dnaSeqFile::sequenceLength(uint64 i) {
 
   if (_indexLen == 0)   return(UINT64_MAX);
   if (_indexLen <= i)   return(UINT64_MAX);
@@ -118,7 +118,7 @@ makeIndexName(char const *prefix) {
 
 //  Load an index.  Returns true if one was loaded.
 bool
-merylutil::sequence::v1::dnaSeqFile::loadIndex(void) {
+dnaSeqFile::loadIndex(void) {
   char const  *indexName = makeIndexName(_filename);
   FILE        *indexFile = nullptr;
 
@@ -164,7 +164,7 @@ merylutil::sequence::v1::dnaSeqFile::loadIndex(void) {
 
 
 void
-merylutil::sequence::v1::dnaSeqFile::saveIndex(void) {
+dnaSeqFile::saveIndex(void) {
   char const *indexName = makeIndexName(_filename);
   FILE       *indexFile = merylutil::openOutputFile(indexName);
 
@@ -186,7 +186,7 @@ merylutil::sequence::v1::dnaSeqFile::saveIndex(void) {
 
 
 void
-merylutil::sequence::v1::dnaSeqFile::generateIndex(void) {
+dnaSeqFile::generateIndex(void) {
   dnaSeq     seq;
 
   //  Fail if an index is requested for a compressed file.
@@ -248,7 +248,7 @@ merylutil::sequence::v1::dnaSeqFile::generateIndex(void) {
 
 
 void
-merylutil::sequence::v1::dnaSeqFile::removeIndex(void) {
+dnaSeqFile::removeIndex(void) {
 
   delete [] _index;
 
@@ -260,9 +260,9 @@ merylutil::sequence::v1::dnaSeqFile::removeIndex(void) {
 
 
 bool
-merylutil::sequence::v1::dnaSeqFile::loadFASTA(char  *&name, uint32 &nameMax,
-                                               char  *&seq,
-                                               uint8 *&qlt,  uint64 &seqMax, uint64 &seqLen, uint64 &qltLen) {
+dnaSeqFile::loadFASTA(char  *&name, uint32 &nameMax,
+                      char  *&seq,
+                      uint8 *&qlt,  uint64 &seqMax, uint64 &seqLen, uint64 &qltLen) {
   uint64  nameLen = 0;
   char    ch      = _buffer->read();
 
@@ -332,9 +332,9 @@ merylutil::sequence::v1::dnaSeqFile::loadFASTA(char  *&name, uint32 &nameMax,
 
 
 bool
-merylutil::sequence::v1::dnaSeqFile::loadFASTQ(char  *&name, uint32 &nameMax,
-                                               char  *&seq,
-                                               uint8 *&qlt,  uint64 &seqMax, uint64 &seqLen, uint64 &qltLen) {
+dnaSeqFile::loadFASTQ(char  *&name, uint32 &nameMax,
+                      char  *&seq,
+                      uint8 *&qlt,  uint64 &seqMax, uint64 &seqLen, uint64 &qltLen) {
   uint32  nameLen = 0;
   char    ch      = _buffer->read();
 
@@ -435,9 +435,9 @@ merylutil::sequence::v1::dnaSeqFile::loadFASTQ(char  *&name, uint32 &nameMax,
 
 
 bool
-merylutil::sequence::v1::dnaSeqFile::loadSequence(char  *&name, uint32 &nameMax,
-                                                  char  *&seq,
-                                                  uint8 *&qlt,  uint64 &seqMax, uint64 &seqLen, uint32 &error) {
+dnaSeqFile::loadSequence(char  *&name, uint32 &nameMax,
+                         char  *&seq,
+                         uint8 *&qlt,  uint64 &seqMax, uint64 &seqLen, uint32 &error) {
   uint64 qltLen = 0;
 
   //  Allocate space for the arrays, if they're currently unallocated.
@@ -529,7 +529,7 @@ merylutil::sequence::v1::dnaSeqFile::loadSequence(char  *&name, uint32 &nameMax,
 
 
 bool
-merylutil::sequence::v1::dnaSeqFile::loadSequence(dnaSeq &seq) {
+dnaSeqFile::loadSequence(dnaSeq &seq) {
   bool result = loadSequence(seq._name, seq._nameMax,
                              seq._seq,
                              seq._qlt,  seq._seqMax, seq._seqLen, seq._error);
@@ -543,10 +543,10 @@ merylutil::sequence::v1::dnaSeqFile::loadSequence(dnaSeq &seq) {
 
 
 bool
-merylutil::sequence::v1::dnaSeqFile::loadBases(char    *seq,
-                                               uint64   maxLength,
-                                               uint64  &seqLength,
-                                               bool    &endOfSequence) {
+dnaSeqFile::loadBases(char    *seq,
+                      uint64   maxLength,
+                      uint64  &seqLength,
+                      bool    &endOfSequence) {
 
   seqLength     = 0;
   endOfSequence = false;
@@ -615,3 +615,5 @@ merylutil::sequence::v1::dnaSeqFile::loadBases(char    *seq,
 
   return(endOfSequence);
 }
+
+}  //  namespace merylutil::sequence::v1

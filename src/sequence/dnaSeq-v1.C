@@ -19,12 +19,13 @@
 
 #include "dnaSeq-v1.H"
 
+namespace merylutil::inline sequence::inline v1 {
 
-merylutil::sequence::v1::dnaSeq::dnaSeq() {
+dnaSeq::dnaSeq() {
 };
 
 
-merylutil::sequence::v1::dnaSeq::~dnaSeq() {
+dnaSeq::~dnaSeq() {
   delete [] _name;
   delete [] _seq;
   delete [] _qlt;
@@ -32,7 +33,7 @@ merylutil::sequence::v1::dnaSeq::~dnaSeq() {
 
 
 void
-merylutil::sequence::v1::dnaSeq::releaseAll(void) {
+dnaSeq::releaseAll(void) {
   delete [] _name;    _name = _ident = _flags = nullptr;
   delete [] _seq;     _seq                    = nullptr;
   delete [] _qlt;     _qlt                    = nullptr;
@@ -44,7 +45,7 @@ merylutil::sequence::v1::dnaSeq::releaseAll(void) {
 
 
 void
-merylutil::sequence::v1::dnaSeq::releaseBases(void) {
+dnaSeq::releaseBases(void) {
   delete [] _seq;     _seq                    = nullptr;
   delete [] _qlt;     _qlt                    = nullptr;
 
@@ -54,8 +55,8 @@ merylutil::sequence::v1::dnaSeq::releaseBases(void) {
 
 
 bool
-merylutil::sequence::v1::dnaSeq::copy(char  *bout,
-                                      uint32 bgn, uint32 end, bool terminate) {
+dnaSeq::copy(char  *bout,
+             uint32 bgn, uint32 end, bool terminate) {
 
   if ((end < bgn) || (_seqLen < end))
     return(false);
@@ -71,9 +72,9 @@ merylutil::sequence::v1::dnaSeq::copy(char  *bout,
 
 
 bool
-merylutil::sequence::v1::dnaSeq::copy(char  *bout,
-                                      uint8 *qout,
-                                      uint32 bgn, uint32 end, bool terminate) {
+dnaSeq::copy(char  *bout,
+             uint8 *qout,
+             uint32 bgn, uint32 end, bool terminate) {
 
   if ((end < bgn) || (_seqLen < end))
     return(false);
@@ -93,7 +94,7 @@ merylutil::sequence::v1::dnaSeq::copy(char  *bout,
 
 
 void
-merylutil::sequence::v1::dnaSeq::findNameAndFlags(void) {
+dnaSeq::findNameAndFlags(void) {
   uint32 ii=0;
 
   while (isWhiteSpace(_name[ii]) == true)   //  Skip white space before the name.
@@ -117,3 +118,4 @@ merylutil::sequence::v1::dnaSeq::findNameAndFlags(void) {
   _flags = _name + ii;                      //  Flags are here or NUL.
 }
 
+}  //  namespace merylutil::sequence::v1

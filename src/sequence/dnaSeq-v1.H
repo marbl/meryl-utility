@@ -44,7 +44,8 @@
 //  false if bgn or end are out of range or inconsistent.
 //
 
-namespace merylutil::sequence::inline v1 {
+namespace merylutil::inline sequence::inline v1 {
+
 class dnaSeq {
 public:
   dnaSeq();
@@ -89,7 +90,7 @@ private:
 
   friend class dnaSeqFile;
 };
-}
 
+}  //  namespace merylutil::sequence::v1
 
 #endif  //  MERYLUTIL_SEQUENCE_V1_DNASEQ_H

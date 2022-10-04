@@ -52,6 +52,16 @@ SOURCES      := \
                 kmers-v1/kmers-writer.C \
                 kmers-v1/kmers.C \
                 \
+                kmers-v2/kmers-exact.C \
+                kmers-v2/kmers-files.C \
+                kmers-v2/kmers-histogram.C \
+                kmers-v2/kmers-reader-dump.C \
+                kmers-v2/kmers-reader.C \
+                kmers-v2/kmers-writer-block.C \
+                kmers-v2/kmers-writer-stream.C \
+                kmers-v2/kmers-writer.C \
+                kmers-v2/kmers.C \
+                \
                 math/md5-v1.C \
                 math/mt19937ar-v1.C \
                 math/sampledDistribution-v1.C \

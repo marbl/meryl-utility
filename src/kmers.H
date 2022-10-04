@@ -20,15 +20,14 @@
 #ifndef MERYLUTIL_KMERS_H
 #define MERYLUTIL_KMERS_H
 
-//#include "system.H"
-//#include "system.H"
-//#include "files.H"
-//#include "bits.H"
-
 //  merSize 1 NOT supported.  Fails _leftShift.
 
 #undef  SHOW_LOAD
 
+////////////////////////////////////////
+//
+//  Version 1 is used in meryl (and meryl-lookup), merfin and canu.
+//
 #include "kmers-v1/kmers-tiny.H"
 #include "kmers-v1/kmers-histogram.H"
 
@@ -39,5 +38,20 @@
 
 #include "kmers-v1/kmers-iterator.H"
 #include "kmers-v1/kmers-lookup.H"
+
+////////////////////////////////////////
+//
+//  Version 2 is used in meryl2.
+//
+#include "kmers-v2/kmers-tiny.H"
+#include "kmers-v2/kmers-histogram.H"
+
+#include "kmers-v2/kmers-iterator.H"
+
+#include "kmers-v2/kmers-writer.H"
+#include "kmers-v2/kmers-reader.H"
+
+#include "kmers-v2/kmers-iterator.H"
+#include "kmers-v2/kmers-lookup.H"
 
 #endif  //  MERYLUTIL_KMERS

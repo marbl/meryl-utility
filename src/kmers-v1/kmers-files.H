@@ -17,8 +17,8 @@
  *  contains full conditions and disclaimers.
  */
 
-#ifndef MERYLUTIL_KMER_FILES_V1_H
-#define MERYLUTIL_KMER_FILES_V1_H
+#ifndef MERYLUTIL_KMERS_FILES_V1_H
+#define MERYLUTIL_KMERS_FILES_V1_H
 
 #ifndef MERYLUTIL_KMERS_H
 #error "include kmers.H, not this."
@@ -155,4 +155,4 @@ private:
 
 }  //  namespace merylutil::kmers::v1
 
-#endif  //  MERYLUTIL_KMER_FILES_V1_H
+#endif  //  MERYLUTIL_KMERS_FILES_V1_H

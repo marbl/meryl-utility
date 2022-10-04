@@ -17,8 +17,8 @@
  *  contains full conditions and disclaimers.
  */
 
-#ifndef MERYLUTIL_KMER_LOOKUP_H
-#define MERYLUTIL_KMER_LOOKUP_H
+#ifndef MERYLUTIL_KMERS_LOOKUP_H
+#define MERYLUTIL_KMERS_LOOKUP_H
 
 #ifndef MERYLUTIL_KMERS_H
 #error "include kmers.H, not this."

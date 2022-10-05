@@ -29,7 +29,7 @@
 #include "types.H"
 #include "bits.H"
 
-namespace merylutil::inline kmers::inline v1 {
+namespace merylutil::inline kmers::v1 {
 
 //  Stores a histogram of kmer count values.
 

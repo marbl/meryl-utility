@@ -24,7 +24,7 @@
 #error "include kmers.H, not this."
 #endif
 
-namespace merylutil::inline kmers::inline v1 {
+namespace merylutil::inline kmers::v1 {
 
 class merylFileReader {
 private:

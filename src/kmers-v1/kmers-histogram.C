@@ -19,7 +19,7 @@
 
 #include "kmers.H"
 
-namespace merylutil::inline kmers::inline v1 {
+namespace merylutil::inline kmers::v1 {
 
 merylHistogram::merylHistogram() {
   _numUnique     = 0;

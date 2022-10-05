@@ -24,7 +24,7 @@
 #error "include kmers.H, not this."
 #endif
 
-namespace merylutil::inline kmers::inline v1 {
+namespace merylutil::inline kmers::v1 {
 
 //  Converts a buffer of characters (or a file of characters) into kmers, one
 //  kmer at a time.

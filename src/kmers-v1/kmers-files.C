@@ -19,7 +19,7 @@
 
 #include "kmers.H"
 
-namespace merylutil::inline kmers::inline v1 {
+namespace merylutil::inline kmers::v1 {
 
 bool
 merylFileBlockReader::loadBlock(FILE *inFile, uint32 activeFile, uint32 activeIteration) {

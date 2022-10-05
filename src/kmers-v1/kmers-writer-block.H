@@ -27,7 +27,7 @@
 //  Responsible for taking a block of sorted kmers
 //  and writing them to the appropriate file.
 
-namespace merylutil::inline kmers::inline v1 {
+namespace merylutil::inline kmers::v1 {
 
 class merylFileWriter;
 

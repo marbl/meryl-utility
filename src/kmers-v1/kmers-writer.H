@@ -28,7 +28,7 @@
 #include "kmers-writer-block.H"
 #include "kmers-writer-stream.H"
 
-namespace merylutil::inline kmers::inline v1 {
+namespace merylutil::inline kmers::v1 {
 
 //  Responsible for writing data to a file.
 //

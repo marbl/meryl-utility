@@ -19,7 +19,7 @@
 
 #include "kmers.H"
 
-namespace merylutil::inline kmers::inline v1 {
+namespace merylutil::inline kmers::v1 {
 
 uint32 kmerTiny::_merSize   = 0;
 kmdata kmerTiny::_fullMask  = 0;

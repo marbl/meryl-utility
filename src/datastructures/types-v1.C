@@ -275,10 +275,12 @@ decodeInteger(char const *str, uint64 bgn, uint64 end,
   else {
     char *a    = new char [1024];
     char *b    = new char [1024];
+    char *c    = new char [1024];
     int32 bpos = 0;
 
     snprintf(a, 1024, "Can't decode '%s': didn't find type of number ('b', 'o', 'd' or 'h') at end.", str);
     snprintf(b, 1024, "              ");
+    c[0] = 0;
 
     bpos = strlen(b);
 
@@ -292,15 +294,18 @@ decodeInteger(char const *str, uint64 bgn, uint64 end,
 
     err.push_back(a);
     err.push_back(b);
+    err.push_back(c);
   }
 
   if (invalidNumber == true) {
     char *a    = new char [1024];
     char *b    = new char [1024];
+    char *c    = new char [1024];
     int32 bpos = 0;
 
     snprintf(a, 1024, "Can't decode '%s': %s number has invalid letters.", str, expectedType);
     snprintf(b, 1024, "              ");
+    c[0] = 0;
 
     bpos = strlen(b);
 
@@ -314,6 +319,7 @@ decodeInteger(char const *str, uint64 bgn, uint64 end,
 
     err.push_back(a);
     err.push_back(b);
+    err.push_back(c);
   }
 
   //  Copy the (negated) value to the result and return.

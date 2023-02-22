@@ -35,21 +35,21 @@ public:
 
     fileSize = merylutil::sizeOfFile(inname);
 
-    inFile = merylutil::openInputFile(inPath);
-    otFile = merylutil::openOutputFile(otPath);
+    if (merylutil::fileExists(otPath) == false) {
+      inFile = merylutil::openInputFile(inPath);
+      otFile = merylutil::openOutputFile(otPath);
+    }
   };
 
   ~cpBufState() {
     struct stat     st;
     struct timespec times[2];   // access, modification
 
-    merylutil::closeFile(inFile);
-    merylutil::closeFile(otFile);
+    //  Grab the timestamp of the input.
 
     errno = 0;
-    if (stat(inPath, &st)) {
+    if (stat(inPath, &st))
       fprintf(stderr, "stat error: %s\n", strerror(errno));
-    }
 
     times[0].tv_sec  = st.st_atim.tv_sec;
     times[0].tv_nsec = st.st_atim.tv_nsec;
@@ -57,9 +57,16 @@ public:
     times[1].tv_sec  = st.st_mtim.tv_sec;
     times[1].tv_nsec = st.st_mtim.tv_nsec;
 
-    errno = 0;
-    if (utimensat(AT_FDCWD, otPath, times, 0)) {
-      fprintf(stderr, "futimens error: %s\n", strerror(errno));
+    //  If the output was opened, close the files and update the timestamp.
+    //  If it wasn't opened, it existed already and we didn't do the copy.
+
+    if (otFile) {
+      merylutil::closeFile(inFile);
+      merylutil::closeFile(otFile);
+
+      errno = 0;
+      if (utimensat(AT_FDCWD, otPath, times, 0))
+        fprintf(stderr, "futimens error: %s\n", strerror(errno));
     }
   };
 
@@ -107,11 +114,11 @@ public:
   FILE       *inFile = nullptr;
   FILE       *otFile = nullptr;
 
-  uint64     bufMax   = 1048576;
-  uint64     fileSize = 0;
+  uint64      bufMax   = 1048576;
+  uint64      fileSize = 0;
 
-  double     inStart=DBL_MAX, inEnd=0;
-  double     otStart=DBL_MAX, otEnd=0;
+  double      inStart=DBL_MAX, inEnd=0;
+  double      otStart=DBL_MAX, otEnd=0;
 
   merylutil::md5sum  md5;
 };
@@ -153,17 +160,12 @@ void  bufStatus(void *G, uint64 numberLoaded, uint64 numberComputed, uint64 numb
   if (inPerc > 100)   inPerc = 100.0;
   if (otPerc > 100)   otPerc = 100.0;
 
-#if 0
-  fprintf(stderr, "  %6.2f%%  %6.2f MB  %6.2f MB/sec -> %6.2f MB -> %6.2f%%  %6.2f MB  %6.2f MB/sec\r",
-          inPerc, inSize / 1048576.0, inSpeed / 1048576.0,
-          (inSize - otSize) / 1048576.0,
-          otPerc, otSize / 1048576.0, otSpeed / 1048576.0);
-#else
-  fprintf(stderr, "\033[3A");
-  fprintf(stderr, "  INPUT:  %6.2f%%  %8.2f MB  %6.2f MB/sec\n", inPerc, inSize / 1048576.0, inSpeed / 1048576.0);
-  fprintf(stderr, "  BUFFER:          %8.2f MB\n", (inSize - otSize) / 1048576.0);
-  fprintf(stderr, "  OUTPUT: %6.2f%%  %8.2f MB  %6.2f MB/sec\n",     otPerc, otSize / 1048576.0, otSpeed / 1048576.0);
-#endif
+  if (g->otFile) {
+    fprintf(stderr, "\033[3A");
+    fprintf(stderr, "  INPUT:  %6.2f%%  %8.2f MB  %6.2f MB/sec\n", inPerc, inSize / 1048576.0, inSpeed / 1048576.0);
+    fprintf(stderr, "  BUFFER:          %8.2f MB\n", (inSize - otSize) / 1048576.0);
+    fprintf(stderr, "  OUTPUT: %6.2f%%  %8.2f MB  %6.2f MB/sec\n", otPerc, otSize / 1048576.0, otSpeed / 1048576.0);
+  }
 }
 
 
@@ -208,17 +210,20 @@ main(int argc, char **argv) {
     ss->setInOrderOutput(true);
 
     fprintf(stderr, "%s -> %s\n", infile, otpath);
-    fprintf(stderr, "\n");
-    fprintf(stderr, "\n");
-    fprintf(stderr, "\n");
 
-    ss->run(g, true);
+    if (g->otFile) {
+      fprintf(stderr, "\n");
+      fprintf(stderr, "\n");
+      fprintf(stderr, "\n");
 
-    g->md5.finalize();
+      ss->run(g, true);
 
-    fprintf(stderr, "\033[3A");
-    fprintf(stderr, "  MD5:    %s\n", g->md5.toString());
-    fprintf(stderr, "\033[3B");
+      g->md5.finalize();
+
+      fprintf(stderr, "\033[3A");
+      fprintf(stderr, "  MD5:    %s\n", g->md5.toString());
+      fprintf(stderr, "\033[3B");
+    }
 
     delete ss;
     delete g;

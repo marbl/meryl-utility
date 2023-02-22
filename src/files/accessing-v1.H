@@ -37,11 +37,11 @@ namespace merylutil::inline files::inline v1 {
 
 void    findBaseFileName(char *basename, char const *filename);
 
-void    rename(char const *oldname, char const *newname);
-void    rename(char const *oldprefix, char oldseparator, char const *oldsuffix,
-               char const *newprefix, char newseparator, char const *newsuffix);
+bool    rename(char const *oldname, char const *newname, bool fatal=true);
+bool    rename(char const *oldprefix, char oldseparator, char const *oldsuffix,
+               char const *newprefix, char newseparator, char const *newsuffix, bool fatal=true);
 
-void    symlink(char const *pathToFile, char const *pathToLink);
+bool    symlink(char const *pathToFile, char const *pathToLink, bool fatal=true);
 
 bool    pathExists     (char const *prefix, char separator='.', char const *suffix=nullptr);                        //  true if file or dir 'path' exists
 bool    fileExists     (char const *prefix, char separator='.', char const *suffix=nullptr, bool writable=false);   //  true if file        'path' exists (and is writable)
@@ -49,12 +49,13 @@ bool    directoryExists(char const *prefix, char separator='.', char const *suff
 
 //  OPERATIONS ON DIRECTORIES
 
-void    mkdir(char const *dirname);
-void    rmdir(char const *dirname);
+bool    mkdir(char const *dirname, bool fatal=true);
+bool    rmdir(char const *dirname, bool fatal=true);
 
 //  OPERATIONS ON FILES
 
-void    unlink(char const *prefix, char separator='.', char const *suffix=nullptr);
+bool    unlink(char const *path, bool fatal=false);
+bool    unlink(char const *prefix, char separator, char const *suffix, bool fatal=false);
 
 //  OPERATIONS ON PERMISSIONS
 

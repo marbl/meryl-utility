@@ -18,7 +18,7 @@
  */
 
 #include "accessing-v1.H"
-
+#include "system.H"
 
 //  Report ALL file open/close events.
 #undef SHOW_FILE_OPEN_CLOSE
@@ -70,21 +70,23 @@ findBaseFileName(char *basename, char const *filename) {
 //
 namespace merylutil::inline files::inline v1 {
 
-void
-rename(char const *oldname, char const *newname) {
+bool
+rename(char const *oldname, char const *newname, bool fatal) {
 
   if (pathExists(oldname) == false)
-    return;
+    return false;
 
   errno = 0;
-  if (::rename(oldname, newname) != 0)
-    fprintf(stderr, "renane()--  Failed to rename file '%s' to '%s': %s\n",
-            oldname, newname, strerror(errno)), exit(1);
+  if (::rename(oldname, newname) == -1)
+    return fatalError(fatal, "renane()--  Failed to rename file '%s' to '%s': %s\n",
+                      oldname, newname, strerror(errno));
+
+  return true;
 }
 
-void
+bool
 rename(char const *oldprefix, char oldseparator, char const *oldsuffix,
-       char const *newprefix, char newseparator, char const *newsuffix) {
+       char const *newprefix, char newseparator, char const *newsuffix, bool fatal) {
   char   oldpath[FILENAME_MAX+1] = {0};
   char   newpath[FILENAME_MAX+1] = {0};
 
@@ -92,12 +94,14 @@ rename(char const *oldprefix, char oldseparator, char const *oldsuffix,
   snprintf(newpath, FILENAME_MAX, "%s%c%s", newprefix, newseparator, newsuffix);
 
   if (pathExists(oldpath) == false)
-    return;
+    return false;
 
   errno = 0;
-  if (::rename(oldpath, newpath) != 0)
-    fprintf(stderr, "renane()--  Failed to rename file '%s' to '%s': %s\n",
-            oldpath, newpath, strerror(errno)), exit(1);
+  if (::rename(oldpath, newpath) == -1)
+    return fatalError(fatal, "renane()--  Failed to rename file '%s' to '%s': %s\n",
+                      oldpath, newpath, strerror(errno));
+
+  return true;
 }
 
 }  //  namespace merylutil::files::v1
@@ -124,7 +128,7 @@ symlink(char const *pathToFile, char const *pathToLink) {
     return;
 
   errno = 0;
-  if (::symlink(pathToFile, pathToLink) != 0)
+  if (::symlink(pathToFile, pathToLink) == -1)
     fprintf(stderr, "symlink()-- Failed to make link '%s' pointing to file '%s': %s\n",
             pathToLink, pathToFile, strerror(errno)), exit(1);
 }
@@ -146,7 +150,7 @@ pathExists(char const *prefix, char separator, char const *suffix) {
   char   path[FILENAME_MAX];
 
   if (prefix == NULL)
-    return(false);
+    return false;
 
   if (suffix)
     snprintf(path, FILENAME_MAX, "%s%c%s", prefix, separator, suffix);
@@ -154,9 +158,9 @@ pathExists(char const *prefix, char separator, char const *suffix) {
     strncpy(path, prefix, FILENAME_MAX-1);
 
   if (stat(path, &s) == -1)
-    return(false);
+    return false;
 
-  return(true);               //  Stat-able?  Something exists there!
+  return true;                //  Stat-able?  Something exists there!
 }
 
 bool
@@ -166,7 +170,7 @@ fileExists(char const *prefix, char separator, char const *suffix,
   char   path[FILENAME_MAX];
 
   if (prefix == NULL)
-    return(false);
+    return false;
 
   if (suffix)
     snprintf(path, FILENAME_MAX, "%s%c%s", prefix, separator, suffix);
@@ -174,18 +178,18 @@ fileExists(char const *prefix, char separator, char const *suffix,
     strncpy(path, prefix, FILENAME_MAX-1);
 
   if (stat(path, &s) == -1)
-    return(false);
+    return false;
 
   if (s.st_mode & S_IFDIR)    //  Is a directory, not a file.
-    return(false);
+    return false;
 
   if (writable == false)      //  User doesn't care if it's writable or not.
-    return(true);
+    return true;
 
   if (s.st_mode & (S_IWUSR | S_IWGRP | S_IWOTH))   //  User cares, and is writable.
-    return(true);
+    return true;
 
-  return(false);
+  return false;
 }
 
 bool
@@ -194,7 +198,7 @@ directoryExists(char const *prefix, char separator, char const *suffix) {
   char   path[FILENAME_MAX];
 
   if (prefix == NULL)
-    return(false);
+    return false;
 
   if (suffix)
     snprintf(path, FILENAME_MAX, "%s%c%s", prefix, separator, suffix);
@@ -202,12 +206,12 @@ directoryExists(char const *prefix, char separator, char const *suffix) {
     strncpy(path, prefix, FILENAME_MAX-1);
 
   if (stat(path, &s) == -1)
-    return(false);
+    return false;
 
   if ((s.st_mode & S_IFDIR) == 0)     //  Is a file, not a directory.
-    return(false);
+    return false;
 
-  return(true);
+  return true;
 }
 
 }  //  namespace merylutil::files::v1
@@ -222,35 +226,32 @@ directoryExists(char const *prefix, char separator, char const *suffix) {
 //
 namespace merylutil::inline files::inline v1 {
 
-void
-mkdir(char const *dirname) {
-  struct stat  st;
+bool
+mkdir(char const *dirname, bool fatal) {
+
+  if (directoryExists(dirname) == true)   //  If it already exists,
+    return true;                          //  we're done!
 
   errno = 0;
-  if ((stat(dirname, &st) == -1) && (errno != ENOENT))
-    fprintf(stderr, "mkdir()--  Couldn't stat '%s': %s\n",
-            dirname, strerror(errno)), exit(1);
+  if (::mkdir(dirname, S_IRWXU | S_IRWXG | S_IRWXO) == -1)
+    return fatalError(fatal, "mkdir()--  Failed to create directory '%s': %s\n",
+                      dirname, strerror(errno));
 
-  if ((errno == 0) && (S_ISDIR(st.st_mode) == false))
-    fprintf(stderr, "mkdir()--  Couldn't create directory '%s': File exists\n",
-            dirname), exit(1);
-
-  errno = 0;
-  if (::mkdir(dirname, S_IRWXU | S_IRWXG | S_IRWXO) != 0)
-    fprintf(stderr, "mkdir()--  Couldn't create directory '%s': %s\n",
-            dirname, strerror(errno)), exit(1);
+  return true;
 }
 
-void
-rmdir(char const *dirname) {
+bool
+rmdir(char const *dirname, bool fatal) {
 
-  if (directoryExists(dirname) == false)
-    return;
+  if (directoryExists(dirname) == false)   //  If it doesn't exist,
+    return true;                           //  we're done!
 
   errno = 0;
-  if (::rmdir(dirname) != 0)
-    fprintf(stderr, "rmdir()--  Failed to remove directory '%s': %s\n",
-            dirname, strerror(errno)), exit(1);
+  if (::rmdir(dirname) == -1)
+    return fatalError(fatal, "rmdir()--  Failed to remove directory '%s': %s\n",
+                      dirname, strerror(errno));
+
+  return true;
 }
 
 }  //  namespace merylutil::files::v1
@@ -264,8 +265,13 @@ rmdir(char const *dirname) {
 //
 namespace merylutil::inline files::inline v1 {
 
-void
-unlink(char const *prefix, char separator, char const *suffix) {
+bool
+unlink(char const *path, bool fatal) {
+  return unlink(path, 0, nullptr, fatal);
+}
+
+bool
+unlink(char const *prefix, char separator, char const *suffix, bool fatal) {
   char   filename[FILENAME_MAX];
 
   if (suffix)
@@ -274,12 +280,14 @@ unlink(char const *prefix, char separator, char const *suffix) {
     strncpy(filename, prefix, FILENAME_MAX-1);
 
   if (fileExists(filename) == false)
-    return;
+    return false;
 
   errno = 0;
-  if (::unlink(filename) != 0)
-    fprintf(stderr, "unlink()--  Failed to remove file '%s': %s\n",
-            filename, strerror(errno)), exit(1);
+  if (::unlink(filename) == -1)
+    return fatalError(fatal, "unlink()--  Failed to remove file '%s': %s\n",
+                      filename, strerror(errno));
+
+  return true;
 }
 
 }  //  namespace merylutil::files::v1
@@ -301,7 +309,7 @@ makeReadOnly(char const *prefix, char separator, char const *suffix) {
   struct stat  s;
 
   if (prefix == NULL)
-    return(false);
+    return false;
 
   if (suffix)
     snprintf(path, FILENAME_MAX, "%s%c%s", prefix, separator, suffix);
@@ -309,17 +317,17 @@ makeReadOnly(char const *prefix, char separator, char const *suffix) {
     strncpy(path, prefix, FILENAME_MAX-1);
 
   if (stat(path, &s) == -1)
-    return(false);
+    return false;
 
   mode_t m = (s.st_mode) & ~((mode_t)(S_IWUSR | S_IWGRP | S_IWOTH));
 
   errno = 0;
   if (::chmod(path, m) == -1) {
     fprintf(stderr, "WARNING: Failed to remove write permission from file '%s': %s\n", path, strerror(errno));
-    return(false);
+    return false;
   }
 
-  return(true);
+  return true;
 }
 
 bool
@@ -328,7 +336,7 @@ makeWritable(char const *prefix, char separator, char const *suffix) {
   struct stat  s;
 
   if (prefix == NULL)
-    return(false);
+    return false;
 
   if (suffix)
     snprintf(path, FILENAME_MAX, "%s%c%s", prefix, separator, suffix);
@@ -336,7 +344,7 @@ makeWritable(char const *prefix, char separator, char const *suffix) {
     strncpy(path, prefix, FILENAME_MAX-1);
 
   if (stat(path, &s) == -1)
-    return(false);
+    return false;
 
   mode_t u = umask(0);                      //  Destructively read the umask.
   mode_t w = S_IWUSR | S_IWGRP | S_IWOTH;   //  Create a mask for the write bits.
@@ -346,10 +354,10 @@ makeWritable(char const *prefix, char separator, char const *suffix) {
   errno = 0;                                //  Add allowed write bits to the file.
   if (::chmod(path, s.st_mode | (w & u)) == -1) {
     fprintf(stderr, "WARNING: Failed to add write permission to file '%s': %s\n", path, strerror(errno));
-    return(false);
+    return false;
   }
 
-  return(true);
+  return true;
 }
 
 }  //  namespace merylutil::files::v1
@@ -467,7 +475,7 @@ fseek(FILE *stream, off_t offset, int whence) {
     return;
 #endif  //  __FreeBSD__
 
-  if (::fseeko(stream, offset, whence) != 0)
+  if (::fseeko(stream, offset, whence) == -1)
     fprintf(stderr, "fseek()--  Failed with %s.\n", strerror(errno)), exit(1);
 
   if (whence == SEEK_SET)

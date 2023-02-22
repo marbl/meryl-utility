@@ -41,6 +41,7 @@ uint64   getPhysicalMemorySize(void);
 uint64   getPageSize(void);
 
 uint64   getMaxMemoryAllowed(void);
+uint64   getAllowedMemory(char const *memstr, std::vector<char const *> &err);
 
 //
 //  getMaxThreadsAllowed() returns the minimum value of 'limit' and any of a
@@ -61,6 +62,8 @@ uint64   getMaxMemoryAllowed(void);
 //  getThreadNum() returns 0 .. numThreadsActive-1 for each thread.
 //
 uint32   getMaxThreadsAllowed(uint32 limit=uint32max);
+uint32   getAllowedThreads(char const *thrstr, std::vector<char const *> &err);
+
 uint32   getNumThreads(void);
 uint32   getNumThreadsActive(void);
 

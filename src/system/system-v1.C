@@ -207,7 +207,11 @@ getPageSize(void) {
 //    TORQUE_RESC_MEM  (probably obsolete)
 //      Potentially memory in bytes.
 //
-//
+//  The second form will return the system memory limit (as above) if the
+//  string is not supplied, or decode the string (allowing suffixes k, m, g,
+//  t, ki, mi, gi, ti, etc) and return that.  NOTE that a 'b' suffix will
+//  attempt to interpret the integer as binary.
+
 uint64
 getMaxMemoryAllowed(void) {
   char    *env, *cpu;
@@ -227,6 +231,18 @@ getMaxMemoryAllowed(void) {
     maxmem = strtouint64(env);
 
   return(maxmem);
+}
+
+uint64
+getAllowedMemory(char const *memstr, std::vector<char const *> &err) {
+  uint64 m;
+
+  if (memstr == nullptr)
+    m = getMaxMemoryAllowed();
+  else
+    m = decodeInteger(memstr, 0, 0, m, err);
+
+  return(m);
 }
 
 
@@ -297,6 +313,19 @@ getMaxThreadsAllowed(uint32 limit) {
 
   return(nAllowed);
 }
+
+uint32
+getAllowedThreads(char const *thrstr, std::vector<char const *> &err) {
+  uint32 t = 0;
+
+  if (thrstr == nullptr)
+    t = getMaxThreadsAllowed();
+  else
+    t = decodeInteger(thrstr, 0, 0, t, err);
+
+  return(t);
+}
+
 
 
 

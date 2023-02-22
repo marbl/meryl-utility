@@ -38,6 +38,9 @@ loadFromFile(void        *objects,
   uint64  nLoaded   = 0;
   uint64  blockSize = (uint64)32 * 1024 * 1024 / objectSize;
 
+  if (file == nullptr)
+    return(nLoaded);
+
   while (nLoaded < nObjects) {
     uint64  toLoad = std::min(blockSize, nObjects - nLoaded);
 

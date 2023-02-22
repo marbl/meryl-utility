@@ -41,8 +41,19 @@ int AS_configure(int argc, char **argv, uint32 maxThreads=uint32max);
 //  A helper for, usually, processing command line errors.
 //  Lines longer than 1024 are truncated.
 //
-int
-sprintf(std::vector<char const *> &ev, char const *fmt, ...);
+int sprintf(std::vector<char const *> &ev, char const *fmt, ...);
+int sprintf(std::vector<char const *> &ev, char const *fmt, va_list ap);
+
+
+//  A helper.
+//    If 'fatal', print message to stderr and exit(1).
+//    Else, returns false.
+//
+//  To be used in functions that can switch from returning fatal errors
+//  (which was the default behavior) to returning true/false.  See
+//  accessing-v1.C for examples.
+//
+bool fatalError(bool fatal, char const *fmt, ...);
 
 
 //  Return true of an external command is exists and is executable.

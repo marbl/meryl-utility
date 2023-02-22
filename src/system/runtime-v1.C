@@ -137,6 +137,34 @@ sprintf(std::vector<char const *> &ev, char const *fmt, ...) {
   return(ret);
 }
 
+int
+sprintf(std::vector<char const *> &ev, char const *fmt, va_list ap) {
+  char    *str = new char [1024];
+  int      ret = 0;
+
+  ret = vsnprintf(str, 1024, fmt, ap);
+
+  ev.push_back(str);
+
+  return(ret);
+}
+
+
+
+bool
+fatalError(bool fatal, char const *fmt, ...) {
+  va_list  ap;
+
+  va_start(ap, fmt);
+  if ((fatal == true) && (fmt != nullptr))
+    vfprintf(stderr, fmt, ap);
+  va_end(ap);
+
+  if (fatal == true)
+    exit(1);
+
+  return(false);
+}
 
 
 

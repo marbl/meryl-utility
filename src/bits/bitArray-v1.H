@@ -26,7 +26,7 @@ namespace merylutil::inline bits::inline v1 {
 
 class bitArray {
 public:
-  bitArray(uint64 maxNumBits=0)   {  allocate(_maxBitAvail);    }
+  bitArray(uint64 maxNumBits=0)   {  allocate(maxNumBits);      }
   ~bitArray(void)                 {  delete [] _bits;           }
 
   bool     isAllocated(void)      {  return(_bits != nullptr);  }

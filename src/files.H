@@ -43,7 +43,7 @@
 
 
 //  Search CANU_INSTALL_PATH, MERYL_INSTALL_PATH and PATH for a data file.
-char const *findSharedFile(char const *relpath, char const *filename);
+char const *findSharedFile(char const *binname, char const *relpath, char const *filename);
 
 
 

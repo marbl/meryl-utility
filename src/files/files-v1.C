@@ -37,7 +37,7 @@ using namespace merylutil::files::v1;
 //  'relpath' should be something like 'share/sequence'.
 //
 char const *
-findSharedFile(char const *relpath, char const *filename) {
+findSharedFile(char const *binname, char const *relpath, char const *filename) {
   static
   char     fp[FILENAME_MAX + 1] = {0};
   char    *env;
@@ -62,6 +62,21 @@ findSharedFile(char const *relpath, char const *filename) {
   env = getenv("MERYL_INSTALL_PATH");
   if (env != NULL) {
     snprintf(fp, FILENAME_MAX, "%s/%s/%s", env, relpath, filename);
+
+    if (fileExists(fp))
+      return(fp);
+  }
+
+  //  Does the file exist near our binary?
+
+  strcpy(fp, binname);
+  env = strrchr(fp, '/');
+  if (env != nullptr) {
+    *++env = 0;
+    strcat(env, "../");
+    strcat(env, relpath);
+    strcat(env, "/");
+    strcat(env, filename);
 
     if (fileExists(fp))
       return(fp);

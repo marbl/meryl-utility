@@ -38,4 +38,54 @@ chomp(char *S) {
     *t-- = 0;
 }
 
+
+
+////////////////////////////////////////////////////////////
+//
+//  In-place removes whitespace from either end of a string.
+//
+//  The non-whitespace portion of the string is shifted to the front of the
+//  storage and unused space is filled with NUL bytes.  Any bytes after the
+//  first NUL byte are not modified.
+//
+//  Using '@' to represent NUL bytes:
+//
+//    input:   s = '   hello world    @'
+//    output:  s = 'hello world@@@@@@@@'
+//
+//    input:   s = '   hello@world@    '
+//    output:  s = 'hello@@@@world@    '
+//
+//    input:   s = 'hello@kq4Bq4tab9q5B'
+//    output:  s = 'hello@kq4Bq4tab9q5B'
+//
+//  The pointer to s is returned from the function.
+//
+char *
+trimString(char *s, bool bgn, bool end) {
+  int64 i=0, b=0, e=0;
+
+  while (s[e] != 0)                          //  Find the end of the string.
+    e++;                                     //  We later expect 'e' to be the
+  e--;                                       //  last letter of the string.
+
+  if (end)                                   //  Trim spaces at the end.
+    while ((e >= 0) && (s[e] == ' '))        //
+      s[e--] = 0;                            //
+
+  if (bgn)                                   //  Trim spaces from the start.
+    while ((b < e) && (s[b] == ' '))         //
+      b++;                                   //
+
+  while (b <= e)                             //  Shift the string to actually
+    s[i++] = s[b++];                         //  remove the spaces at the start.
+
+  while (i <= e)                             //  Terminate the new string and
+    s[i++] = 0;                              //  erase left over crud.
+
+  return s;
+}
+
+
+
 }  //  merylutil::strings::v1

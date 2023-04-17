@@ -31,6 +31,9 @@ namespace merylutil::inline strings::inline v1 {
 void
 chomp(char *S);
 
+char *
+trimString(char *s, bool bgn=true, bool end=true);
+
 //  Return true if string s is unallocated or empty.
 inline
 bool

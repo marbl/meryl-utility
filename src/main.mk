@@ -66,6 +66,7 @@ SOURCES      := \
                 math/mt19937ar-v1.C \
                 math/sampledDistribution-v1.C \
                 \
+                system/cpuIdent-v1.C \
                 system/logging-v1.C \
                 system/runtime-v1.C \
                 system/speedCounter-v1.C \
@@ -107,8 +108,7 @@ endif
 
 
 
-SRC_INCDIRS  := . \
-                parasail
+SRC_INCDIRS  := .
 
 SUBMAKEFILES := pccp/pccp.mk
 
@@ -125,6 +125,7 @@ SUBMAKEFILES += tests/alignTest-ssw.mk \
                 tests/loggingTest.mk \
                 tests/magicNumber.mk \
                 tests/parasailTest.mk \
+                tests/testVectorSupport.mk \
                 tests/readLines.mk \
                 tests/sequenceTest.mk \
                 tests/stddevTest.mk \

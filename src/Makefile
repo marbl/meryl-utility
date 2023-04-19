@@ -409,6 +409,8 @@ ifeq ($(origin CXXFLAGS), undefined)
     LDFLAGS  += -L`jemalloc-config --libdir` -Wl,-rpath,`jemalloc-config --libdir` -ljemalloc `jemalloc-config --libs`
   endif
 
+  CXXFLAGS += -mxsave
+
   #  Enable some warnings.
   #     gcc7:  -Wno-format-truncation  - sprintf() into possibly smaller buffer
   #            -Wno-parentheses

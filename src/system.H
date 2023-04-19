@@ -23,6 +23,8 @@
 #include "system/system-v1.H"
 #include "system/runtime-v1.H"
 
+#include "system/cpuIdent-v1.H"
+
 #include "system/logging-v1.H"
 
 #include "system/speedCounter-v1.H"

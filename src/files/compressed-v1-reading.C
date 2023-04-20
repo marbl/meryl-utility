@@ -39,6 +39,7 @@ compressedFileReader::compressedFileReader(const char *filename, cftType type) {
 compressedFileReader::~compressedFileReader() {
   close();
   delete [] _filename;   _filename = nullptr;
+  delete [] _line;       _line     = nullptr;
 }
 
 

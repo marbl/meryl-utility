@@ -42,6 +42,23 @@ public:
   bool  isNormal(void)      {  return((_pipe == false) &&
                                       (_stdi == false));   };
 
+  //  Return the file line-by-line.
+  //    while (F->readLine())
+  //      puts(F->line());
+  //
+  bool    readLine(void) {
+    if (merylutil::readLine(_line, _lineLen, _lineMax, _file) == true) {
+      _lineNum++;
+      return(true);
+    } else {
+      return(false);
+    }
+  };
+  char   *line   (void)   { return(_line);    };
+  uint32  lineLen(void)   { return(_lineLen); };
+  uint32  lineNum(void)   { return(_lineNum); };
+
+
 private:
   FILE     *_file     = nullptr;
   char     *_filename = nullptr;
@@ -50,6 +67,11 @@ private:
 
   bool      _pipe     = false;
   bool      _stdi     = false;
+
+  uint32    _lineMax  = 0;
+  uint32    _lineLen  = 0;
+  uint64    _lineNum  = 0;
+  char     *_line     = nullptr;     //  For readLine()
 };
 
 }  //  merylutil::files::v1

@@ -23,10 +23,10 @@ FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER
 DEALINGS IN THE SOFTWARE.  */
 
 #define HTS_BUILDING_LIBRARY // Enables HTSLIB_EXPORT, see htslib/hts_defs.h
-#include <config.h>
+#include "htslib/config.h"
 
-#include "htslib/hts.h"
-#include "htslib/khash.h"
+#include "htslib/hts/hts.h"
+#include "htslib/hts/khash.h"
 
 typedef struct reglist
 {

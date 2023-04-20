@@ -45,7 +45,7 @@
  * model.
  */
 
-#include "config.h"
+#include "htslib/config.h"
 
 #include <stdint.h>
 #include <stdlib.h>
@@ -57,12 +57,12 @@
 #include <limits.h>
 #include <math.h>
 
-#include "rANS_word.h"
-#include "rANS_static4x16.h"
-#include "rANS_static16_int.h"
-#include "pack.h"
-#include "rle.h"
-#include "utils.h"
+#include "htslib/htscodecs/rANS_word.h"
+#include "htslib/htscodecs/rANS_static4x16.h"
+#include "htslib/htscodecs/rANS_static16_int.h"
+#include "htslib/htscodecs/pack.h"
+#include "htslib/htscodecs/rle.h"
+#include "htslib/htscodecs/utils.h"
 
 #define TF_SHIFT 12
 #define TOTFREQ (1<<TF_SHIFT)

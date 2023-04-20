@@ -25,12 +25,12 @@
 */
 
 #define HTS_BUILDING_LIBRARY // Enables HTSLIB_EXPORT, see htslib/hts_defs.h
-#include <config.h>
+#include "htslib/config.h"
 
 #include <math.h>
 #include <stdlib.h>
 #include <stdint.h>
-#include "htslib/kfunc.h"
+#include "htslib/hts/kfunc.h"
 
 /* Log gamma function
  * \log{\Gamma(z)}

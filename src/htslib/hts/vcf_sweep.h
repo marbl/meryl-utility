@@ -26,8 +26,8 @@ DEALINGS IN THE SOFTWARE.  */
 #ifndef HTSLIB_VCF_SWEEP_H
 #define HTSLIB_VCF_SWEEP_H
 
-#include "hts.h"
-#include "vcf.h"
+#include "htslib/hts/hts.h"
+#include "htslib/hts/vcf.h"
 
 #ifdef __cplusplus
 extern "C" {

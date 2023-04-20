@@ -31,14 +31,14 @@
  * OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  */
 
-#include "config.h"
+#include "htslib/config.h"
 
 // Use 11 for order-1?
 #define TF_SHIFT 12
 #define TOTFREQ (1<<TF_SHIFT)
 
-#include "rANS_byte.h"
-#include "utils.h"
+#include "htslib/htscodecs/rANS_byte.h"
+#include "htslib/htscodecs/utils.h"
 
 /*-------------------------------------------------------------------------- */
 /*
@@ -60,7 +60,7 @@
 #include <pthread.h>
 #endif
 
-#include "rANS_static.h"
+#include "htslib/htscodecs/rANS_static.h"
 
 #define ABS(a) ((a)>0?(a):-(a))
 

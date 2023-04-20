@@ -24,7 +24,7 @@ FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER
 DEALINGS IN THE SOFTWARE.  */
 
 #define HTS_BUILDING_LIBRARY // Enables HTSLIB_EXPORT, see htslib/hts_defs.h
-#include <config.h>
+#include "htslib/config.h"
 
 #include <stdlib.h>
 #include <string.h>
@@ -33,8 +33,8 @@ DEALINGS IN THE SOFTWARE.  */
 #include <stdint.h>
 #include <errno.h>
 #include <assert.h>
-#include "htslib/hts.h"
-#include "htslib/sam.h"
+#include "htslib/hts/hts.h"
+#include "htslib/hts/sam.h"
 
 int sam_cap_mapq(bam1_t *b, const char *ref, hts_pos_t ref_len, int thres)
 {

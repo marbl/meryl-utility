@@ -50,11 +50,11 @@ OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 #include <stdint.h>
 #include <sys/types.h>
 
-#include "../htslib/thread_pool.h"
-#include "../htslib/cram.h"
-#include "string_alloc.h"
-#include "mFILE.h"
-#include "../htslib/khash.h"
+#include "htslib/hts/thread_pool.h"
+#include "htslib/hts/cram.h"
+#include "htslib/cram/string_alloc.h"
+#include "htslib/cram/mFILE.h"
+#include "htslib/hts/khash.h"
 
 #ifdef __cplusplus
 extern "C" {
@@ -303,6 +303,7 @@ struct cram_metrics {
     // Not amenable to rANS bit-packing techniques; cardinality > 16
     int unpackable;
 };
+typedef struct cram_metrics cram_metrics;
 
 // Hash aux key (XX:i) to cram_metrics
 KHASH_MAP_INIT_INT(m_metrics, cram_metrics*)
@@ -330,6 +331,7 @@ struct cram_block {
     int crc32_checked;
     uint32_t crc_part;
 };
+typedef struct cram_block cram_block;
 
 struct cram_codec; /* defined in cram_codecs.h */
 struct cram_map;
@@ -881,6 +883,7 @@ struct cram_fd {
     // in delta between them.  (Ideal would be a per read setting.)
     int ap_delta;
 };
+typedef struct cram_fd cram_fd;
 
 // Translation of required fields to cram data series
 enum cram_fields {

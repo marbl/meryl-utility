@@ -1,9 +1,9 @@
 #ifndef RANS_INTERNAL_H
 #define RANS_INTERNAL_H
 
-#include "config.h"
-#include "varint.h"
-#include "utils.h"
+#include "htslib/config.h"
+#include "htslib/htscodecs/varint.h"
+#include "htslib/htscodecs/utils.h"
 
 /*
  * Copyright (c) 2017-2022 Genome Research Ltd.

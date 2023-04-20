@@ -31,7 +31,7 @@
  * OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  */
 
-#include "config.h"
+#include "htslib/config.h"
 
 #include <stdint.h>
 #include <stdlib.h>
@@ -40,11 +40,11 @@
 #include <string.h>
 #include <limits.h>
 
-#include "rANS_word.h"
-#include "rANS_static4x16.h"
-#include "rANS_static16_int.h"
-#include "varint.h"
-#include "utils.h"
+#include "htslib/htscodecs/rANS_word.h"
+#include "htslib/htscodecs/rANS_static4x16.h"
+#include "htslib/htscodecs/rANS_static16_int.h"
+#include "htslib/htscodecs/varint.h"
+#include "htslib/htscodecs/utils.h"
 
 #define TF_SHIFT 12
 #define TOTFREQ (1<<TF_SHIFT)

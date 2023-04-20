@@ -29,7 +29,7 @@ SOFTWARE.
 #ifndef HTS_LOG_H
 #define HTS_LOG_H
 
-#include "hts_defs.h"
+#include "htslib/hts/hts_defs.h"
 
 #ifdef __cplusplus
 extern "C" {

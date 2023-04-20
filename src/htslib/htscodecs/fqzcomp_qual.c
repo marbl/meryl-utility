@@ -53,7 +53,7 @@
 // cc -Wall -DTEST_MAIN -O3 -g fqzcomp_qual2.c -lm
 // ./a.out $f > /tmp/_ && ./a.out -d < /tmp/_ > /tmp/__ && cmp /tmp/__ $f
 
-#include "config.h"
+#include "htslib/config.h"
 
 #include <stdio.h>
 #include <stdlib.h>
@@ -66,9 +66,9 @@
 #include <inttypes.h>
 #include <sys/types.h>
 
-#include "fqzcomp_qual.h"
-#include "varint.h"
-#include "utils.h"
+#include "htslib/htscodecs/fqzcomp_qual.h"
+#include "htslib/htscodecs/varint.h"
+#include "htslib/htscodecs/utils.h"
 
 #define CTX_BITS 16
 #define CTX_SIZE (1<<CTX_BITS)
@@ -83,7 +83,7 @@
 #define QSIZE (1<<QBITS)
 
 #define NSYM 2
-#include "c_simple_model.h"
+#include "htslib/htscodecs/c_simple_model.h"
 
 #undef NSYM
 #define NSYM QMAX

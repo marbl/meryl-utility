@@ -39,9 +39,9 @@ DEALINGS IN THE SOFTWARE.  */
 #include <stdint.h>
 #include <sys/types.h>
 
-#include "hts_defs.h"
-#include "hts.h"
-#include "sam.h"
+#include "htslib/hts/hts_defs.h"
+#include "htslib/hts/hts.h"
+#include "htslib/hts/sam.h"
 
 #ifdef __cplusplus
 extern "C" {

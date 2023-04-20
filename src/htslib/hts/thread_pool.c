@@ -24,7 +24,7 @@ DEALINGS IN THE SOFTWARE.  */
 
 #ifndef TEST_MAIN
 #define HTS_BUILDING_LIBRARY // Enables HTSLIB_EXPORT, see htslib/hts_defs.h
-#include <config.h>
+#include "htslib/config.h"
 #endif
 
 #include <stdlib.h>
@@ -39,8 +39,8 @@ DEALINGS IN THE SOFTWARE.  */
 #include <unistd.h>
 #include <limits.h>
 
-#include "thread_pool_internal.h"
-#include "htslib/hts_log.h"
+#include "htslib/hts/thread_pool_internal.h"
+#include "htslib/hts/hts_log.h"
 
 // Minimum stack size for threads.  Required for some rANS codecs
 // that use over 2Mbytes of stack for encoder / decoder state

@@ -33,7 +33,7 @@
 #include <stdint.h>
 #include <sys/types.h>
 
-#include "hts_defs.h"
+#include "htslib/hts/hts_defs.h"
 
 // Ensure ssize_t exists within this header. All #includes must precede this,
 // and ssize_t must be undefined again at the end of this header.

@@ -44,7 +44,7 @@ DEALINGS IN THE SOFTWARE.  */
 
 #include <pthread.h>
 #include <stdint.h>
-#include "htslib/thread_pool.h"
+#include "htslib/hts/thread_pool.h"
 
 #ifdef __cplusplus
 extern "C" {

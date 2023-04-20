@@ -31,7 +31,7 @@
  * OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  */
 
-#include "config.h"
+#include "htslib/config.h"
 
 #if defined(__x86_64__) && \
     defined(HAVE_SSE4_1) && defined(HAVE_SSSE3) && defined(HAVE_POPCNT)
@@ -43,11 +43,11 @@
 #include <limits.h>
 #include <x86intrin.h>
 
-#include "rANS_word.h"
-#include "rANS_static4x16.h"
-#include "rANS_static16_int.h"
-#include "varint.h"
-#include "utils.h"
+#include "htslib/htscodecs/rANS_word.h"
+#include "htslib/htscodecs/rANS_static4x16.h"
+#include "htslib/htscodecs/rANS_static16_int.h"
+#include "htslib/htscodecs/varint.h"
+#include "htslib/htscodecs/utils.h"
 
 /* Uses: SSE, SSE2, SSSE3, SSE4.1 and POPCNT
 SSE:

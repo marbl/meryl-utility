@@ -23,15 +23,15 @@
 */
 
 #define HTS_BUILDING_LIBRARY // Enables HTSLIB_EXPORT, see htslib/hts_defs.h
-#include <config.h>
+#include "htslib/config.h"
 #include <strings.h>
 #include <assert.h>
-#include "htslib/hts.h"
-#include "htslib/kstring.h"
-#include "htslib/kseq.h"
-#include "htslib/khash_str2int.h"
-#include "htslib/regidx.h"
-#include "hts_internal.h"
+#include "htslib/hts/hts.h"
+#include "htslib/hts/kstring.h"
+#include "htslib/hts/kseq.h"
+#include "htslib/hts/khash_str2int.h"
+#include "htslib/hts/regidx.h"
+#include "htslib/hts/hts_internal.h"
 
 #define MAX_COOR_0 REGIDX_MAX   // CSI and hts_itr_query limit, 0-based
 

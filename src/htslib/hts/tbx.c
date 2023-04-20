@@ -24,19 +24,19 @@ FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER
 DEALINGS IN THE SOFTWARE.  */
 
 #define HTS_BUILDING_LIBRARY // Enables HTSLIB_EXPORT, see htslib/hts_defs.h
-#include <config.h>
+#include "htslib/config.h"
 
 #include <stdlib.h>
 #include <string.h>
 #include <stdio.h>
 #include <assert.h>
 #include <errno.h>
-#include "htslib/tbx.h"
-#include "htslib/bgzf.h"
-#include "htslib/hts_endian.h"
-#include "hts_internal.h"
+#include "htslib/hts/tbx.h"
+#include "htslib/hts/bgzf.h"
+#include "htslib/hts/hts_endian.h"
+#include "htslib/hts/hts_internal.h"
 
-#include "htslib/khash.h"
+#include "htslib/hts/khash.h"
 KHASH_DECLARE(s2i, kh_cstr_t, int64_t)
 
 HTSLIB_EXPORT

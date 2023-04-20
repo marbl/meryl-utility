@@ -24,7 +24,7 @@
 */
 
 #define HTS_BUILDING_LIBRARY // Enables HTSLIB_EXPORT, see htslib/hts_defs.h
-#include <config.h>
+#include "htslib/config.h"
 
 #include <stdio.h>
 #include <stdlib.h>
@@ -41,13 +41,13 @@
 #include <libdeflate.h>
 #endif
 
-#include "htslib/hts.h"
-#include "htslib/bgzf.h"
-#include "htslib/hfile.h"
-#include "htslib/thread_pool.h"
-#include "htslib/hts_endian.h"
-#include "cram/pooled_alloc.h"
-#include "hts_internal.h"
+#include "htslib/hts/hts.h"
+#include "htslib/hts/bgzf.h"
+#include "htslib/hts/hfile.h"
+#include "htslib/hts/thread_pool.h"
+#include "htslib/hts/hts_endian.h"
+#include "htslib/cram/pooled_alloc.h"
+#include "htslib/hts/hts_internal.h"
 
 #ifndef EFTYPE
 #define EFTYPE ENOEXEC
@@ -83,7 +83,7 @@ typedef struct {
     int64_t end_offset;
 } cache_t;
 
-#include "htslib/khash.h"
+#include "htslib/hts/khash.h"
 KHASH_MAP_INIT_INT64(cache, cache_t)
 #endif
 

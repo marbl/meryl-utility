@@ -24,7 +24,7 @@ FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER
 DEALINGS IN THE SOFTWARE.  */
 
 #define HTS_BUILDING_LIBRARY // Enables HTSLIB_EXPORT, see htslib/hts_defs.h
-#include <config.h>
+#include "htslib/config.h"
 
 #include <zlib.h>
 #include <stdio.h>
@@ -49,28 +49,24 @@ DEALINGS IN THE SOFTWARE.  */
 #endif
 #endif
 
-#include "htslib/hts.h"
-#include "htslib/bgzf.h"
-#include "cram/cram.h"
-#include "htslib/hfile.h"
-#include "htslib/hts_endian.h"
-#include "version.h"
-#include "config_vars.h"
-#include "hts_internal.h"
-#include "hfile_internal.h"
-#include "sam_internal.h"
-#include "htslib/hts_expr.h"
-#include "htslib/hts_os.h" // drand48
+#include "htslib/hts/hts.h"
+#include "htslib/hts/bgzf.h"
+#include "htslib/cram/cram.h"
+#include "htslib/hts/hfile.h"
+#include "htslib/hts/hts_endian.h"
+#include "htslib/version.h"
+#include "htslib/config_vars.h"
+#include "htslib/hts/hts_internal.h"
+#include "htslib/hts/hfile_internal.h"
+#include "htslib/hts/sam_internal.h"
+#include "htslib/hts/hts_expr.h"
+#include "htslib/hts/hts_os.h" // drand48
 
-#include "htslib/khash.h"
-#include "htslib/kseq.h"
-#include "htslib/ksort.h"
-#include "htslib/tbx.h"
-#if defined(HAVE_EXTERNAL_LIBHTSCODECS)
-#include <htscodecs/htscodecs.h>
-#else
-#include "htscodecs/htscodecs/htscodecs.h"
-#endif
+#include "htslib/hts/khash.h"
+#include "htslib/hts/kseq.h"
+#include "htslib/hts/ksort.h"
+#include "htslib/hts/tbx.h"
+#include "htslib/htscodecs/htscodecs.h"
 
 #ifndef EFTYPE
 #define EFTYPE ENOEXEC

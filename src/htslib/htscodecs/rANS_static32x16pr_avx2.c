@@ -31,7 +31,7 @@
  * OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  */
 
-#include "config.h"
+#include "htslib/config.h"
 
 #if defined(__x86_64__) && defined(HAVE_AVX2)
 
@@ -42,13 +42,13 @@
 #include <limits.h>
 #include <x86intrin.h>
 
-#include "rANS_word.h"
-#include "rANS_static4x16.h"
+#include "htslib/htscodecs/rANS_word.h"
+#include "htslib/htscodecs/rANS_static4x16.h"
 #define ROT32_SIMD
-#include "rANS_static16_int.h"
-#include "varint.h"
-#include "utils.h"
-#include "permute.h"
+#include "htslib/htscodecs/rANS_static16_int.h"
+#include "htslib/htscodecs/varint.h"
+#include "htslib/htscodecs/utils.h"
+#include "htslib/htscodecs/permute.h"
 
 #define NX 32
 

@@ -27,7 +27,7 @@
 /*
   An example:
 
-#include "khash.h"
+#include "htslib/hts/khash.h"
 KHASH_MAP_INIT_INT(32, char)
 int main() {
 	int ret, is_missing;
@@ -130,8 +130,8 @@ int main() {
 #include <string.h>
 #include <limits.h>
 
-#include "kstring.h"
-#include "kroundup.h"
+#include "htslib/hts/kstring.h"
+#include "htslib/hts/kroundup.h"
 
 /* compiler specific configuration */
 

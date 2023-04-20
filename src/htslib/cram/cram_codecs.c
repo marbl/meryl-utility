@@ -34,7 +34,7 @@ OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  */
 
 #define HTS_BUILDING_LIBRARY // Enables HTSLIB_EXPORT, see htslib/hts_defs.h
-#include <config.h>
+#include "htslib/config.h"
 
 #include <stdlib.h>
 #include <string.h>
@@ -44,19 +44,13 @@ OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 #include <errno.h>
 #include <stddef.h>
 
-#include "../htslib/hts_endian.h"
+#include "htslib/hts/hts_endian.h"
 
-#if defined(HAVE_EXTERNAL_LIBHTSCODECS)
-#include <htscodecs/varint.h>
-#include <htscodecs/pack.h>
-#include <htscodecs/rle.h>
-#else
-#include "../htscodecs/htscodecs/varint.h"
-#include "../htscodecs/htscodecs/pack.h"
-#include "../htscodecs/htscodecs/rle.h"
-#endif
+#include "htslib/htscodecs/varint.h"
+#include "htslib/htscodecs/pack.h"
+#include "htslib/htscodecs/rle.h"
 
-#include "cram.h"
+#include "htslib/cram/cram.h"
 
 /*
  * ---------------------------------------------------------------------------

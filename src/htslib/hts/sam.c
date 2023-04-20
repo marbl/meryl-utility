@@ -24,7 +24,7 @@ FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER
 DEALINGS IN THE SOFTWARE.  */
 
 #define HTS_BUILDING_LIBRARY // Enables HTSLIB_EXPORT, see htslib/hts_defs.h
-#include <config.h>
+#include "htslib/config.h"
 
 #include <strings.h>
 #include <stdio.h>
@@ -38,21 +38,21 @@ DEALINGS IN THE SOFTWARE.  */
 #include <unistd.h>
 
 // Suppress deprecation message for cigar_tab, which we initialise
-#include "htslib/hts_defs.h"
+#include "htslib/hts/hts_defs.h"
 #undef HTS_DEPRECATED
 #define HTS_DEPRECATED(message)
 
-#include "htslib/sam.h"
-#include "htslib/bgzf.h"
-#include "cram/cram.h"
-#include "hts_internal.h"
-#include "sam_internal.h"
-#include "htslib/hfile.h"
-#include "htslib/hts_endian.h"
-#include "htslib/hts_expr.h"
-#include "header.h"
+#include "htslib/hts/sam.h"
+#include "htslib/hts/bgzf.h"
+#include "htslib/cram/cram.h"
+#include "htslib/hts/hts_internal.h"
+#include "htslib/hts/sam_internal.h"
+#include "htslib/hts/hfile.h"
+#include "htslib/hts/hts_endian.h"
+#include "htslib/hts/hts_expr.h"
+#include "htslib/hts/header.h"
 
-#include "htslib/khash.h"
+#include "htslib/hts/khash.h"
 KHASH_DECLARE(s2i, kh_cstr_t, int64_t)
 KHASH_SET_INIT_INT(tag)
 
@@ -1743,8 +1743,8 @@ hts_itr_t *sam_itr_regions(const hts_idx_t *idx, sam_hdr_t *hdr, hts_reglist_t *
  *** SAM header I/O ***
  **********************/
 
-#include "htslib/kseq.h"
-#include "htslib/kstring.h"
+#include "htslib/hts/kseq.h"
+#include "htslib/hts/kstring.h"
 
 sam_hdr_t *sam_hdr_parse(size_t l_text, const char *text)
 {

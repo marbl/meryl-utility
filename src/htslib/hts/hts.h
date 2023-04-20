@@ -32,10 +32,10 @@ DEALINGS IN THE SOFTWARE.  */
 #include <stdint.h>
 #include <inttypes.h>
 
-#include "hts_defs.h"
-#include "hts_log.h"
-#include "kstring.h"
-#include "kroundup.h"
+#include "htslib/hts/hts_defs.h"
+#include "htslib/hts/hts_log.h"
+#include "htslib/hts/kstring.h"
+#include "htslib/hts/kroundup.h"
 
 #ifdef __cplusplus
 extern "C" {

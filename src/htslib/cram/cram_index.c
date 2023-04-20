@@ -49,7 +49,7 @@ OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  */
 
 #define HTS_BUILDING_LIBRARY // Enables HTSLIB_EXPORT, see htslib/hts_defs.h
-#include <config.h>
+#include "htslib/config.h"
 
 #include <stdio.h>
 #include <errno.h>
@@ -62,11 +62,11 @@ OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 #include <sys/stat.h>
 #include <math.h>
 
-#include "../htslib/bgzf.h"
-#include "../htslib/hfile.h"
-#include "../hts_internal.h"
-#include "cram.h"
-#include "os.h"
+#include "htslib/hts/bgzf.h"
+#include "htslib/hts/hfile.h"
+#include "htslib/hts/hts_internal.h"
+#include "htslib/cram/cram.h"
+#include "htslib/cram/os.h"
 
 #if 0
 static void dump_index_(cram_index *e, int level) {

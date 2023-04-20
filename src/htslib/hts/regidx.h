@@ -64,7 +64,7 @@
 #ifndef HTSLIB_REGIDX_H
 #define HTSLIB_REGIDX_H
 
-#include "hts.h"
+#include "htslib/hts/hts.h"
 
 #ifdef __cplusplus
 extern "C" {

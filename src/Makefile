@@ -401,6 +401,8 @@ ifeq ($(origin CXXFLAGS), undefined)
 
   ifeq ($(BUILDDEBUG), 1)
   else
+    #  clang doesn't like -fexpensive-optimizations
+    #CXXFLAGS += -O3 -funroll-loops                           -finline-functions -fomit-frame-pointer
     CXXFLAGS += -O4 -funroll-loops -fexpensive-optimizations -finline-functions -fomit-frame-pointer
   endif
 
@@ -409,6 +411,12 @@ ifeq ($(origin CXXFLAGS), undefined)
     LDFLAGS  += -L`jemalloc-config --libdir` -Wl,-rpath,`jemalloc-config --libdir` -ljemalloc `jemalloc-config --libs`
   endif
 
+  #  htslib vectorized codes need many flags and we leave it disabled for now.
+  #CFLAGS   += -mxsave -mssse3 -mpopcnt -msse4.1 -mavx2 -mavx512f
+  #CXXFLAGS += -mxsave -mssse3 -mpopcnt -msse4.1 -mavx2 -mavx512f
+  #CFLAGS   += -mxsave -mpopcnt -msse4.1 -mavx2 -mavx512f
+  #CXXFLAGS += -mxsave -mpopcnt -msse4.1 -mavx2 -mavx512f
+  CFLAGS   += -mxsave    #  htslib and merylutil cpu detection need this.
   CXXFLAGS += -mxsave
 
   #  Enable some warnings.
@@ -423,6 +431,7 @@ ifeq ($(origin CXXFLAGS), undefined)
   CXXFLAGS += -Wno-deprecated-declarations
   CXXFLAGS += -Wno-format-truncation
   CXXFLAGS += -std=c++17
+#  clang wants -std=c++20
 
   CFLAGS += -Wall -Wextra -Wformat
   CFLAGS += -Wno-char-subscripts

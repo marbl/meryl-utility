@@ -47,7 +47,7 @@ DEALINGS IN THE SOFTWARE.  */
 #ifndef HTSLIB_THREAD_POOL_H
 #define HTSLIB_THREAD_POOL_H
 
-#include "hts_defs.h"
+#include "htslib/hts/hts_defs.h"
 
 #ifdef __cplusplus
 extern "C" {

@@ -23,7 +23,7 @@ FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER
 DEALINGS IN THE SOFTWARE.  */
 
 #define HTS_BUILDING_LIBRARY // Enables HTSLIB_EXPORT, see htslib/hts_defs.h
-#include <config.h>
+#include "htslib/config.h"
 
 #include <assert.h>
 #include <stdio.h>
@@ -34,12 +34,12 @@ DEALINGS IN THE SOFTWARE.  */
 #include <inttypes.h>
 #include <errno.h>
 #include <sys/stat.h>
-#include "htslib/synced_bcf_reader.h"
-#include "htslib/kseq.h"
-#include "htslib/khash_str2int.h"
-#include "htslib/bgzf.h"
-#include "htslib/thread_pool.h"
-#include "bcf_sr_sort.h"
+#include "htslib/hts/synced_bcf_reader.h"
+#include "htslib/hts/kseq.h"
+#include "htslib/hts/khash_str2int.h"
+#include "htslib/hts/bgzf.h"
+#include "htslib/hts/thread_pool.h"
+#include "htslib/hts/bcf_sr_sort.h"
 
 #define REQUIRE_IDX_      1
 #define ALLOW_NO_IDX_     2

@@ -25,7 +25,7 @@
 */
 
 #define HTS_BUILDING_LIBRARY // Enables HTSLIB_EXPORT, see htslib/hts_defs.h
-#include <config.h>
+#include "htslib/config.h"
 
 #include <stdlib.h>
 #include <stdio.h>
@@ -34,7 +34,7 @@
 #include <limits.h>
 #include <math.h>
 #include <errno.h>
-#include "htslib/hts.h"
+#include "htslib/hts/hts.h"
 
 /*****************************************
  * Probabilistic banded glocal alignment *

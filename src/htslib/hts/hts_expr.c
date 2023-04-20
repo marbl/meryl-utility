@@ -26,7 +26,7 @@ DEALINGS IN THE SOFTWARE.  */
 // - ?: operator for conditionals?
 
 #define HTS_BUILDING_LIBRARY // Enables HTSLIB_EXPORT, see htslib/hts_defs.h
-#include <config.h>
+#include "htslib/config.h"
 
 #include <stdio.h>
 #include <string.h>
@@ -37,9 +37,9 @@ DEALINGS IN THE SOFTWARE.  */
 #include <regex.h>
 #include <math.h>
 
-#include "htslib/hts_expr.h"
-#include "htslib/hts_log.h"
-#include "textutils_internal.h"
+#include "htslib/hts/hts_expr.h"
+#include "htslib/hts/hts_log.h"
+#include "htslib/hts/textutils_internal.h"
 
 // Could also cache hts_expr_val_t stack here for kstring reuse?
 #define MAX_REGEX 10

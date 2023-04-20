@@ -24,12 +24,12 @@ FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER
 DEALINGS IN THE SOFTWARE.  */
 
 #define HTS_BUILDING_LIBRARY // Enables HTSLIB_EXPORT, see htslib/hts_defs.h
-#include <config.h>
+#include "htslib/config.h"
 
 #include <math.h>
-#include "htslib/hts.h"
-#include "htslib/ksort.h"
-#include "htslib/hts_os.h" // for drand48
+#include "htslib/hts/hts.h"
+#include "htslib/hts/ksort.h"
+#include "htslib/hts/hts_os.h" // for drand48
 
 KSORT_INIT_STATIC_GENERIC(uint16_t)
 

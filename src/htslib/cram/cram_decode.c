@@ -34,7 +34,7 @@ OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  */
 
 #define HTS_BUILDING_LIBRARY // Enables HTSLIB_EXPORT, see htslib/hts_defs.h
-#include <config.h>
+#include "htslib/config.h"
 
 #include <stdio.h>
 #include <errno.h>
@@ -48,9 +48,9 @@ OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 #include <stdint.h>
 #include <inttypes.h>
 
-#include "cram.h"
-#include "os.h"
-#include "../htslib/hts.h"
+#include "htslib/cram/cram.h"
+#include "htslib/cram/os.h"
+#include "htslib/hts/hts.h"
 
 //Whether CIGAR has just M or uses = and X to indicate match and mismatch
 //#define USE_X

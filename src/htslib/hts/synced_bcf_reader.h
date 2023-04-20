@@ -56,9 +56,9 @@ DEALINGS IN THE SOFTWARE.  */
 #ifndef HTSLIB_SYNCED_BCF_READER_H
 #define HTSLIB_SYNCED_BCF_READER_H
 
-#include "hts.h"
-#include "vcf.h"
-#include "tbx.h"
+#include "htslib/hts/hts.h"
+#include "htslib/hts/vcf.h"
+#include "htslib/hts/tbx.h"
 
 #ifdef __cplusplus
 extern "C" {

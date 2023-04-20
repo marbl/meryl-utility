@@ -25,7 +25,7 @@
 */
 
 #define HTS_BUILDING_LIBRARY // Enables HTSLIB_EXPORT, see htslib/hts_defs.h
-#include <config.h>
+#include "htslib/config.h"
 
 #include <stdarg.h>
 #include <stdio.h>
@@ -33,7 +33,7 @@
 #include <string.h>
 #include <stdint.h>
 #include <math.h>
-#include "htslib/kstring.h"
+#include "htslib/hts/kstring.h"
 
 int kputd(double d, kstring_t *s) {
 	int len = 0;

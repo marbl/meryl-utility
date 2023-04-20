@@ -42,20 +42,20 @@ OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 #ifndef CRAM_ALL_H
 #define CRAM_ALL_H
 
-#include "cram_samtools.h"
-#include "../header.h"
-#include "cram_structs.h"
-#include "cram_io.h"
-#include "cram_encode.h"
-#include "cram_decode.h"
-#include "cram_stats.h"
-#include "cram_codecs.h"
-#include "cram_index.h"
+#include "htslib/cram/cram_samtools.h"
+#include "htslib/hts/header.h"
+#include "htslib/cram/cram_structs.h"
+#include "htslib/cram/cram_io.h"
+#include "htslib/cram/cram_encode.h"
+#include "htslib/cram/cram_decode.h"
+#include "htslib/cram/cram_stats.h"
+#include "htslib/cram/cram_codecs.h"
+#include "htslib/cram/cram_index.h"
 
 // Validate against the external cram.h,
 //
 // This contains duplicated portions from cram_io.h and cram_structs.h,
 // so we want to ensure that the prototypes match.
-#include "../htslib/cram.h"
+#include "htslib/hts/cram.h"
 
 #endif

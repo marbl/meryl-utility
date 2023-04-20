@@ -44,7 +44,7 @@
 #define X_EXT    0x04    // External compression codec via magic num (gz, xz, bz2)
 #define X_ORDER  0x03    // Mask to obtain order
 
-#include "config.h"
+#include "htslib/config.h"
 
 #ifdef HAVE_LIBBZ2
 #include <bzlib.h>

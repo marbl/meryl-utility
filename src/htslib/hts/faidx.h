@@ -30,8 +30,8 @@
 #define HTSLIB_FAIDX_H
 
 #include <stdint.h>
-#include "hts_defs.h"
-#include "hts.h"
+#include "htslib/hts/hts_defs.h"
+#include "htslib/hts/hts.h"
 
 #ifdef __cplusplus
 extern "C" {

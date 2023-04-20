@@ -23,7 +23,7 @@ FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER
 DEALINGS IN THE SOFTWARE.  */
 
 #define HTS_BUILDING_LIBRARY // Enables HTSLIB_EXPORT, see htslib/hts_defs.h
-#include <config.h>
+#include "htslib/config.h"
 
 #include <stdio.h>
 #include <stdlib.h>
@@ -41,9 +41,9 @@ DEALINGS IN THE SOFTWARE.  */
 #endif
 #endif
 
-#include "htslib/hfile.h"
-#include "hfile_internal.h"
-#include "htslib/kstring.h"
+#include "htslib/hts/hfile.h"
+#include "htslib/hts/hfile_internal.h"
+#include "htslib/hts/kstring.h"
 
 #ifndef ENOTSUP
 #define ENOTSUP EINVAL
@@ -910,7 +910,7 @@ int hfile_plugin_init_crypt4gh_needed(struct hFILE_plugin *self)
  * Plugin and hopen() backend dispatcher *
  *****************************************/
 
-#include "htslib/khash.h"
+#include "htslib/hts/khash.h"
 
 KHASH_MAP_INIT_STR(scheme_string, const struct hFILE_scheme_handler *)
 static khash_t(scheme_string) *schemes = NULL;

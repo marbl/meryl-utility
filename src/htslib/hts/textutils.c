@@ -23,16 +23,16 @@ FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER
 DEALINGS IN THE SOFTWARE.  */
 
 #define HTS_BUILDING_LIBRARY // Enables HTSLIB_EXPORT, see htslib/hts_defs.h
-#include <config.h>
+#include "htslib/config.h"
 
 #include <stdio.h>
 #include <string.h>
 
-#include "htslib/hfile.h"
-#include "htslib/kstring.h"
-#include "htslib/sam.h"  // For stringify_argv() declaration
+#include "htslib/hts/hfile.h"
+#include "htslib/hts/kstring.h"
+#include "htslib/hts/sam.h"  // For stringify_argv() declaration
 
-#include "hts_internal.h"
+#include "htslib/hts/hts_internal.h"
 
 static int dehex(char c)
 {

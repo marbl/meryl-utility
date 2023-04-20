@@ -23,11 +23,11 @@ FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER
 DEALINGS IN THE SOFTWARE.  */
 
 #define HTS_BUILDING_LIBRARY // Enables HTSLIB_EXPORT, see htslib/hts_defs.h
-#include <config.h>
+#include "htslib/config.h"
 #include <inttypes.h>
 
-#include "htslib/vcfutils.h"
-#include "htslib/kbitset.h"
+#include "htslib/hts/vcfutils.h"
+#include "htslib/hts/kbitset.h"
 
 int bcf_calc_ac(const bcf_hdr_t *header, bcf1_t *line, int *ac, int which)
 {

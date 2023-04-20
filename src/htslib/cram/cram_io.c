@@ -40,7 +40,7 @@ OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  */
 
 #define HTS_BUILDING_LIBRARY // Enables HTSLIB_EXPORT, see htslib/hts_defs.h
-#include <config.h>
+#include "htslib/config.h"
 
 #include <stdio.h>
 #include <errno.h>
@@ -69,26 +69,17 @@ OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 #define crc32(a,b,c) libdeflate_crc32((a),(b),(c))
 #endif
 
-#include "cram.h"
-#include "os.h"
-#include "../htslib/hts.h"
-#include "open_trace_file.h"
+#include "htslib/cram/cram.h"
+#include "htslib/cram/os.h"
+#include "htslib/hts/hts.h"
+#include "htslib/cram/open_trace_file.h"
 
-#if defined(HAVE_EXTERNAL_LIBHTSCODECS)
-#include <htscodecs/rANS_static.h>
-#include <htscodecs/rANS_static4x16.h>
-#include <htscodecs/arith_dynamic.h>
-#include <htscodecs/tokenise_name3.h>
-#include <htscodecs/fqzcomp_qual.h>
-#include <htscodecs/varint.h> // CRAM v4.0 variable-size integers
-#else
-#include "../htscodecs/htscodecs/rANS_static.h"
-#include "../htscodecs/htscodecs/rANS_static4x16.h"
-#include "../htscodecs/htscodecs/arith_dynamic.h"
-#include "../htscodecs/htscodecs/tokenise_name3.h"
-#include "../htscodecs/htscodecs/fqzcomp_qual.h"
-#include "../htscodecs/htscodecs/varint.h"
-#endif
+#include "htslib/htscodecs/rANS_static.h"
+#include "htslib/htscodecs/rANS_static4x16.h"
+#include "htslib/htscodecs/arith_dynamic.h"
+#include "htslib/htscodecs/tokenise_name3.h"
+#include "htslib/htscodecs/fqzcomp_qual.h"
+#include "htslib/htscodecs/varint.h"
 
 //#define REF_DEBUG
 
@@ -101,10 +92,10 @@ OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 #define RP(...)
 #endif
 
-#include "../htslib/hfile.h"
-#include "../htslib/bgzf.h"
-#include "../htslib/faidx.h"
-#include "../hts_internal.h"
+#include "htslib/hts/hfile.h"
+#include "htslib/hts/bgzf.h"
+#include "htslib/hts/faidx.h"
+#include "htslib/hts/hts_internal.h"
 
 #ifndef PATH_MAX
 #define PATH_MAX FILENAME_MAX

@@ -26,7 +26,7 @@ DEALINGS IN THE SOFTWARE.  */
 #ifndef HTSLIB_VCFUTILS_H
 #define HTSLIB_VCFUTILS_H
 
-#include "vcf.h"
+#include "htslib/hts/vcf.h"
 
 #ifdef __cplusplus
 extern "C" {

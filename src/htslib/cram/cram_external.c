@@ -39,17 +39,13 @@ OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  */
 
 #define HTS_BUILDING_LIBRARY // Enables HTSLIB_EXPORT, see htslib/hts_defs.h
-#include <config.h>
+#include "htslib/config.h"
 #include <stdint.h>
 
-#if defined(HAVE_EXTERNAL_LIBHTSCODECS)
-#include <htscodecs/rANS_static4x16.h.h>
-#else
-#include "../htscodecs/htscodecs/rANS_static4x16.h"
-#endif
+#include "htslib/htscodecs/rANS_static4x16.h"
 
-#include "../htslib/hfile.h"
-#include "cram.h"
+#include "htslib/hts/hfile.h"
+#include "htslib/cram/cram.h"
 
 /*
  *-----------------------------------------------------------------------------

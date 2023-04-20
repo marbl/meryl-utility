@@ -25,7 +25,7 @@ FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER
 DEALINGS IN THE SOFTWARE.  */
 
 #define HTS_BUILDING_LIBRARY // Enables HTSLIB_EXPORT, see htslib/hts_defs.h
-#include <config.h>
+#include "htslib/config.h"
 
 #include <stdio.h>
 #include <assert.h>
@@ -37,17 +37,17 @@ DEALINGS IN THE SOFTWARE.  */
 #include <inttypes.h>
 #include <errno.h>
 
-#include "htslib/vcf.h"
-#include "htslib/bgzf.h"
-#include "htslib/tbx.h"
-#include "htslib/hfile.h"
-#include "hts_internal.h"
-#include "htslib/hts_endian.h"
-#include "htslib/khash_str2int.h"
-#include "htslib/kstring.h"
-#include "htslib/sam.h"
+#include "htslib/hts/vcf.h"
+#include "htslib/hts/bgzf.h"
+#include "htslib/hts/tbx.h"
+#include "htslib/hts/hfile.h"
+#include "htslib/hts/hts_internal.h"
+#include "htslib/hts/hts_endian.h"
+#include "htslib/hts/khash_str2int.h"
+#include "htslib/hts/kstring.h"
+#include "htslib/hts/sam.h"
 
-#include "htslib/khash.h"
+#include "htslib/hts/khash.h"
 KHASH_MAP_INIT_STR(vdict, bcf_idinfo_t)
 typedef khash_t(vdict) vdict_t;
 
@@ -55,7 +55,7 @@ KHASH_MAP_INIT_STR(hdict, bcf_hrec_t*)
 typedef khash_t(hdict) hdict_t;
 
 
-#include "htslib/kseq.h"
+#include "htslib/hts/kseq.h"
 HTSLIB_EXPORT
 uint32_t bcf_float_missing    = 0x7F800001;
 

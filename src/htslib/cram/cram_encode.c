@@ -29,7 +29,7 @@ OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 */
 
 #define HTS_BUILDING_LIBRARY // Enables HTSLIB_EXPORT, see htslib/hts_defs.h
-#include <config.h>
+#include "htslib/config.h"
 
 #include <stdio.h>
 #include <errno.h>
@@ -44,12 +44,12 @@ OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 #include <inttypes.h>
 #include <ctype.h>
 
-#include "cram.h"
-#include "os.h"
-#include "../sam_internal.h" // for nibble2base
-#include "../htslib/hts.h"
-#include "../htslib/hts_endian.h"
-#include "../textutils_internal.h"
+#include "htslib/cram/cram.h"
+#include "htslib/cram/os.h"
+#include "htslib/hts/sam_internal.h" // for nibble2base
+#include "htslib/hts/hts.h"
+#include "htslib/hts/hts_endian.h"
+#include "htslib/hts/textutils_internal.h"
 
 KHASH_MAP_INIT_STR(m_s2u64, uint64_t)
 

@@ -31,15 +31,15 @@
  * OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  */
 
-#include "config.h"
+#include "htslib/config.h"
 
 #include <stdint.h>
 #include <stdlib.h>
 #include <string.h>
 #include <stdio.h>
 
-#include "varint.h"
-#include "rle.h"
+#include "htslib/htscodecs/varint.h"
+#include "htslib/htscodecs/rle.h"
 
 #define MAGIC 8
 

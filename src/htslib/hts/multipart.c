@@ -23,16 +23,16 @@ FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER
 DEALINGS IN THE SOFTWARE.  */
 
 #define HTS_BUILDING_LIBRARY // Enables HTSLIB_EXPORT, see htslib/hts_defs.h
-#include <config.h>
+#include "htslib/config.h"
 
 #include <stdio.h>
 #include <string.h>
 #include <errno.h>
 
-#include "htslib/kstring.h"
+#include "htslib/hts/kstring.h"
 
-#include "hts_internal.h"
-#include "hfile_internal.h"
+#include "htslib/hts/hts_internal.h"
+#include "htslib/hts/hfile_internal.h"
 
 #ifndef EPROTO
 #define EPROTO ENOEXEC

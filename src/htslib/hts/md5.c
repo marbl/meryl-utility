@@ -47,11 +47,11 @@
  */
 
 #define HTS_BUILDING_LIBRARY // Enables HTSLIB_EXPORT, see htslib/hts_defs.h
-#include <config.h>
+#include "htslib/config.h"
 
 #include <stdlib.h>
-#include "htslib/hts.h"
-#include "htslib/hts_endian.h"
+#include "htslib/hts/hts.h"
+#include "htslib/hts/hts_endian.h"
 
 #ifndef HAVE_OPENSSL
 

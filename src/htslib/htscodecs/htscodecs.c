@@ -31,8 +31,8 @@
  * OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  */
 
-#include "htscodecs.h"
-#include "version.h"
+#include "htslib/htscodecs/htscodecs.h"
+#include "htslib/version.h"
 
 /*
  * A const string form of the HTSCODECS_VERSION define.

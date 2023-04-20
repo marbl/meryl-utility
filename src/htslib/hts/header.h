@@ -42,12 +42,12 @@ OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
 #include <stdarg.h>
 
-#include "cram/string_alloc.h"
-#include "cram/pooled_alloc.h"
+#include "htslib/cram/string_alloc.h"
+#include "htslib/cram/pooled_alloc.h"
 
-#include "htslib/khash.h"
-#include "htslib/kstring.h"
-#include "htslib/sam.h"
+#include "htslib/hts/khash.h"
+#include "htslib/hts/kstring.h"
+#include "htslib/hts/sam.h"
 
 #ifdef __cplusplus
 extern "C" {

@@ -29,7 +29,7 @@ OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 */
 
 #define HTS_BUILDING_LIBRARY // Enables HTSLIB_EXPORT, see htslib/hts_defs.h
-#include <config.h>
+#include "htslib/config.h"
 
 #include <stdio.h>
 #include <stdlib.h>
@@ -41,9 +41,9 @@ OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 #include <unistd.h>
 #include <stdarg.h>
 
-#include "../htslib/hts_log.h"
-#include "os.h"
-#include "mFILE.h"
+#include "htslib/hts/hts_log.h"
+#include "htslib/cram/os.h"
+#include "htslib/cram/mFILE.h"
 
 #ifdef HAVE_MMAP
 #include <sys/mman.h>

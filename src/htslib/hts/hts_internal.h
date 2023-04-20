@@ -26,8 +26,8 @@ DEALINGS IN THE SOFTWARE.  */
 #include <stddef.h>
 #include <ctype.h>
 
-#include "htslib/hts.h"
-#include "textutils_internal.h"
+#include "htslib/hts/hts.h"
+#include "htslib/hts/textutils_internal.h"
 
 #define HTS_MAX_EXT_LEN 9
 

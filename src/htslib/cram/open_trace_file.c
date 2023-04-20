@@ -62,7 +62,7 @@ OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 */
 
 #define HTS_BUILDING_LIBRARY // Enables HTSLIB_EXPORT, see htslib/hts_defs.h
-#include <config.h>
+#include "htslib/config.h"
 
 #include <stdlib.h>
 #include <stdio.h>
@@ -78,11 +78,11 @@ OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 #  define PATH_MAX 1024
 #endif
 
-#include "open_trace_file.h"
-#include "misc.h"
-#include "../htslib/hfile.h"
-#include "../htslib/hts_log.h"
-#include "../htslib/hts.h"
+#include "htslib/cram/open_trace_file.h"
+#include "htslib/cram/misc.h"
+#include "htslib/hts/hfile.h"
+#include "htslib/hts/hts_log.h"
+#include "htslib/hts/hts.h"
 
 /*
  * Returns whether the path refers to a regular file.

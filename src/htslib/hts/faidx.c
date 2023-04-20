@@ -24,7 +24,7 @@ FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER
 DEALINGS IN THE SOFTWARE.  */
 
 #define HTS_BUILDING_LIBRARY // Enables HTSLIB_EXPORT, see htslib/hts_defs.h
-#include <config.h>
+#include "htslib/config.h"
 
 #include <ctype.h>
 #include <string.h>
@@ -36,12 +36,12 @@ DEALINGS IN THE SOFTWARE.  */
 #include <unistd.h>
 #include <assert.h>
 
-#include "htslib/bgzf.h"
-#include "htslib/faidx.h"
-#include "htslib/hfile.h"
-#include "htslib/khash.h"
-#include "htslib/kstring.h"
-#include "hts_internal.h"
+#include "htslib/hts/bgzf.h"
+#include "htslib/hts/faidx.h"
+#include "htslib/hts/hfile.h"
+#include "htslib/hts/khash.h"
+#include "htslib/hts/kstring.h"
+#include "htslib/hts/hts_internal.h"
 
 typedef struct {
     int id; // faidx_t->name[id] is for this struct.

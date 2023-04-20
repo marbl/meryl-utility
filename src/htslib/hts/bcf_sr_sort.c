@@ -23,14 +23,14 @@
 */
 
 #define HTS_BUILDING_LIBRARY // Enables HTSLIB_EXPORT, see htslib/hts_defs.h
-#include <config.h>
+#include "htslib/config.h"
 
 #include <assert.h>
 #include <strings.h>
 
-#include "bcf_sr_sort.h"
-#include "htslib/khash_str2int.h"
-#include "htslib/kbitset.h"
+#include "htslib/hts/bcf_sr_sort.h"
+#include "htslib/hts/khash_str2int.h"
+#include "htslib/hts/kbitset.h"
 
 #define SR_REF   1
 #define SR_SNP   2

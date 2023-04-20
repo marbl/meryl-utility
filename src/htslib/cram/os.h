@@ -78,7 +78,7 @@ OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 #include <limits.h>
 #include <stdint.h>
 
-#include "../htslib/hts_endian.h"
+#include "htslib/hts/hts_endian.h"
 
 #ifdef __cplusplus
 extern "C" {

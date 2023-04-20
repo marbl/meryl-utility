@@ -34,8 +34,8 @@
 #ifndef BCF_SR_SORT_H
 #define BCF_SR_SORT_H
 
-#include "htslib/synced_bcf_reader.h"
-#include "htslib/kbitset.h"
+#include "htslib/hts/synced_bcf_reader.h"
+#include "htslib/hts/kbitset.h"
 
 typedef struct
 {

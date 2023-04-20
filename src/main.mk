@@ -78,7 +78,52 @@ SOURCES      := \
                 sequence/dnaSeqFile-v1.C \
                 sequence/sequence-v1.C \
                 \
-                \
+                htslib/hts/bcf_sr_sort.c \
+                htslib/hts/bgzf.c \
+                htslib/hts/errmod.c \
+                htslib/hts/faidx.c \
+                htslib/hts/header.c \
+                htslib/hts/hfile.c \
+                htslib/hts/hts.c \
+                htslib/hts/hts_expr.c \
+                htslib/hts/hts_os.c \
+                htslib/hts/kfunc.c \
+                htslib/hts/kstring.c \
+                htslib/hts/md5.c \
+                htslib/hts/multipart.c \
+                htslib/hts/probaln.c \
+                htslib/hts/realn.c \
+                htslib/hts/regidx.c \
+                htslib/hts/region.c \
+                htslib/hts/sam.c \
+                htslib/hts/synced_bcf_reader.c \
+                htslib/hts/tbx.c \
+                htslib/hts/textutils.c \
+                htslib/hts/thread_pool.c \
+                htslib/hts/vcf.c \
+                htslib/hts/vcf_sweep.c \
+                htslib/hts/vcfutils.c \
+                htslib/cram/cram_codecs.c \
+                htslib/cram/cram_decode.c \
+                htslib/cram/cram_encode.c \
+                htslib/cram/cram_external.c \
+                htslib/cram/cram_index.c \
+                htslib/cram/cram_io.c \
+                htslib/cram/cram_stats.c \
+                htslib/cram/mFILE.c \
+                htslib/cram/open_trace_file.c \
+                htslib/cram/pooled_alloc.c \
+                htslib/cram/string_alloc.c \
+                htslib/htscodecs/arith_dynamic.c \
+                htslib/htscodecs/fqzcomp_qual.c \
+                htslib/htscodecs/htscodecs.c \
+                htslib/htscodecs/pack.c \
+                htslib/htscodecs/rANS_static.c \
+                htslib/htscodecs/rANS_static32x16pr.c \
+                htslib/htscodecs/rANS_static4x16pr.c \
+                htslib/htscodecs/rle.c \
+                htslib/htscodecs/tokenise_name3.c \
+                htslib/htscodecs/utils.c \
                 \
                 parasail/cpuid.c \
                 parasail/memory.c \
@@ -89,6 +134,10 @@ SOURCES      := \
                 parasail/sg_qe_db_dispatch.c \
                 parasail/cigar.c
 
+#                htslib/htscodecs/rANS_static32x16pr_avx2.c \
+#                htslib/htscodecs/rANS_static32x16pr_avx512.c \
+#                htslib/htscodecs/rANS_static32x16pr_neon.c \
+#                htslib/htscodecs/rANS_static32x16pr_sse4.c \
 
 ifeq (${BUILDSTACKTRACE}, 1)
 SOURCES      += utility/libbacktrace/atomic.c \
@@ -131,6 +180,7 @@ SUBMAKEFILES += tests/alignTest-ssw.mk \
                 tests/stddevTest.mk \
                 tests/stringsTest.mk \
                 tests/systemTest.mk \
+                tests/testHTSlib.mk \
                 tests/toHexTest.mk \
                 tests/typesTest.mk
 endif

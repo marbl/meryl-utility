@@ -23,12 +23,12 @@ FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER
 DEALINGS IN THE SOFTWARE.  */
 
 #define HTS_BUILDING_LIBRARY // Enables HTSLIB_EXPORT, see htslib/hts_defs.h
-#include <config.h>
+#include "htslib/config.h"
 
 #include <assert.h>
 
-#include "htslib/vcf_sweep.h"
-#include "htslib/bgzf.h"
+#include "htslib/hts/vcf_sweep.h"
+#include "htslib/hts/bgzf.h"
 
 #define SW_FWD 0
 #define SW_BWD 1

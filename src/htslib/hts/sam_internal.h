@@ -25,7 +25,7 @@ DEALINGS IN THE SOFTWARE.  */
 
 #include <errno.h>
 #include <stdint.h>
-#include "htslib/sam.h"
+#include "htslib/hts/sam.h"
 
 #ifdef __cplusplus
 extern "C" {

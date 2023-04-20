@@ -36,8 +36,8 @@
 #include <errno.h>
 #include <sys/types.h>
 
-#include "hts_defs.h"
-#include "kroundup.h"
+#include "htslib/hts/hts_defs.h"
+#include "htslib/hts/kroundup.h"
 
 #if defined __GNUC__ && (__GNUC__ > 2 || (__GNUC__ == 2 && __GNUC_MINOR__ > 4))
 #ifdef __MINGW_PRINTF_FORMAT

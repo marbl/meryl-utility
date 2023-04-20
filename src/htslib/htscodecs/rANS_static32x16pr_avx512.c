@@ -37,7 +37,7 @@
  * be used for order-1.
  */
 
-#include "config.h"
+#include "htslib/config.h"
 
 #if defined(__x86_64__) && defined(HAVE_AVX512)
 
@@ -48,12 +48,12 @@
 #include <limits.h>
 #include <x86intrin.h>
 
-#include "rANS_word.h"
-#include "rANS_static4x16.h"
+#include "htslib/htscodecs/rANS_word.h"
+#include "htslib/htscodecs/rANS_static4x16.h"
 #define ROT32_SIMD
-#include "rANS_static16_int.h"
-#include "varint.h"
-#include "utils.h"
+#include "htslib/htscodecs/rANS_static16_int.h"
+#include "htslib/htscodecs/varint.h"
+#include "htslib/htscodecs/utils.h"
 
 unsigned char *rans_compress_O0_32x16_avx512(unsigned char *in,
                                              unsigned int in_size,

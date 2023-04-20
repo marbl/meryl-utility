@@ -29,13 +29,13 @@ OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 */
 
 #define HTS_BUILDING_LIBRARY // Enables HTSLIB_EXPORT, see htslib/hts_defs.h
-#include <config.h>
+#include "htslib/config.h"
 
 #include <string.h>
 #include <assert.h>
 #include <errno.h>
-#include "textutils_internal.h"
-#include "header.h"
+#include "htslib/hts/textutils_internal.h"
+#include "htslib/hts/header.h"
 
 // Hash table for removing multiple lines from the header
 KHASH_SET_INIT_STR(rm)

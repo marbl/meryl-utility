@@ -27,10 +27,10 @@ DEALINGS IN THE SOFTWARE.  */
 
 #include <stdarg.h>
 
-#include "htslib/hts_defs.h"
-#include "htslib/hfile.h"
+#include "htslib/hts/hts_defs.h"
+#include "htslib/hts/hfile.h"
 
-#include "textutils_internal.h"
+#include "htslib/hts/textutils_internal.h"
 
 #ifdef __cplusplus
 extern "C" {

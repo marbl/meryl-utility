@@ -22,10 +22,6 @@
 #include "logging-v1.H"
 #include "arrays.H"
 
-#warning temporary using
-using namespace merylutil;
-
-
 
 class logFileLevel {
 public:
@@ -160,7 +156,7 @@ public:
     }
 
     _length = 0;
-    _output = new writeBuffer(_fileName, "w", _lengthMax);
+    _output = new merylutil::writeBuffer(_fileName, "w", _lengthMax);
   };
 
 
@@ -168,7 +164,7 @@ public:
     char  rotmes[256] = {0};
 
     if (_output) {
-      snprintf(rotmes, 1024, "logFile()--  next message will exceed file size limit of " F_U64 "; rotate to new file.\n",
+      snprintf(rotmes, 256, "logFile()--  next message will exceed file size limit of " F_U64 "; rotate to new file.\n",
                _lengthMax);
 
       _output->write(rotmes, strlen(rotmes));
@@ -217,6 +213,7 @@ private:
 
   uint32        _part;
 
+  merylutil::
   writeBuffer  *_output;
   uint64        _length;
   uint64        _lengthMax;
@@ -319,7 +316,7 @@ logFile::addLevel(char const *levelName,
                   bool        enabled) {
   logFileLevel   key(levelName);
 
-  increaseArray(_levels, _levelsLen, _levelsMax, 8);
+  merylutil::increaseArray(_levels, _levelsLen, _levelsMax, 8);
 
   //_levelsIndex[key]   = _levelsLen;
   _levels[_levelsLen] = new logFileLevel(levelName, enabled);
@@ -336,7 +333,7 @@ logFile::addLevel(char const *levelName,
                   bool        enabled) {
   logFileLevel   key(levelName);
 
-  increaseArray(_levels, _levelsLen, _levelsMax, 8);
+  merylutil::increaseArray(_levels, _levelsLen, _levelsMax, 8);
 
   //_levelsIndex[key]   = _levelsLen;
   _levels[_levelsLen] = new logFileLevel(levelName, enabled);

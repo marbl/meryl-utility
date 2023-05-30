@@ -48,7 +48,11 @@ uint64   getAllowedMemory(char const *memstr, std::vector<char const *> &err);
 //  variety of environment variables specifying a thread limit.  It does NOT
 //  configure OpenMP to use that many threads.
 //
-//  AS_configure() (runtime.H) calls:
+//  getAllowedThreads() reutns getMaxThreadsAllowed() if thrstr is nullptr,
+//  otherwise decodes thrstr as an integer and returns that.  It also does
+//  NOT configure OpenMP to use that many threads.
+//
+//  AS_configure() (runtime.H) DOES configure OpenMP with a call to:
 //    setNumThreads(getMaxThreadsAllowed(limit))
 //  User code is then free to parse args and call setNumThreads() to change
 //  the number of threads to whatever is specified on the command line.

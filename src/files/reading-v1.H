@@ -42,7 +42,7 @@
 //  Implementations are in files/readLine-v0.C and files/readLine-v1.C.
 //
 
-namespace merylutil::files::v0 {
+namespace merylutil::inline files::v0 {
 bool
 readLine(char *&L, uint32 &Llen, uint32 &Lmax, FILE *F);
 }
@@ -113,7 +113,7 @@ loadFromFile(OBJ *object, char const *description, FILE *file, bool exact=true) 
 //  If {suffix} is nullptr, then both {separator} and {suffix} are ignored.
 //
 
-namespace merylutil::files::inline v1 {
+namespace merylutil::inline files::inline v1 {
 
 template<typename OBJ>
 void

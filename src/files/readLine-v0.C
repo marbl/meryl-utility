@@ -28,7 +28,7 @@
 //  This file contains v0.
 //
 
-namespace merylutil::files::v0 {
+namespace merylutil::inline files::v0 {
 
 bool
 readLine(char *&L, uint32 &Llen, uint32 &Lmax, FILE *F) {

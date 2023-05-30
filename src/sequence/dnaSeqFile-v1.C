@@ -22,7 +22,7 @@
 #include "arrays.H"
 #include "strings.H"
 
-namespace merylutil::sequence::inline v1 {
+namespace merylutil::inline sequence::inline v1 {
 
 
 dnaSeqFile::dnaSeqFile(char const *filename, bool indexed) {

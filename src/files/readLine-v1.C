@@ -45,11 +45,11 @@ readLine(char *&L, uint32 &Llen, uint32 &Lmax, FILE *F) {
   uint32  growth = 1024;
 
   if (feof(F))
-    return(false);
+    return false;
 
   //  Keep reading characters until EOF or a line terminator is encountered.
 
-  while ((feof(F) == false) && (ch != '\n')) {
+  while ((feof(F) == 0) && (ferror(F) == 0) && (ch != '\n')) {
     if (Llen + 1 >= Lmax)
       resizeArray(L, Llen, Lmax, Lmax + growth, _raAct::copyData | _raAct::clearNew);  //  Grow the array.
 
@@ -65,7 +65,12 @@ readLine(char *&L, uint32 &Llen, uint32 &Lmax, FILE *F) {
   while ((Llen > 0) && (isWhiteSpace(L[Llen-1])))
     L[--Llen] = 0;
 
-  return(true);
+  //  Report errors.
+
+  if (ferror(F))
+    fprintf(stderr, "ERROR: readLine() got error '%s'.\n", strerror(errno)), exit(1);
+
+  return (ferror(F) == 0);
 }
 
 }  //  namespace merylutil::files::v1

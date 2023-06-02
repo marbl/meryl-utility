@@ -304,6 +304,8 @@ void ksw_extz2_sse(void *km, int qlen, const uint8_t *query, int tlen, const uin
 		kfree(km, mem2); kfree(km, off);
 	}
 }
-#endif // __SSE2__
 
 }  //  merylutil::align::ksw2::v1
+
+#endif // __SSE2__
+

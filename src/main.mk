@@ -171,6 +171,7 @@ SUBMAKEFILES += tests/alignTest-ssw.mk \
                 tests/filesTest.mk \
                 tests/intervalListTest.mk \
                 tests/intervalsTest.mk \
+                tests/count-palindromes.mk \
                 tests/loggingTest.mk \
                 tests/magicNumber.mk \
                 tests/parasailTest.mk \

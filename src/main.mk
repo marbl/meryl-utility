@@ -140,19 +140,19 @@ SOURCES      := \
 #                htslib/htscodecs/rANS_static32x16pr_sse4.c \
 
 ifeq (${BUILDSTACKTRACE}, 1)
-SOURCES      += utility/libbacktrace/atomic.c \
-                utility/libbacktrace/backtrace.c \
-                utility/libbacktrace/dwarf.c \
-                utility/libbacktrace/elf.c \
-                utility/libbacktrace/fileline.c \
-                utility/libbacktrace/mmap.c \
-                utility/libbacktrace/mmapio.c \
-                utility/libbacktrace/posix.c \
-                utility/libbacktrace/print.c \
-                utility/libbacktrace/simple.c \
-                utility/libbacktrace/sort.c \
-                utility/libbacktrace/state.c \
-                utility/libbacktrace/unknown.c
+SOURCES      += system/libbacktrace/atomic.c \
+                system/libbacktrace/backtrace.c \
+                system/libbacktrace/dwarf.c \
+                system/libbacktrace/elf.c \
+                system/libbacktrace/fileline.c \
+                system/libbacktrace/mmap.c \
+                system/libbacktrace/mmapio.c \
+                system/libbacktrace/posix.c \
+                system/libbacktrace/print.c \
+                system/libbacktrace/simple.c \
+                system/libbacktrace/sort.c \
+                system/libbacktrace/state.c \
+                system/libbacktrace/unknown.c
 endif
 
 
@@ -182,6 +182,7 @@ SUBMAKEFILES += tests/alignTest-ssw.mk \
                 tests/stringsTest.mk \
                 tests/systemTest.mk \
                 tests/testHTSlib.mk \
+                tests/testHTSbam.mk \
                 tests/toHexTest.mk \
                 tests/typesTest.mk
 endif

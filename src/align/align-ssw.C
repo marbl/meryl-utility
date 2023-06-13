@@ -32,6 +32,8 @@
  *  BSD licensed under Micharl Farrar.
  */
 
+#ifdef __x86_64__
+
 //#include <nmmintrin.h>
 #include <emmintrin.h>
 #include <stdint.h>
@@ -976,3 +978,5 @@ int32_t mark_mismatch (int32_t ref_begin1,
 }
 
 }  //  merylutil::align::ssw::v1
+
+#endif  //  __x86_64__

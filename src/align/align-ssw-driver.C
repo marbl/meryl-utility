@@ -95,6 +95,17 @@ sswLib::setGapScores(int8 open, int8 extend) {
 
 
 
+#ifndef SSW_H
+
+bool
+sswLib::align(char const *seqA_, uint32 seqlenA_, int32 bgnA_, int32 endA_,
+              char const *seqB_, uint32 seqlenB_, int32 bgnB_, int32 endB_, bool verbose_) {
+  fprintf(stderr, "sswLib::align()--  SSW not available on this architecture.\n");
+  assert(0);
+}
+
+#else
+
 bool
 sswLib::align(char const *seqA_, uint32 seqlenA_, int32 bgnA_, int32 endA_,
               char const *seqB_, uint32 seqlenB_, int32 bgnB_, int32 endB_, bool verbose_) {
@@ -227,6 +238,7 @@ sswLib::align(char const *seqA_, uint32 seqlenA_, int32 bgnA_, int32 endA_,
   return(true);
 }
 
+#endif  //  SSW_H
 
 
 //  Draw the alignment, truncating long match regions to at most 2 *

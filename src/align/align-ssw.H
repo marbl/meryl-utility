@@ -27,13 +27,14 @@
  *
  */
 
+#ifdef __x86_64__
+
 #ifndef SSW_H
 #define SSW_H
 
 #include <stdio.h>
 #include <stdint.h>
 #include <string.h>
-#include <emmintrin.h>
 
 namespace merylutil::inline align::inline ssw::inline v1 {
 
@@ -201,4 +202,5 @@ static inline uint32_t cigar_int_to_len (uint32_t cigar_int) {
 
 }  //  merylutil::align::ssw::v1
 
-#endif    // SSW_H
+#endif  //  SSW_H
+#endif  //  __x86_64__

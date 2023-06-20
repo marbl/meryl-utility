@@ -28,6 +28,7 @@ char tempnagz[32] = { 0 };
 bool
 testMkdirRmdir(void) {
 
+  fprintf(stderr, "\n");
   fprintf(stderr, "Testing mkdir/rmdir.\n");
 
   if (merylutil::directoryExists(tempname) == true) {
@@ -72,7 +73,7 @@ testMkdirRmdir(void) {
   }
 
   fprintf(stderr, " - Pass!\n");
-  fprintf(stderr, "\n");
+
   return true;
 }
 
@@ -80,8 +81,8 @@ testMkdirRmdir(void) {
 bool
 testFileIO(uint16 *array, uint64 nObj) {
 
+  fprintf(stderr, "\n");
   fprintf(stderr, "Testing compressedFileWriter/compressedFileReader.\n");
-
 
   {
     compressedFileWriter *out = new compressedFileWriter(tempnagz);
@@ -95,12 +96,10 @@ testFileIO(uint16 *array, uint64 nObj) {
   }
   fprintf(stderr, " - data written.\n");
 
-
   if (merylutil::fileExists(tempnagz) == false) {
     fprintf(stderr, " - file doesn't exist.\n");
     return false;
   }
-
 
   {
     compressedFileReader *in = new compressedFileReader(tempnagz);
@@ -125,12 +124,10 @@ testFileIO(uint16 *array, uint64 nObj) {
   }
   fprintf(stderr, " - data read.\n");
 
-
   merylutil::unlink(tempnagz);
 
-
   fprintf(stderr, " - Pass!\n");
-  fprintf(stderr, "\n");
+
   return true;
 }
 
@@ -138,6 +135,7 @@ testFileIO(uint16 *array, uint64 nObj) {
 bool
 testUnlink(void) {
 
+  fprintf(stderr, "\n");
   fprintf(stderr, "Testing unlink.\n");
   fprintf(stderr, " - of non-existent file\n");
   merylutil::unlink(tempname);
@@ -151,11 +149,63 @@ testUnlink(void) {
   merylutil::unlink(tempname);
   merylutil::rmdir(tempname);
 
+  if (merylutil::pathExists(nullptr) == true) {
+    fprintf(stderr, "   - nullptr file exists?\n");
+    return(false);
+  }
+
   fprintf(stderr, " - Pass!\n");
 
   return true;
 }
 
+
+bool
+testPermissions(void) {
+
+  fprintf(stderr, "\n");
+  fprintf(stderr, "Testing permissions.\n");
+
+  if (merylutil::makeReadOnly(tempname) == true) {
+    fprintf(stderr, "   - made non-existent file read only?\n");
+    return false;
+  }
+  if (merylutil::makeWritable(tempname) == true) {
+    fprintf(stderr, "   - made non-existent file write only?\n");
+    return false;
+  }
+
+  merylutil::createEmptyFile(tempname);
+
+  if (merylutil::fileExists(tempname, 0, nullptr, true) == false) {  //  TEST: should be writable
+    fprintf(stderr, "   - initial file isn't writable.\n");
+    return false;
+  }
+
+  if (merylutil::makeReadOnly(tempname) == false) {
+    fprintf(stderr, "   - failed to make read only.\n");
+    return false;
+  }
+  if (merylutil::fileExists(tempname, 0, nullptr, true) == true) {   //  TEST: should be read only
+    fprintf(stderr, "   - file claims to be writable, but should be read-only.\n");
+    return false;
+  }
+
+  if (merylutil::makeWritable(tempname) == false) {
+    fprintf(stderr, "   - failed to make writable.\n");
+    return false;
+  }
+  if (merylutil::fileExists(tempname, 0, nullptr, true) == false) {  //  TEST: should be writable
+    fprintf(stderr, "   - file claims to be unwritable, but should be writable.\n");
+    return false;
+  }
+
+  merylutil::unlink(tempname);
+
+  fprintf(stderr, " - Pass!\n");
+
+  return true;
+}
 
 
 int32
@@ -163,6 +213,7 @@ main(int32 argc, char **argv) {
   uint64     nObj      = (uint64)16 * 1024 * 1024;
   uint16    *array     = new uint16 [nObj];
   uint32     tests     = 0;
+  bool       success   = true;
 
   strcpy(tempname, "./filesTest-XXXXXXXXXXXXXXXX");
   mktemp(tempname);
@@ -171,13 +222,14 @@ main(int32 argc, char **argv) {
 
   std::vector<char const *>  err;
   for (int32 arg=1; arg < argc; arg++) {
-    if      (strcmp(argv[arg], "-mkdir") == 0)    tests = 1;
-    else if (strcmp(argv[arg], "-io") == 0)       tests = 2;
-    else if (strcmp(argv[arg], "-unlink") == 0)   tests = 3;
-    else if (strcmp(argv[arg], "-h") == 0)        tests = 4;
-    else                                          tests = 4;
+    if      (strcmp(argv[arg], "-mkdir") == 0)        tests = 1;
+    else if (strcmp(argv[arg], "-io") == 0)           tests = 2;
+    else if (strcmp(argv[arg], "-unlink") == 0)       tests = 3;
+    else if (strcmp(argv[arg], "-permissions") == 0)  tests = 4;
+    else if (strcmp(argv[arg], "-h") == 0)            tests = 5;
+    else                                              tests = 5;
   }
-  if (tests == 4) {
+  if (tests == 5) {
     fprintf(stderr, "usage: %s ...\n", argv[0]);
     fprintf(stderr, "  -mkdir    run just mkdir/rmdir tests.\n");
     fprintf(stderr, "  -io       run just compressed file create/read/write tests.\n");
@@ -193,12 +245,18 @@ main(int32 argc, char **argv) {
 
   fprintf(stderr, "Testing using temporary file/directory '%s' and '%s'.\n", tempname, tempnagz);
 
-  if ((tests == 0) || (tests == 1))   testMkdirRmdir();
-  if ((tests == 0) || (tests == 2))   testFileIO(array, nObj);
-  if ((tests == 0) || (tests == 3))   testUnlink();
+  if ((tests == 0) || (tests == 1))   success &= testMkdirRmdir();
+  if ((tests == 0) || (tests == 2))   success &= testFileIO(array, nObj);
+  if ((tests == 0) || (tests == 3))   success &= testUnlink();
+  if ((tests == 0) || (tests == 4))   success &= testPermissions();
 
   delete [] array;
 
-  return 0;
+  if (success)
+    fprintf(stderr, "\nAll tests passed!\n");
+  else
+    fprintf(stderr, "\nSome test failed.\n");
+
+  return (success == false);
 }
 

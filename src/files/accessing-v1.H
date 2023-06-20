@@ -35,7 +35,11 @@ namespace merylutil::inline files::inline v1 {
 
 //  OPERATIONS ON FILE NAMES
 
+char const *
+constructPathName(char const *prefix, char separator, char const *suffix);
+
 void    findBaseFileName(char *basename, char const *filename);
+void    stripLastSuffix(char *basename, char const *filename);
 
 bool    rename(char const *oldname, char const *newname, bool fatal=true);
 bool    rename(char const *oldprefix, char oldseparator, char const *oldsuffix,
@@ -64,11 +68,15 @@ bool    makeWritable(char const *prefix, char separator='.', char const *suffix=
 
 //  OPERATIONS ON METADATA
 
-off_t   sizeOfFile(char const *path);
+off_t   sizeOfFile(char const *prefix, char separator='.', char const *suffix=nullptr);
 off_t   sizeOfFile(FILE *file);
 
-uint64  timeOfFile(char const *path);
+uint64  timeOfFile(char const *prefix, char separator='.', char const *suffix=nullptr);
 uint64  timeOfFile(FILE *file);
+
+bool    setFileTime(uint64 time, char const *prefix, char separator='.', char const *suffix=nullptr);
+bool    setFileTime(double time, char const *prefix, char separator='.', char const *suffix=nullptr);
+bool    setFileTime(struct timespec time, char const *prefix, char separator='.', char const *suffix=nullptr);
 
 off_t   ftell(FILE *stream);
 void    fseek(FILE *stream, off_t offset, int whence);
@@ -78,8 +86,8 @@ void    fseek(FILE *stream, off_t offset, int whence);
 FILE   *openInputFile (char const *prefix, char separator='.', char const *suffix=nullptr, bool doOpen=true);
 FILE   *openOutputFile(char const *prefix, char separator='.', char const *suffix=nullptr, bool doOpen=true);
 
-void    closeFile(FILE *&F, char const *filename, char separator, char const *suffix, bool critical=true);
-void    closeFile(FILE *&F, char const *filename=nullptr, bool critical=true);
+void    closeFile(FILE *&F, char const *prefix, char separator, char const *suffix, bool critical=true);
+void    closeFile(FILE *&F, char const *pathname=nullptr, bool critical=true);
 
 void    createEmptyFile(char const *prefix, char separator='.', char const *suffix=nullptr);
 

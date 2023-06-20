@@ -3,11 +3,7 @@
 #include "system.H"
 #include "math.H"
 
-#include <fcntl.h>
-#include <sys/stat.h>
 #include <vector>
-
-//using namespace merylutil;
 
 
 class cpBuf {
@@ -41,32 +37,16 @@ public:
     }
   };
 
+  //  If the output was opened, close the files and update the timestamp.
+  //  If it wasn't opened, it existed already and we didn't do the copy.
   ~cpBufState() {
-    struct stat     st;
-    struct timespec times[2];   // access, modification
-
-    //  Grab the timestamp of the input.
-
-    errno = 0;
-    if (stat(inPath, &st))
-      fprintf(stderr, "stat error: %s\n", strerror(errno));
-
-    times[0].tv_sec  = st.st_atim.tv_sec;
-    times[0].tv_nsec = st.st_atim.tv_nsec;
-
-    times[1].tv_sec  = st.st_mtim.tv_sec;
-    times[1].tv_nsec = st.st_mtim.tv_nsec;
-
-    //  If the output was opened, close the files and update the timestamp.
-    //  If it wasn't opened, it existed already and we didn't do the copy.
-
     if (otFile) {
+      merylutil::muTime times;
+
       merylutil::closeFile(inFile);
       merylutil::closeFile(otFile);
 
-      errno = 0;
-      if (utimensat(AT_FDCWD, otPath, times, 0))
-        fprintf(stderr, "futimens error: %s\n", strerror(errno));
+      times.getTimeOfFile(inPath).setTimeOfFile(otPath);
     }
   };
 

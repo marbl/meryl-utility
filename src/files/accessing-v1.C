@@ -20,10 +20,42 @@
 #include "accessing-v1.H"
 #include "system.H"
 
+#include <fcntl.h>
+#include <sys/stat.h>
+
 //  Report ALL file open/close events.
 #undef SHOW_FILE_OPEN_CLOSE
 
 
+namespace merylutil::inline files::inline v1 {
+
+char const *
+constructPathName(char const *prefix, char separator, char const *suffix) {
+  uint32  plen = (prefix == nullptr) ? 0 : strlen(prefix);
+  uint32  dlen = (suffix == nullptr) ? 0 : 1;
+  uint32  slen = (suffix == nullptr) ? 0 : strlen(suffix);
+  uint32  tlen = plen + dlen + slen + 1;
+
+  char   *path = new char [tlen];
+  uint32  p    = 0;
+
+  while ((prefix) && (*prefix))   //  Copy the prefix to path, if it exists.
+    path[p++] = *prefix++;
+
+  if (suffix)                     //  Append the separator, if there is a suffix.
+    path[p++] = separator;
+
+  while ((suffix) && (*suffix))   //  Append the suffix, if it exists.
+    path[p++] = *suffix++;
+
+  path[p] = 0;                    //  Terminate the string.
+
+  assert(p <= tlen);
+
+  return(path);
+}
+
+}  //  namespace merylutil::files::v1
 
 
 ////////////////////////////////////////
@@ -62,6 +94,34 @@ findBaseFileName(char *basename, char const *filename) {
 }  //  namespace merylutil::files::v1
 
 
+////////////////////////////////////////
+//
+//  Removes the last dotted suffix from 'filename' and places the
+//  result in 'basename'.
+//
+namespace merylutil::inline files::inline v1 {
+
+void
+stripLastSuffix(char *basename, char const *filename) {
+
+  strcpy(basename, filename);               //  Copy in-name to out-name.
+
+  if (directoryExists(basename))            //  Stop if this is an actual
+    return;                                 //  directory.
+
+  char  *slash = strrchr(basename, '/');    //  Search backwards for the last
+  char  *dot   = strrchr(basename, '.');    //  slash and last dot.
+
+  if (dot == nullptr)                       //  If not dot, we're done.
+    return;
+
+  if (slash < dot)                          //  If the dot is after the slash,
+    *dot = 0;                               //  remove the suffix.
+}
+
+}  //  namespace merylutil::files::v1
+
+
 
 ////////////////////////////////////////
 //
@@ -87,21 +147,21 @@ rename(char const *oldname, char const *newname, bool fatal) {
 bool
 rename(char const *oldprefix, char oldseparator, char const *oldsuffix,
        char const *newprefix, char newseparator, char const *newsuffix, bool fatal) {
-  char   oldpath[FILENAME_MAX+1] = {0};
-  char   newpath[FILENAME_MAX+1] = {0};
+  char const *oldpath = constructPathName(oldprefix, oldseparator, oldsuffix);
+  char const *newpath = constructPathName(newprefix, newseparator, newsuffix);
+  bool        success = true;
 
-  snprintf(oldpath, FILENAME_MAX, "%s%c%s", oldprefix, oldseparator, oldsuffix);
-  snprintf(newpath, FILENAME_MAX, "%s%c%s", newprefix, newseparator, newsuffix);
+  if (pathExists(oldpath)) {
+    errno = 0;
+    if (::rename(oldpath, newpath) == -1)
+      success = fatalError(fatal, "renane()--  Failed to rename file '%s' to '%s': %s\n",
+                           oldpath, newpath, strerror(errno));
+  }
 
-  if (pathExists(oldpath) == false)
-    return false;
+  delete [] oldpath;
+  delete [] newpath;
 
-  errno = 0;
-  if (::rename(oldpath, newpath) == -1)
-    return fatalError(fatal, "renane()--  Failed to rename file '%s' to '%s': %s\n",
-                      oldpath, newpath, strerror(errno));
-
-  return true;
+  return success;
 }
 
 }  //  namespace merylutil::files::v1
@@ -147,71 +207,62 @@ namespace merylutil::inline files::inline v1 {
 bool
 pathExists(char const *prefix, char separator, char const *suffix) {
   struct stat  s;
-  char   path[FILENAME_MAX];
 
-  if (prefix == NULL)
-    return false;
+  //if (prefix == nullptr)
+  //  return false;
 
-  if (suffix)
-    snprintf(path, FILENAME_MAX, "%s%c%s", prefix, separator, suffix);
-  else
-    strncpy(path, prefix, FILENAME_MAX-1);
+  char const *pathname = constructPathName(prefix, separator, suffix);
+  bool        isp      = false;
 
-  if (stat(path, &s) == -1)
-    return false;
+  if (stat(pathname, &s) == 0)
+    isp = true;
 
-  return true;                //  Stat-able?  Something exists there!
+  delete [] pathname;
+
+  return (isp == true);
 }
 
 bool
 fileExists(char const *prefix, char separator, char const *suffix,
            bool        writable) {
   struct stat  s;
-  char   path[FILENAME_MAX];
+  mode_t       w = (S_IWUSR | S_IWGRP | S_IWOTH);
 
-  if (prefix == NULL)
-    return false;
+  //if (prefix == nullptr)
+  //  return false;
 
-  if (suffix)
-    snprintf(path, FILENAME_MAX, "%s%c%s", prefix, separator, suffix);
-  else
-    strncpy(path, prefix, FILENAME_MAX-1);
+  char const *pathname = constructPathName(prefix, separator, suffix);
+  bool        isd      = true;
+  bool        isw      = false;
 
-  if (stat(path, &s) == -1)
-    return false;
+  if (stat(pathname, &s) == 0) {                   //  If path exists...
+    isd = (s.st_mode & S_IFDIR);                   //    Is a directory?
+    isw = (s.st_mode & w) || (writable == false);  //    Is writable?  (or don't care)
+  }
 
-  if (s.st_mode & S_IFDIR)    //  Is a directory, not a file.
-    return false;
+  delete [] pathname;
 
-  if (writable == false)      //  User doesn't care if it's writable or not.
-    return true;
-
-  if (s.st_mode & (S_IWUSR | S_IWGRP | S_IWOTH))   //  User cares, and is writable.
-    return true;
-
-  return false;
+  return (isd == false) && (isw == true);
 }
+
 
 bool
 directoryExists(char const *prefix, char separator, char const *suffix) {
   struct stat  s;
-  char   path[FILENAME_MAX];
 
-  if (prefix == NULL)
-    return false;
+  //if (prefix == nullptr)
+  //  return false;
 
-  if (suffix)
-    snprintf(path, FILENAME_MAX, "%s%c%s", prefix, separator, suffix);
-  else
-    strncpy(path, prefix, FILENAME_MAX-1);
+  char const *pathname = constructPathName(prefix, separator, suffix);
+  bool        isd      = false;
 
-  if (stat(path, &s) == -1)
-    return false;
+  if (stat(pathname, &s) == 0) {                   //  If path exists...
+    isd = (s.st_mode & S_IFDIR);                   //    Is a directory?
+  }
 
-  if ((s.st_mode & S_IFDIR) == 0)     //  Is a file, not a directory.
-    return false;
+  delete [] pathname;
 
-  return true;
+  return (isd == true);
 }
 
 }  //  namespace merylutil::files::v1
@@ -272,22 +323,19 @@ unlink(char const *path, bool fatal) {
 
 bool
 unlink(char const *prefix, char separator, char const *suffix, bool fatal) {
-  char   filename[FILENAME_MAX];
+  char const *pathname = constructPathName(prefix, separator, suffix);
+  bool        success  = true;
 
-  if (suffix)
-    snprintf(filename, FILENAME_MAX, "%s%c%s", prefix, separator, suffix);
-  else
-    strncpy(filename, prefix, FILENAME_MAX-1);
+  if (fileExists(pathname)) {
+    errno = 0;
+    if (::unlink(pathname) == -1)
+      success = fatalError(fatal, "unlink()--  Failed to remove file '%s': %s\n",
+                           pathname, strerror(errno));
+  }
 
-  if (fileExists(filename) == false)
-    return false;
+  delete [] pathname;
 
-  errno = 0;
-  if (::unlink(filename) == -1)
-    return fatalError(fatal, "unlink()--  Failed to remove file '%s': %s\n",
-                      filename, strerror(errno));
-
-  return true;
+  return success;
 }
 
 }  //  namespace merylutil::files::v1
@@ -305,59 +353,56 @@ namespace merylutil::inline files::inline v1 {
 
 bool
 makeReadOnly(char const *prefix, char separator, char const *suffix) {
-  char         path[FILENAME_MAX];
+  char         path[FILENAME_MAX+1];
   struct stat  s;
 
-  if (prefix == NULL)
-    return false;
+  //if (prefix == nullptr)   return false;
 
-  if (suffix)
-    snprintf(path, FILENAME_MAX, "%s%c%s", prefix, separator, suffix);
-  else
-    strncpy(path, prefix, FILENAME_MAX-1);
+  char const *pathname = constructPathName(prefix, separator, suffix);
+  bool        success  = false;
 
-  if (stat(path, &s) == -1)
-    return false;
+  if (stat(pathname, &s) == 0) {              //  If file exists...
+    mode_t w = S_IWUSR | S_IWGRP | S_IWOTH;   //    Create write-enable mask.
+    mode_t m = (s.st_mode) & ~w;              //    Turn off write-enable bits.
 
-  mode_t m = (s.st_mode) & ~((mode_t)(S_IWUSR | S_IWGRP | S_IWOTH));
-
-  errno = 0;
-  if (::chmod(path, m) == -1) {
-    fprintf(stderr, "WARNING: Failed to remove write permission from file '%s': %s\n", path, strerror(errno));
-    return false;
+    errno = 0;
+    if (::chmod(pathname, m) == -1)
+      fprintf(stderr, "WARNING: Failed to remove write permission from file '%s': %s\n", pathname, strerror(errno));
+    else
+      success = true;
   }
 
-  return true;
+  delete [] pathname;
+
+  return success;
 }
 
 bool
 makeWritable(char const *prefix, char separator, char const *suffix) {
-  char         path[FILENAME_MAX];
   struct stat  s;
 
-  if (prefix == NULL)
-    return false;
+  //if (prefix == nullptr)   return false;
 
-  if (suffix)
-    snprintf(path, FILENAME_MAX, "%s%c%s", prefix, separator, suffix);
-  else
-    strncpy(path, prefix, FILENAME_MAX-1);
+  char const *pathname = constructPathName(prefix, separator, suffix);
+  bool        success  = false;
 
-  if (stat(path, &s) == -1)
-    return false;
+  if (stat(pathname, &s) == 0) {              //  If file exists...
+    mode_t u = umask(0);                      //    Destructively read the current umask.
+    mode_t w = S_IWUSR | S_IWGRP | S_IWOTH;   //    Create write-enable mask.
+    mode_t m = (s.st_mode) | (w & ~u);        //    Turn on write, respecting umask.
 
-  mode_t u = umask(0);                      //  Destructively read the umask.
-  mode_t w = S_IWUSR | S_IWGRP | S_IWOTH;   //  Create a mask for the write bits.
+    umask(u);                                 //    Restore default umask.
 
-  umask(u);                                 //  Restore umask.
-
-  errno = 0;                                //  Add allowed write bits to the file.
-  if (::chmod(path, s.st_mode | (w & u)) == -1) {
-    fprintf(stderr, "WARNING: Failed to add write permission to file '%s': %s\n", path, strerror(errno));
-    return false;
+    errno = 0;                                //    Add allowed write bits to the file.
+    if (::chmod(pathname, m) == -1)
+      fprintf(stderr, "WARNING: Failed to add write permission to file '%s': %s\n", pathname, strerror(errno));
+    else
+      success = true;
   }
 
-  return true;
+  delete [] pathname;
+
+  return success;
 }
 
 }  //  namespace merylutil::files::v1
@@ -372,12 +417,16 @@ makeWritable(char const *prefix, char separator, char const *suffix) {
 namespace merylutil::inline files::inline v1 {
 
 off_t
-sizeOfFile(char const *path) {
+sizeOfFile(char const *prefix, char separator, char const *suffix) {
   struct stat  s;
 
+  char const *pathname = constructPathName(prefix, separator, suffix);
+
   errno = 0;
-  if (stat(path, &s) == -1)
-    fprintf(stderr, "Failed to stat() file '%s': %s\n", path, strerror(errno)), exit(1);
+  if (::stat(pathname, &s) == -1)
+    fprintf(stderr, "Failed to stat() file '%s': %s\n", pathname, strerror(errno)), exit(1);
+
+  delete [] pathname;
 
   return(s.st_size);
 }
@@ -388,41 +437,28 @@ sizeOfFile(FILE *file) {
   off_t        size = 0;
 
   errno = 0;
-  if (fstat(fileno(file), &s) == -1)
+  if (::fstat(fileno(file), &s) == -1)
     fprintf(stderr, "Failed to stat() FILE*: %s\n", strerror(errno)), exit(1);
 
   return(s.st_size);
 }
 
 uint64
-timeOfFile(char const *path) {
-  struct stat  s;
+timeOfFile(char const *prefix, char separator, char const *suffix) {
+  muTime mt;
 
-  errno = 0;
-  if (stat(path, &s) == -1)
-    fprintf(stderr, "Failed to stat() file '%s': %s\n", path, strerror(errno)), exit(1);
+  mt.getTimeOfFile(prefix, separator, suffix);
 
-#ifdef __APPLE__
-  return(s.st_mtimespec.tv_sec);
-#else
-  return(s.st_mtim.tv_sec);
-#endif
+  return (uint64)floor(mt.seconds());
 }
 
 uint64
 timeOfFile(FILE *file) {
-  struct stat  s;
-  off_t        size = 0;
+  muTime mt;
 
-  errno = 0;
-  if (fstat(fileno(file), &s) == -1)
-    fprintf(stderr, "Failed to stat() FILE*: %s\n", strerror(errno)), exit(1);
+  mt.getTimeOfFile(file);
 
-#ifdef __APPLE__
-  return(s.st_mtimespec.tv_sec);
-#else
-  return(s.st_mtim.tv_sec);
-#endif
+  return (uint64)floor(mt.seconds());
 }
 
 }  //  namespace merylutil::files::v1
@@ -500,28 +536,22 @@ openInputFile(char const *prefix,
                      char        separator,
                      char const *suffix,
                      bool        doOpen) {
-  char   filename[FILENAME_MAX];
+  //if (prefix == nullptr)  return(nullptr);
+  if (doOpen == false)    return(nullptr);
 
-  if (prefix == NULL)
-    return(NULL);
-
-  if (doOpen == false)
-    return(NULL);
-
-  if (suffix)
-    snprintf(filename, FILENAME_MAX, "%s%c%s", prefix, separator, suffix);
-  else
-    strncpy(filename, prefix, FILENAME_MAX-1);
+  char const *pathname = constructPathName(prefix, separator, suffix);
 
 #ifdef SHOW_FILE_OPEN_CLOSE
-  fprintf(stderr, "openInputFile()-- Opening '%s'.\n", filename);
+  fprintf(stderr, "openInputFile()-- Opening '%s'.\n", pathname);
 #endif
 
   errno = 0;
 
-  FILE *F = fopen(filename, "r");
+  FILE *F = fopen(pathname, "r");
   if (errno)
-    fprintf(stderr, "Failed to open '%s' for reading: %s\n", filename, strerror(errno)), exit(1);
+    fprintf(stderr, "Failed to open '%s' for reading: %s\n", pathname, strerror(errno)), exit(1);
+
+  delete [] pathname;
 
   return(F);
 }
@@ -534,24 +564,16 @@ namespace merylutil::inline files::inline v1 {
 
 FILE *
 openOutputFile(char const *prefix,
-                      char        separator,
-                      char const *suffix,
-                      bool        doOpen) {
-  char   filename[FILENAME_MAX];
+               char        separator,
+               char const *suffix,
+               bool        doOpen) {
+  //if (prefix == nullptr) return(nullptr);
+  if (doOpen == false)   return(nullptr);
 
-  if (prefix == NULL)
-    return(NULL);
-
-  if (doOpen == false)
-    return(NULL);
-
-  if (suffix)
-    snprintf(filename, FILENAME_MAX, "%s%c%s", prefix, separator, suffix);
-  else
-    strncpy(filename, prefix, FILENAME_MAX-1);
+  char const *pathname = constructPathName(prefix, separator, suffix);
 
 #ifdef SHOW_FILE_OPEN_CLOSE
-  fprintf(stderr, "openOutputFile()-- Creating '%s'.\n", filename);
+  fprintf(stderr, "openOutputFile()-- Creating '%s'.\n", pathname);
 #endif
 
   //  Unlink the file before opening for writes.  This prevents race
@@ -564,13 +586,15 @@ openOutputFile(char const *prefix,
   //
   //  Very confusing.
   //
-  unlink(filename);
+  unlink(pathname);
 
   errno = 0;
 
-  FILE *F = fopen(filename, "w");
+  FILE *F = fopen(pathname, "w");
   if (errno)
-    fprintf(stderr, "Failed to open '%s' for writing: %s\n", filename, strerror(errno)), exit(1);
+    fprintf(stderr, "Failed to open '%s' for writing: %s\n", pathname, strerror(errno)), exit(1);
+
+  delete [] pathname;
 
   return(F);
 }
@@ -578,7 +602,7 @@ openOutputFile(char const *prefix,
 void
 closeFile(FILE *&F, char const *prefix, char separator, char const *suffix, bool critical) {
 
-  if ((F == NULL) || (F == stdout) || (F == stderr))
+  if ((F == nullptr) || (F == stdout) || (F == stderr))
     return;
 
 #ifdef SHOW_FILE_OPEN_CLOSE
@@ -594,7 +618,7 @@ closeFile(FILE *&F, char const *prefix, char separator, char const *suffix, bool
 
   fclose(F);
 
-  F = NULL;
+  F = nullptr;
 
   if ((critical == false) || (errno == 0))
     return;
@@ -610,8 +634,8 @@ closeFile(FILE *&F, char const *prefix, char separator, char const *suffix, bool
 }
 
 void
-closeFile(FILE *&F, char const *filename, bool critical) {
-  closeFile(F, filename, '.', nullptr, critical);
+closeFile(FILE *&F, char const *pathname, bool critical) {
+  closeFile(F, pathname, '.', nullptr, critical);
 }
 
 }  //  namespace merylutil::files::v1

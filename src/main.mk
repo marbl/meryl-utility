@@ -73,6 +73,7 @@ SOURCES      := \
                 system/sweatShop-v1.C \
                 system/system-stackTrace-v1.C \
                 system/system-v1.C \
+                system/time-v1.C \
                 \
                 sequence/dnaSeq-v1.C \
                 sequence/dnaSeqFile-v1.C \

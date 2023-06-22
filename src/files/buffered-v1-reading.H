@@ -39,7 +39,7 @@ private:
   void          initialize(const char *pfx, char sep, const char *sfx, uint64 bMax);
 
 public:
-  bool          eof(void) { return(_eof); };   //  True if next read will hit EOF.
+  bool          eof(void) { return(_eof); }   //  True if next read will hit EOF.
 
   char          peek(void);
 
@@ -67,25 +67,25 @@ public:
   template<typename OBJ>
   bool          readIFFarray(char const *name, OBJ *array, uint32 nObjects) {
     return(readIFFchunk(name, array, sizeof(OBJ) * nObjects));
-  };
+  }
 
   template<typename OBJ>
   bool          readIFFobject(char const *name, OBJ &object) {
     return(readIFFchunk(name, &object, sizeof(OBJ)));
-  };
+  }
 
   template<typename OBJ>
   bool          readIFFobject(char const *name, OBJ *object) {
     return(readIFFchunk(name, object, sizeof(OBJ)));
-  };
+  }
 
   void          skipAhead(char stop, bool after=false);
   uint64        copyUntil(char stop, char *dest, uint64 destLen);
 
   void          seek(uint64 pos, uint64 extra=0);
-  uint64        tell(void) { return(_filePos); };
+  uint64        tell(void) { return(_filePos); }
 
-  const char   *filename(void) { return(_filename); };
+  const char   *filename(void) { return(_filename); }
 
 private:
   void          fillBuffer(void);

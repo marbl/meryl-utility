@@ -125,7 +125,7 @@ private:
 
   merylHistogram            *_stats         = nullptr;
 
-  FILE                      *_datFile       = nullptr;;
+  FILE                      *_datFile       = nullptr;
 
   merylFileBlockReader      *_block         = nullptr;
   merylFileIndex            *_blockIndex    = nullptr;

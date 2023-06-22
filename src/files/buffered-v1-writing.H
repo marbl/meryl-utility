@@ -34,8 +34,8 @@ private:
   void                 initialize(const char *pfx, char sep, const char *sfx, const char *mode, uint64 bMax);
 
 public:
-  const char          *filename(void) { return(_filename); };
-  uint64               tell(void)     { return(_filePos);  };
+  const char          *filename(void) { return(_filename); }
+  uint64               tell(void)     { return(_filePos);  }
 
   void                 write(void const *data, uint64 length);
   void                 flush(void);
@@ -57,17 +57,17 @@ public:
   template<typename OBJ>
   void   writeIFFarray(char const *name, OBJ *array, uint32 nObjects) {
     writeIFFchunk(name, array, sizeof(OBJ) * nObjects);
-  };
+  }
 
   template<typename OBJ>
   void   writeIFFobject(char const *name, OBJ &object) {
     writeIFFchunk(name, &object, sizeof(OBJ));
-  };
+  }
 
   template<typename OBJ>
   void   writeIFFobject(char const *name, OBJ *object) {
     writeIFFchunk(name, object, sizeof(OBJ));
-  };
+  }
 
   void   writeIFFchunk(char const *name, void *data=NULL, uint32 dataLength=0);
 

@@ -43,9 +43,11 @@ readBuffer::initialize(const char *pfx, char sep, const char *sfx, uint64 bMax) 
   }
   else if ((pfx != nullptr) && (sfx == nullptr)) {
     strncpy(_filename, pfx, FILENAME_MAX);
+    _owned = true;
   }
   else if ((pfx != nullptr) && (sfx != nullptr)) {
     snprintf(_filename, FILENAME_MAX, "%s%c%s", pfx, sep, sfx);
+    _owned = true;
   }
   else {
     fprintf(stderr, "Invalid readBuffer filename pfx='%s' sep='%d' sfx='%s'\n", pfx, sep, sfx);
@@ -108,8 +110,7 @@ readBuffer::~readBuffer() {
 
   delete [] _buffer;
 
-#warning DO NOT CLOSE if the file was from fileno() above
-  if (_stdin == false)
+  if (_owned == true)   //  Close the file if we opened it.
     close(_file);
 }
 

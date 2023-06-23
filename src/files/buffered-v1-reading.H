@@ -91,22 +91,23 @@ private:
   void          fillBuffer(void);
   void          init(int fileptr, const char *filename, uint64 bufferMax);
 
-  char         _filename[FILENAME_MAX+1] = {0};
+  char         _filename[FILENAME_MAX+1] = {0};  //  Filename, if known.
 
-  int          _file     = 0;          //  Handle for file.
-  uint64       _filePos  = 0;          //  Position we're at in the file.
+  int          _file      = 0;                   //  Handle for file.
+  uint64       _filePos   = 0;                   //  Position we're at in the file.
 
-  bool         _stdin    = false;      //  True if reading from stdin.
-  bool         _eof      = false;      //  True if we hit EOF.
+  bool         _owned     = false;     //  True if we opened the file.
+  bool         _stdin     = false;     //  True if reading from stdin.
+  bool         _eof       = false;     //  True if we hit EOF.
 
-  bool         _ignoreCR = true;       //  Ignore blasted DOS CR letters in read() and readuntil().
+  bool         _ignoreCR  = true;      //  Ignore blasted DOS CR letters in read() and readuntil().
 
-  uint64       _bufferBgn = 0;         //  File position where this buffer is from.
+  uint64       _bufferBgn  = 0;        //  File position where this buffer is from.
 
-  uint64       _bufferPos = 0;         //  Position in the buffer we're at.
-  uint64       _bufferLen = 0;         //  Length of the valid data in the buffer.
-  uint64       _bufferMax = 0;         //  Size of _buffer allocation.
-  uint8       *_buffer    = nullptr;   //  Data!
+  uint64       _bufferPos  = 0;        //  Position in the buffer we're at.
+  uint64       _bufferLen  = 0;        //  Length of the valid data in the buffer.
+  uint64       _bufferMax  = 0;        //  Size of _buffer allocation.
+  uint8       *_buffer     = nullptr;  //  Data!
 };
 
 

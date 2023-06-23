@@ -328,7 +328,6 @@ md5sum::md5sum(uint8 const *b, uint32 bLen) {
 
 md5sum::~md5sum() {
   delete (MD5_CTX *)context;
-  delete buffer;
 }
 
 char const *
@@ -340,10 +339,6 @@ void
 md5sum::toString(char *str) {
   memcpy(str, dascii, 32);
 };
-
-//void
-//md5sum::addByte(uint8 b) {
-//};
 
 void
 md5sum::addBlock(uint8 *b, uint64 bLen) {

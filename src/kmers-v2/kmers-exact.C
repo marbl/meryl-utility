@@ -259,20 +259,18 @@ merylExactLookup::count(void) {
   //  Scan all kmer files, counting the number of kmers per prefix.
   //  This is thread safe when _prefixBits is more than 6 (the number of files).
 
-  uint32   nf = _input->numFiles();
+  assert(_input->numFiles() == 64);
 
-  assert(nf == 64);
+  uint64   minp[64];
+  uint64   maxp[64];
 
-  uint64   minp[nf];
-  uint64   maxp[nf];
-
-  for (uint32 ii=0; ii<nf; ii++) {
+  for (uint32 ii=0; ii<64; ii++) {
     minp[ii] = uint64max;
     maxp[ii] = uint64min;
   }
 
 #pragma omp parallel for schedule(dynamic, 1)
-  for (uint32 ff=0; ff<nf; ff++) {
+  for (uint32 ff=0; ff<64; ff++) {
     FILE                  *blockFile = _input->blockFile(ff);
     merylFileBlockReader  *block     = new merylFileBlockReader;
 
@@ -340,7 +338,7 @@ merylExactLookup::count(void) {
   //  different files....so I guess I just figured out what broke if this
   //  triggers.
 
-  for (uint32 ii=1; ii<nf; ii++)
+  for (uint32 ii=1; ii<64; ii++)
     assert(maxp[ii-1] < minp[ii]);
 
   //  Now that we know the length of each block, we can set _suffixBgn to the

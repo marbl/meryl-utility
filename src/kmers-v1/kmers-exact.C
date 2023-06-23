@@ -126,7 +126,7 @@ merylExactLookup::computeSpace(bool reportMemory,
   //  uniformly spread throughout?  The best we could do is infer this from
   //  the size of each file in the database.
 
-  char   summary[7][128] = {0};
+  char   summary[7][128] = { {0}, {0}, {0}, {0}, {0}, {0}, {0} };
 
   for (uint32 pb=pbbgn; pb<pbend; pb++) {
     uint64  pointerw = countNumberOfBits64(_nSuffix + 64 * 256);   //  Width of a block pointer, log2(#kmers)

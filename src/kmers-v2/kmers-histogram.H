@@ -68,8 +68,6 @@ private:
   uint64                   _numDistinct;
   uint64                   _numTotal;
 
-  uint64                   _maxValue;
-
   uint32                   _histMax;    //  Max value that can be stored in _histSml.
   uint64                  *_histSml;    //  Values smaller than _histMax.
   std::map<uint64, uint64> _histBig;    //  Values bigger than _histMax; <value,occurrances>

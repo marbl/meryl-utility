@@ -51,7 +51,7 @@ public:
       else if (_progressCounter[bb] == uint64max)
         _progressString[bb] = '*';
       else
-        _progressString[bb] = (char [4]){ '|', '/', '-', '\\' } [ _progressCounter[bb] & 0x03 ];
+        _progressString[bb] = "|/-\\"[ _progressCounter[bb] & 0x03 ];
     }
 
     _progressString[64] = 0;

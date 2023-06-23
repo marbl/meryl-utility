@@ -32,27 +32,27 @@ POSSIBILITY OF SUCH DAMAGE.  */
 
 #include "config.h"
 
-#if (BACKTRACE_ELF_SIZE == unknown)
-
 #include <sys/types.h>
 
 #include "backtrace.h"
 #include "internal.h"
 
 /* A trivial routine that always fails to find fileline data.  */
+/* Left out of the #if so we don't end up with an empty translation unit.  */
 
 static int
 unknown_fileline (struct backtrace_state *state ATTRIBUTE_UNUSED,
 		  uintptr_t pc, backtrace_full_callback callback,
 		  backtrace_error_callback error_callback ATTRIBUTE_UNUSED,
 		  void *data)
-
 {
   return callback (data, pc, NULL, 0, NULL);
 }
 
 /* Initialize the backtrace data when we don't know how to read the
    debug info.  */
+
+#if (BACKTRACE_ELF_SIZE == unknown)
 
 int
 backtrace_initialize (struct backtrace_state *state ATTRIBUTE_UNUSED,
@@ -65,4 +65,4 @@ backtrace_initialize (struct backtrace_state *state ATTRIBUTE_UNUSED,
   return 1;
 }
 
-#endif  //  __APPLE__
+#endif

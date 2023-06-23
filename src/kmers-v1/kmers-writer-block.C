@@ -219,8 +219,8 @@ merylBlockWriter::finish(void) {
 
 void
 merylBlockWriter::mergeBatches(uint32 oi) {
-  merylFileBlockReader    inBlocks[_iteration + 1];
-  FILE                   *inFiles [_iteration + 1];
+  merylFileBlockReader   *inBlocks = new merylFileBlockReader [_iteration + 1];
+  FILE                  **inFiles  = new FILE *               [_iteration + 1];
 
   //  Open the input files, allocate blocks.
 
@@ -241,15 +241,12 @@ merylBlockWriter::mergeBatches(uint32 oi) {
   kmdata   *suffixes  = NULL;
   kmvalu   *values    = NULL;
 
-  uint64    kmersIn   = 0;
-  uint64    kmersOut  = 0;
-
   //  Load each block from each file, merge, and write.
 
-  uint32    p[_iteration+1];  //  Position in s[] and v[]
-  uint64    l[_iteration+1];  //  Number of entries in s[] and v[]
-  kmdata   *s[_iteration+1];  //  Pointer to the suffixes for piece x
-  kmvalu   *v[_iteration+1];  //  Pointer to the values   for piece x
+  uint32   *p = new uint32   [_iteration+1];  //  Position in s[] and v[]
+  uint64   *l = new uint64   [_iteration+1];  //  Number of entries in s[] and v[]
+  kmdata  **s = new kmdata * [_iteration+1];  //  Pointer to the suffixes for piece x
+  kmvalu  **v = new kmvalu * [_iteration+1];  //  Pointer to the values   for piece x
 
   for (uint32 bb=0; bb<_numBlocks; bb++) {
     uint64  totnKmers = 0;
@@ -352,20 +349,23 @@ merylBlockWriter::mergeBatches(uint32 oi) {
 #pragma omp critical (merylBlockWriterAddValue)
     for (uint32 kk=0; kk<savnKmers; kk++)
       _writer->_stats.addValue(values[kk]);
-
-    //  And update our local stats
-
-    kmersIn  += totnKmers;
-    kmersOut += savnKmers;
   }
 
   delete [] suffixes;
   delete [] values;
 
+  delete [] v;
+  delete [] s;
+  delete [] l;
+  delete [] p;
+
   //  Close the input data files.
 
   for (uint32 ii=1; ii <= _iteration; ii++)
     merylutil::closeFile(inFiles[ii]);
+
+  delete [] inFiles;
+  delete [] inBlocks;
 
   //  Close the output files.
 

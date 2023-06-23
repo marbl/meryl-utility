@@ -33,7 +33,6 @@ public:
   char const *toString(void);
   void        toString(char *str);
 
-  //void        addByte(uint8 b);
   void        addBlock(uint8 *b, uint64 bLen);
 
   void        finalize(void);
@@ -41,10 +40,6 @@ public:
 private:
   uint8       digest[33] = {0};
   char        dascii[33] = {0};
-
-  uint8      *buffer    = nullptr;
-  uint8       bufferLen = 0;
-  uint8       bufferMax = 0;
 
   void       *context;
 };

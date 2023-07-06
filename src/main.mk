@@ -160,7 +160,8 @@ endif
 
 SRC_INCDIRS  := .
 
-SUBMAKEFILES := pccp/pccp.mk
+SUBMAKEFILES := pccp/pccp.mk \
+                regex/regex.mk
 
 ifeq ($(BUILDTESTS), 1)
 SUBMAKEFILES += tests/alignTest-ssw.mk \

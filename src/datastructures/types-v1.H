@@ -53,6 +53,7 @@
 #include <limits.h>
 #include <unistd.h>
 #include <string.h>
+#include <strings.h>
 #include <ctype.h>
 
 #include <float.h>

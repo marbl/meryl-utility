@@ -47,15 +47,17 @@ $(eval $(call TEST_VERSION, ${MAKE}, 3, 3.81))
 #
 
 define INIT_SUBMODULE
+  ifneq ($$(wildcard ${1}), )
   ifeq ($$(wildcard ${2}), )
     $$(info $$(shell git submodule update --init ${1}))
     $$(info )
   endif
+  endif
 endef
 
-#(eval $(call INIT_SUBMODULE, utility,      utility/src/Makefile))
-#(eval $(call INIT_SUBMODULE, meryl,        meryl/src/Makefile))
-#(eval $(call INIT_SUBMODULE, seqrequester, seqrequester/src/Makefile))
+$(eval $(call INIT_SUBMODULE, utility,      utility/src/Makefile))
+$(eval $(call INIT_SUBMODULE, meryl,        meryl/src/Makefile))
+$(eval $(call INIT_SUBMODULE, seqrequester, seqrequester/src/Makefile))
 
 #
 #  Set compiler and flags based on operating system and compiler toolchain.
@@ -119,13 +121,16 @@ define SET_DEFAULT_FLAGS
       LDFLAGS  += -L`jemalloc-config --libdir` -Wl,-rpath,`jemalloc-config --libdir` -ljemalloc `jemalloc-config --libs`
     endif
 
-    #  htslib and meryl-utility need this.
+    #  htslib and meryl-utility need this for SIMD support.
 
-    CFLAGS   += -mxsave
-    CXXFLAGS += -mxsave
+    ifeq ($$(MACHINETYPE), amd64)
+      CFLAGS   += -mxsave
+      CXXFLAGS += -mxsave
+    endif
 
     #  Enable gobs of warnings.
 
+    #CFLAGS   += -pedantic
     CFLAGS   += -Wall -Wextra -Wformat
     CFLAGS   += -Wno-char-subscripts
     CFLAGS   += -Wno-sign-compare
@@ -134,6 +139,7 @@ define SET_DEFAULT_FLAGS
     CFLAGS   += -Wno-unused-variable
     CFLAGS   += -Wno-deprecated-declarations
 
+    #CXXFLAGS += -pedantic
     CXXFLAGS += -Wall -Wextra -Wformat
     CXXFLAGS += -Wno-char-subscripts
     CXXFLAGS += -Wno-sign-compare
@@ -394,10 +400,19 @@ $(eval $(call BOILERMAKE))
 #
 #  But, because make helpfully squashes all the lines to a single line we
 #  need to do something funky and write the version information for C++ and
-#  for make to one file.
+#  for make to one file - which then is included here and in source files.
+#  Makefile.boilermake adds this file as a dependency to ALL source files.
+#
+#  For projects that include meryl-utility as a submodule (the usual case)
+#  write version.H in the submodule src/ directory; for meryl-utility itself,
+#  write in the current directory.
 #
 
-VERSION_H := $(shell ../scripts/version_update.pl ${MODULE} version.H)
+ifeq ($(wildcard utility/src), utility/src)
+  VERSION_H := $(shell ../scripts/version_update.pl ${MODULE} utility/src/version.H)
+else
+  VERSION_H := $(shell ../scripts/version_update.pl ${MODULE} version.H)
+endif
 
 include ${VERSION_H}
 

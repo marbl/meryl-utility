@@ -31,6 +31,7 @@
 void
 merylutil::system::v1::cpuIdent::loadProcessorFlags(void) {
 
+#ifdef __x86_64__
   __builtin_cpu_init();
 
   _maxLeaf    = __get_cpuid_max(0x00000000, nullptr);
@@ -45,6 +46,7 @@ merylutil::system::v1::cpuIdent::loadProcessorFlags(void) {
 
   if (hasXGETBV())
     _xcr0 = _xgetbv(0);   //  Needs clang/gcc option -mxsave
+#endif
 }
 
 
@@ -57,6 +59,7 @@ merylutil::system::v1::cpuIdent::decodeProcessorOrigin(void) {
 
   r[000] = r[001] = r[002] = r[003] = 0;
 
+#ifdef __x86_64__
   if (isLeafValid(0) == false)
     return;
 
@@ -67,6 +70,7 @@ merylutil::system::v1::cpuIdent::decodeProcessorOrigin(void) {
 
   merylutil::trimString(_processorOrigin);
   //printf("'%s' 0x%08x 0x%08x 0x%08x 0x%08x\n", _processorOrigin, r[0], r[1], r[2], r[3]);
+#endif
 }
 
 
@@ -88,6 +92,7 @@ merylutil::system::v1::cpuIdent::decodeProcessorName(void) {
   r[004] = r[005] = r[006] = r[007] = 0;
   r[010] = r[011] = r[012] = r[013] = 0;
 
+#ifdef __x86_64__
   if (isExtendedLeafValid(4) == false)
     return;
 
@@ -96,6 +101,7 @@ merylutil::system::v1::cpuIdent::decodeProcessorName(void) {
   __cpuid_count(0x80000004, 0, r[010], r[011], r[012], r[013]);
 
   merylutil::trimString(_processorName);
+#endif
 }
 
 
@@ -105,6 +111,7 @@ merylutil::system::v1::cpuIdent::decodeProcessorName(void) {
 void
 merylutil::system::v1::cpuIdent::decodeProcessorModelVendorStepID(void) {
 
+#ifdef __x86_64__
   if (isLeafValid(1) == false)   return;
 
   int extFamID   = (_leaf1sub0eax >> 20) & 0xff;
@@ -132,6 +139,7 @@ merylutil::system::v1::cpuIdent::decodeProcessorModelVendorStepID(void) {
   _modelID  = modelID;
   _familyID = familyID;
   _stepping = stepID;
+#endif
 }
 
 
@@ -145,6 +153,7 @@ merylutil::system::v1::cpuIdent::decodeIntelCacheTopology(void) {
   if (false == _isIntel)           return false;
   if (false == isLeafValid(0x04))  return false;
 
+#ifdef __x86_64__
   for (uint32 c=0; c<32; c++) {
     __cpuid_count(0x04, c, eax, ebx, ecx, edx);
 
@@ -175,6 +184,7 @@ merylutil::system::v1::cpuIdent::decodeIntelCacheTopology(void) {
     if (cType == 0x02)  fprintf(stderr, "Intel L%u Instr    %5uKB %2d-way per %2d logical processors\n", cLevel, cSize >> 10, cAssociativity, nLogProc);
     if (cType == 0x03)  fprintf(stderr, "Intel L%u Unified  %5uKB %2d-way per %2d logical processors\n", cLevel, cSize >> 10, cAssociativity, nLogProc);
   }
+#endif
 
   return true;
 }
@@ -195,6 +205,7 @@ merylutil::system::v1::cpuIdent::decodeAMDCacheTopology(void) {
   if (false == isExtendedLeafValid(0x1d))  return false;
   if (false == hasTOPOEXT())               return false;
 
+#ifdef __x86_64__
   for (uint32 c=0; c<32; c++) {
     __cpuid_count(0x8000001d, c, eax, ebx, ecx, edx);
 
@@ -225,6 +236,7 @@ merylutil::system::v1::cpuIdent::decodeAMDCacheTopology(void) {
     if (cType == 0x02)  fprintf(stderr, "AMD   L%u Instr    %5uKB %2d-way per %2d logical processors\n", cLevel, cSize >> 10, cAssociativity, nLogProc);
     if (cType == 0x03)  fprintf(stderr, "AMD   L%u Unified  %5uKB %2d-way per %2d logical processors\n", cLevel, cSize >> 10, cAssociativity, nLogProc);
   }
+#endif
 
   return true;
 }
@@ -238,6 +250,7 @@ merylutil::system::v1::cpuIdent::decodeAMDLegacyCacheTopology(void) {
   if (false == isLeafValid(0x05))  return false;
   if (false == isLeafValid(0x06))  return false;
 
+#ifdef __x86_64__
   __cpuid_count(0x80000005, 0, eax, ebx, ecx, edx);
 
   uint32  cL1DataLineSize      =  (ecx >>  0) & 0x00ff;
@@ -272,6 +285,7 @@ merylutil::system::v1::cpuIdent::decodeAMDLegacyCacheTopology(void) {
   fprintf(stderr, "AMDold L1 Instr    %5uKB %3u B/line %d-way\n", cL1InstSizeKB, cL1InstLineSize, cL1InstAssociativity);
   fprintf(stderr, "AMDold L2 Unified  %5uKB %3u B/line %d-way\n", cL2SizeKB, cL2LineSize, cL2Associativity);
   fprintf(stderr, "AMDold L3 Unified  %5uKB %3u B/line %d-way\n", cL3SizeKB, cL3LineSize, cL3Associativity);
+#endif
 
   return true;
 }

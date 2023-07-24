@@ -44,20 +44,23 @@ $(eval $(call TEST_VERSION, ${MAKE}, 3, 3.81))
 
 #
 #  Initialize submodules if they aren't here yet.
+#   - if the submodule directory exists and it is empty, then have
+#     git fetch the submodule (with some fancy logging).
 #
 
 define INIT_SUBMODULE
-  ifneq ($$(wildcard ${1}), )
-  ifeq ($$(wildcard ${2}), )
-    $$(info $$(shell git submodule update --init ${1}))
+  ifeq ($$(wildcard ${1}),${1})
+  ifeq ($$(wildcard ${1}/*),)
+    $$(info Fetching submodule '${1}')
+    $$(shell git submodule update --init ${1} 2>&1 | awk '{ print " - "$$$$0 }' 1>&2)
     $$(info )
   endif
   endif
 endef
 
-$(eval $(call INIT_SUBMODULE, utility,      utility/src/Makefile))
-$(eval $(call INIT_SUBMODULE, meryl,        meryl/src/Makefile))
-$(eval $(call INIT_SUBMODULE, seqrequester, seqrequester/src/Makefile))
+$(eval $(call INIT_SUBMODULE,utility))
+$(eval $(call INIT_SUBMODULE,meryl))
+$(eval $(call INIT_SUBMODULE,seqrequester))
 
 #
 #  Set compiler and flags based on operating system and compiler toolchain.

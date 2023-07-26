@@ -22,8 +22,8 @@
 using merylutil::compressedFileReader;
 using merylutil::compressedFileWriter;
 
-char tempname[32] = { 0 };
-char tempnagz[32] = { 0 };
+char tempname[64] = { 0 };
+char tempnagz[64] = { 0 };
 
 bool
 testMkdirRmdir(void) {
@@ -226,14 +226,28 @@ main(int32 argc, char **argv) {
     else if (strcmp(argv[arg], "-io") == 0)           tests = 2;
     else if (strcmp(argv[arg], "-unlink") == 0)       tests = 3;
     else if (strcmp(argv[arg], "-permissions") == 0)  tests = 4;
+    else if (strcmp(argv[arg], "-suffix") == 0) {
+      if (strlen(argv[++arg]) < 32) {
+        strcpy(tempnagz, tempname);
+        strcat(tempnagz, ".");
+        strcat(tempnagz, argv[arg]);
+      }
+      else {
+        fprintf(stderr, "error: suffix '%s' too long.\n", argv[arg]);
+        return 1;
+      }
+    }
     else if (strcmp(argv[arg], "-h") == 0)            tests = 5;
     else                                              tests = 5;
   }
   if (tests == 5) {
     fprintf(stderr, "usage: %s ...\n", argv[0]);
-    fprintf(stderr, "  -mkdir    run just mkdir/rmdir tests.\n");
-    fprintf(stderr, "  -io       run just compressed file create/read/write tests.\n");
-    fprintf(stderr, "  -unlink   run just unlink tests,\n");
+    fprintf(stderr, "  -mkdir        run just mkdir/rmdir tests.\n");
+    fprintf(stderr, "  -io           run just compressed file create/read/write tests.\n");
+    fprintf(stderr, "  -unlink       run just unlink tests,\n");
+    fprintf(stderr, "  \n");
+    fprintf(stderr, "  -suffix suf   use suffix 'suf' for compressed files\n");
+    fprintf(stderr, "                ('gz', 'bz2', 'xz', 'zstd')\n");
     fprintf(stderr, "  \n");
     fprintf(stderr, "  by default, all tests are run.\n");
     fprintf(stderr, "  \n");

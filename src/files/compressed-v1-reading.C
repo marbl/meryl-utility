@@ -24,7 +24,7 @@
 namespace merylutil::inline files::inline v1 {
 
 
-compressedFileReader::compressedFileReader(const char *filename, cftType type) {
+compressedFileReader::compressedFileReader(const char *filename, int32 nThreads, cftType type) {
   _filename = duplicateString(filename);
 
   if (type == cftType::cftNONE)                //  If no type is supplied, guess it
@@ -32,7 +32,7 @@ compressedFileReader::compressedFileReader(const char *filename, cftType type) {
   else                                         //  otherwise, trust what the user told
     _type   = type;                            //  us (mostly for compressed pipe input).
 
-  reopen();
+  reopen(nThreads);
 }
 
 
@@ -59,10 +59,11 @@ compressedFileReader::close(void) {
 
 
 void
-compressedFileReader::reopen(void) {
-  int32  nThreads = omp_get_max_threads();
-  bool   pigz     = false;
+compressedFileReader::reopen(int32 nThreads) {
   char   cmd[FILENAME_MAX];
+
+  if (nThreads > 0)        //  Reset number of reading threads if a valid value
+    _nThreads = nThreads;  //  is supplied; default to 2, set in .H.
 
   //  If and existing input is from stdin, do nothing.  reopen() on this
   //  makes no sense, and doing nothing is _possibly_ more correct than
@@ -77,16 +78,13 @@ compressedFileReader::reopen(void) {
   if ((_type != cftSTDIN) && (fileExists(_filename) == false))
     fprintf(stderr, "ERROR:  Failed to open input file '%s': %s\n", _filename, strerror(ENOENT)), exit(1);
 
-  if (_type == cftGZ)
-    pigz = commandAvailable("pigz -h");
-
   //  Open the file!
   errno = 0;
 
   switch (_type) {
-    case cftGZ:
-      if (pigz)
-        snprintf(cmd, FILENAME_MAX, "pigz -dc -p %d '%s'", nThreads, _filename);
+    case cftGZ:                          //  If 'pigz' looks like it works, use
+      if (commandAvailable("pigz -h"))   //  that with a few threads.
+        snprintf(cmd, FILENAME_MAX, "pigz -dc -p %d '%s'", _nThreads, _filename);
       else
         snprintf(cmd, FILENAME_MAX, "gzip -dc '%s'", _filename);
       _file = popen(cmd, "r");
@@ -101,6 +99,12 @@ compressedFileReader::reopen(void) {
 
     case cftXZ:
       snprintf(cmd, FILENAME_MAX, "xz -dc '%s'", _filename);
+      _file = popen(cmd, "r");
+      _pipe = true;
+      break;
+
+    case cftZSTD:
+      snprintf(cmd, FILENAME_MAX, "zstd -q -c -d -T%d '%s'", _nThreads, _filename);
       _file = popen(cmd, "r");
       _pipe = true;
       break;

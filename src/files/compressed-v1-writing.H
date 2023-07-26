@@ -27,7 +27,7 @@ namespace merylutil::inline files::inline v1 {
 
 class compressedFileWriter {
 public:
-  compressedFileWriter(char const *filename, int32 level=1);
+  compressedFileWriter(char const *filename, uint32 cLevel=1, uint32 nThreads=2);
   ~compressedFileWriter();
 
   void  close(void);

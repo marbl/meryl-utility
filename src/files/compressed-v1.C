@@ -40,6 +40,9 @@ compressedFileType(char const *filename) {
   else if ((len > 3) && (strcasecmp(filename + len - 3, ".xz") == 0))
     return(cftXZ);
 
+  else if ((len > 4) && (strcasecmp(filename + len - 4, ".zst") == 0))
+    return(cftZSTD);
+
   else
     return(cftNONE);
 }

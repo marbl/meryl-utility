@@ -27,20 +27,20 @@ namespace merylutil::inline files::inline v1 {
 
 class compressedFileReader {
 public:
-  compressedFileReader(char const *filename, cftType type=cftType::cftNONE);
+  compressedFileReader(char const *filename, int32 threads=0, cftType type=cftType::cftNONE);
   ~compressedFileReader();
 
-  void  reopen(void);
+  void  reopen(int32 threads=0);
   void  close(void);
 
-  FILE *operator*(void)     {  return(_file);              };
-  FILE *file(void)          {  return(_file);              };
+  FILE *operator*(void)     {  return(_file);              }
+  FILE *file(void)          {  return(_file);              }
 
-  char *filename(void)      {  return(_filename);          };
+  char *filename(void)      {  return(_filename);          }
 
-  bool  isCompressed(void)  {  return(_pipe == true);      };
+  bool  isCompressed(void)  {  return(_pipe == true);      }
   bool  isNormal(void)      {  return((_pipe == false) &&
-                                      (_stdi == false));   };
+                                      (_stdi == false));   }
 
   //  Return the file line-by-line.
   //    while (F->readLine())
@@ -53,16 +53,17 @@ public:
     } else {
       return(false);
     }
-  };
-  char   *line   (void)   { return(_line);    };
-  uint32  lineLen(void)   { return(_lineLen); };
-  uint32  lineNum(void)   { return(_lineNum); };
+  }
+  char   *line   (void)   { return(_line);    }
+  uint32  lineLen(void)   { return(_lineLen); }
+  uint32  lineNum(void)   { return(_lineNum); }
 
 
 private:
   FILE     *_file     = nullptr;
   char     *_filename = nullptr;
 
+  int32     _nThreads = 2;
   cftType   _type     = cftType::cftNONE;
 
   bool      _pipe     = false;

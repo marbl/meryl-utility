@@ -24,11 +24,8 @@
 namespace merylutil::inline files::inline v1 {
 
 
-compressedFileWriter::compressedFileWriter(const char *filename, int32 level) {
+compressedFileWriter::compressedFileWriter(const char *filename, uint32 cLevel, uint32 nThreads) {
   char   cmd[FILENAME_MAX];
-
-  int32  nThreads = omp_get_max_threads();
-  bool   pigz     = false;
 
   _file     = NULL;
   _filename = duplicateString(filename);
@@ -37,33 +34,35 @@ compressedFileWriter::compressedFileWriter(const char *filename, int32 level) {
 
   cftType   ft = compressedFileType(_filename);
 
-  //  Decide if we have pigz or gzip available.
-
-  if (ft == cftGZ)
-    pigz = commandAvailable("pigz -h");
-
-  //  Open the output processor for input.
+  if (nThreads == 0)             //  Use max threads if an invalid
+    nThreads = getNumThreads();  //  number is requested.
 
   errno = 0;
 
   switch (ft) {
-    case cftGZ:
-      if (pigz)
-        snprintf(cmd, FILENAME_MAX, "pigz -%dc -p %d > '%s'", level, nThreads, _filename);
+    case cftGZ:                          //  If 'pigz' looks like it works, use
+      if (commandAvailable("pigz -h"))   //  that with a few threads.
+        snprintf(cmd, FILENAME_MAX, "pigz -%dc -p %d > '%s'", cLevel, nThreads, _filename);
       else
-        snprintf(cmd, FILENAME_MAX, "gzip -%dc > '%s'", level, _filename);
+        snprintf(cmd, FILENAME_MAX, "gzip -%dc > '%s'", cLevel, _filename);
       _file = popen(cmd, "w");
       _pipe = true;
       break;
 
     case cftBZ2:
-      snprintf(cmd, FILENAME_MAX, "bzip2 -%dc > '%s'", level, _filename);
+      snprintf(cmd, FILENAME_MAX, "bzip2 -%dc > '%s'", cLevel, _filename);
       _file = popen(cmd, "w");
       _pipe = true;
       break;
 
     case cftXZ:
-      snprintf(cmd, FILENAME_MAX, "xz -%dc > '%s'", level, _filename);
+      snprintf(cmd, FILENAME_MAX, "xz -%dc > '%s'", cLevel, _filename);
+      _file = popen(cmd, "w");
+      _pipe = true;
+      break;
+
+    case cftZSTD:
+      snprintf(cmd, FILENAME_MAX, "zstd -q -c -%d -T%d > '%s'", cLevel, nThreads, _filename);
       _file = popen(cmd, "w");
       _pipe = true;
       break;

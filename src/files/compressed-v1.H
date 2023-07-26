@@ -29,7 +29,8 @@ enum cftType {
   cftGZ    = 1,
   cftBZ2   = 2,
   cftXZ    = 3,
-  cftSTDIN = 4
+  cftZSTD  = 4,
+  cftSTDIN = 5
 };
 
 cftType  compressedFileType(char const *filename);

@@ -1,5 +1,5 @@
-TARGET   := testHTSlib
-SOURCES  := testHTSlib.c
+TARGET   := testHTSbam
+SOURCES  := testHTSbam.C
 
 SRC_INCDIRS := .. ../utility ../utility/htslib
 

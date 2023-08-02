@@ -183,6 +183,7 @@ SUBMAKEFILES += tests/alignTest-ssw.mk \
                 tests/stddevTest.mk \
                 tests/stringsTest.mk \
                 tests/systemTest.mk \
+                tests/testHTSbam.mk \
                 tests/testHTSlib.mk \
                 tests/timeTest.mk \
                 tests/toHexTest.mk \

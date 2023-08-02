@@ -23,31 +23,83 @@
 #include "types.H"
 
 #include <sys/types.h>
+#include <sys/stat.h>  //  for UTIME_OMIT
 #include <sys/time.h>
 
 namespace merylutil::inline system::inline v1 {
 
 //
-//  The meryl-utility time object.
+//  The meryl-utility time objects.
 //
-//  It serves to store both
-//   - real time
-//   - delta time (real time minus some base time)
-//   - file time (both update and access times)
+//  muTime stores a single time value and will convert to/from printable
+//  formats (eventually).
 //
+//  muDeltaTime stores two time values and reports the difference between
+//  them.
+//
+//  muFileTime stores two time values, one for the modification time of a
+//  file, and one for the last access time (but this isn't always supported).
+//
+
 
 class muTime {
 public:
-  muTime() {
-    getTime(0);
-    getTime(1);
+  muTime(int64 s, int64 n) {
+    _s = s;
+    _n = n;
   }
-  muTime(char const *prefix, char separator='.', char const *suffix=nullptr) {
-    getTimeOfFile(prefix, separator, suffix);
+  muTime(bool init=false) {
+    if (init == true)
+      setTime();
   }
-  muTime(FILE *F) {
-    getTimeOfFile(F);
+
+  muTime &setTime(void);
+
+  double  getTime_double(void)  { return (double)_s + (double)_n / 1000000000.0;  }
+  int64   getTime_int64 (void)  { return         _s;                              }
+
+  //char const *getTimeString(void);
+
+public:
+  bool    operator< (muTime &that) { return (_s <  that._s) || (_s == that._s && _n <  that._n); }
+  bool    operator> (muTime &that) { return (_s >  that._s) || (_s == that._s && _n >  that._n); }
+  bool    operator<=(muTime &that) { return (_s <= that._s) || (_s == that._s && _n <= that._n); }
+  bool    operator>=(muTime &that) { return (_s >= that._s) || (_s == that._s && _n >= that._n); }
+
+  bool    operator==(muTime &that) { return (_s == that._s) && (_n == that._n); }
+  bool    operator!=(muTime &that) { return (_s != that._s) || (_n != that._n); }
+
+#if 0
+  muTime &operator=(const muTime &that) {
+    _s = that._s;
+    _n = that._n;
+    return *this;
   }
+#endif
+
+private:
+  int64  _s = 0;
+  int64  _n = 0;
+
+  friend class muDeltaTime;
+  friend class muFileTime;
+};
+
+
+
+class muDeltaTime {
+public:
+  muDeltaTime(bool init=false) {
+    if (init == true)
+      _bgn = _end.setTime();
+  }
+
+public:
+  void      startTimer(void)  {  _bgn.setTime();  }
+  void      stopTimer(void)   {  _end.setTime();  }
+
+  muTime   &beginTime(void)   {  return _bgn;  }
+  muTime   &endTime(void)     {  return _end;  }
 
 public:
   int64     years(void)   { if (_yrs == int64max) updateYDHMS(); return _yrs; }    //  These return the integer number of (unit)s
@@ -63,68 +115,9 @@ public:
   double    full_minutes(void) { return ttt() / _minutes; }   //    full_minutes() = 3.01666
   double    full_seconds(void) { return ttt() / _seconds; }   //    full_seconds() = 181.0
 
-  //  setTimeOfFile()
-  //   - Will set the modification time to the time in the object.  If
-  //     getTimeOfFile() was used to set the object time, then the access
-  //     time is also set.
-  //
-  //  getTimeOfFile()
-  //   - Will set the object time to the modification time of the file.
-  //     The access time is also saved.
-  //
-  bool      setTimeOfFile(char const *prefix, char separator='.', char const *suffix=nullptr);
-  muTime   &getTimeOfFile(char const *prefix, char separator='.', char const *suffix=nullptr);
-  muTime   &getTimeOfFile(FILE *F);
-
-  //  getTime()
-  //   - Will set the specified time index to the current time.
-  //     By convention:
-  //       [0] - base time
-  //       [1] - primary time and file update time
-  //       [2] -                  file access time
-  //
-  muTime   &getTime(uint32 idx=1) {
-    struct timeval  tp;
-
-    gettimeofday(&tp, nullptr);
-
-    _s[idx] = tp.tv_sec;
-    _n[idx] = tp.tv_usec * 1000;
-
-    _yrs = int64max;
-    _dys = int64max;
-    _hrs = int64max;
-    _mns = int64max;
-    _scs = DBL_MAX;
-
-    return *this;
-  }
-
-  //  setStartTime()
-  //   - For interval timing, this will set the base time to the present time.
-  //
-  muTime   &setStartTime(void) { return getTime(0); }
-
-  //  Comparison operators all work on 'delta time'.
-  //
-  bool    operator< (muTime &that) { return (_s[1]-_s[0] <  that._s[1]-that._s[0]) || (_s[1]-_s[0] == that._s[1]-that._s[0] && _n[1]-_n[0] <  that._n[1]-that._n[0]); }
-  bool    operator> (muTime &that) { return (_s[1]-_s[0] >  that._s[1]-that._s[0]) || (_s[1]-_s[0] == that._s[1]-that._s[0] && _n[1]-_n[0] >  that._n[1]-that._n[0]); }
-  bool    operator<=(muTime &that) { return (_s[1]-_s[0] <= that._s[1]-that._s[0]) || (_s[1]-_s[0] == that._s[1]-that._s[0] && _n[1]-_n[0] <= that._n[1]-that._n[0]); }
-  bool    operator>=(muTime &that) { return (_s[1]-_s[0] >= that._s[1]-that._s[0]) || (_s[1]-_s[0] == that._s[1]-that._s[0] && _n[1]-_n[0] >= that._n[1]-that._n[0]); }
-
-  bool    operator==(muTime &that) { return (_s[1]-_s[0] == that._s[1]-that._s[0] && _n[1]-_n[0] == that._n[1]-that._n[0]); }
-  bool    operator!=(muTime &that) { return (_s[1]-_s[0] != that._s[1]-that._s[0] || _n[1]-_n[0] != that._n[1]-that._n[0]); }
-
 private:
-  static constexpr double _seconds =   1.0;
-  static constexpr double _minutes =  60.0 * _seconds;
-  static constexpr double _hours   =  60.0 * _minutes;
-  static constexpr double _days    =  24.0 * _hours;
-  static constexpr double _years   = 365.0 * _days;
-
   double    ttt(void) {
-    return((double)(_s[1] - _s[0]) +
-           (double)(_n[1] - _n[0]) / 1000000000.0);
+    return _end.getTime_double() - _bgn.getTime_double();
   }
 
   void      updateYDHMS(void) {
@@ -137,8 +130,15 @@ private:
     _scs =              t;
   }
 
-  int64   _s[3] = { 0, 0, UTIME_OMIT };
-  int64   _n[3] = { 0, 0, UTIME_OMIT };
+private:
+  muTime  _bgn;
+  muTime  _end;
+
+  static constexpr double _seconds =   1.0;
+  static constexpr double _minutes =  60.0 * _seconds;
+  static constexpr double _hours   =  60.0 * _minutes;
+  static constexpr double _days    =  24.0 * _hours;
+  static constexpr double _years   = 365.0 * _days;
 
   int64   _yrs = int64max;
   int64   _dys = int64max;
@@ -146,6 +146,62 @@ private:
   int64   _mns = int64max;
   double  _scs = DBL_MAX;
 };
+
+
+
+
+
+//  setTimeOfFile()
+//   - Will set the modification time to the time in the object.  If
+//     getTimeOfFile() was used to set the object time, then the access
+//     time is also set.
+//
+//  getTimeOfFile()
+//   - Will set the object time to the modification time of the file.
+//     The access time is also saved.
+//
+class muFileTime {
+public:
+  muFileTime() {
+    _mod = muTime(0, UTIME_OMIT);
+    _acc = muTime(0, UTIME_OMIT);
+  }
+  muFileTime(char const *prefix, char separator='.', char const *suffix=nullptr) {
+    getTimeOfFile(prefix, separator, suffix);
+  }
+  muFileTime(FILE *F) {
+    getTimeOfFile(F);
+  }
+
+  bool      setTimeOfFile(char const *prefix, char separator='.', char const *suffix=nullptr);
+  muTime    getTimeOfFile(char const *prefix, char separator='.', char const *suffix=nullptr);
+  muTime    getTimeOfFile(FILE *F);
+
+  muTime   &lastModifyTime(void)  { return _mod; }
+  muTime   &lastAccessTime(void)  { return _acc; }
+
+  muDeltaTime  fileAge(void) {
+    muDeltaTime  dt;
+
+    dt.beginTime() = _mod;
+    dt.endTime().setTime();
+
+    return dt;
+  }
+
+  bool    operator< (muFileTime &that) { return (_mod <  that._mod); }
+  bool    operator> (muFileTime &that) { return (_mod >  that._mod); }
+  bool    operator<=(muFileTime &that) { return (_mod <= that._mod); }
+  bool    operator>=(muFileTime &that) { return (_mod >= that._mod); }
+
+  bool    operator==(muFileTime &that) { return (_mod == that._mod); }
+  bool    operator!=(muFileTime &that) { return (_mod != that._mod); }
+
+private:
+  muTime  _mod;
+  muTime  _acc;
+};
+
 
 }  //  namespace merylutil::system::v1
 

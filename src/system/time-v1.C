@@ -22,18 +22,33 @@
 
 #include <fcntl.h>
 #include <sys/stat.h>
-
+#include <sys/time.h>
 
 namespace merylutil::inline system::inline v1 {
 
+muTime &
+muTime::setTime(void) {
+  struct timeval  tp;
+
+  gettimeofday(&tp, nullptr);
+
+  _s = tp.tv_sec;
+  _n = tp.tv_usec * 1000;
+
+  return *this;
+}
+
+
+
+
 
 bool
-muTime::setTimeOfFile(char const *prefix, char separator, char const *suffix) {
+muFileTime::setTimeOfFile(char const *prefix, char separator, char const *suffix) {
   char const *pathname = constructPathName(prefix, separator, suffix);
   bool        success  = false;
 
-  struct timespec times[2] = {{ .tv_sec = _s[2], .tv_nsec = _n[2] },    //  Access time
-                              { .tv_sec = _s[1], .tv_nsec = _n[1] }};   //  Modification time
+  struct timespec times[2] = {{ .tv_sec = _acc._s, .tv_nsec = _acc._n },    //  Access time
+                              { .tv_sec = _mod._s, .tv_nsec = _mod._n }};   //  Modification time
 
   if (::utimensat(AT_FDCWD, pathname, times, 0) == -1)
     fprintf(stderr, "WARNING: Failed to set time of file '%s': %s\n", pathname, strerror(errno));
@@ -46,8 +61,8 @@ muTime::setTimeOfFile(char const *prefix, char separator, char const *suffix) {
 }
 
 
-muTime &
-muTime::getTimeOfFile(char const *prefix, char separator, char const *suffix) {
+muTime
+muFileTime::getTimeOfFile(char const *prefix, char separator, char const *suffix) {
   struct stat  s;
 
   char const *pathname = constructPathName(prefix, separator, suffix);
@@ -59,19 +74,19 @@ muTime::getTimeOfFile(char const *prefix, char separator, char const *suffix) {
   delete [] pathname;
 
 #ifdef __APPLE__
-  _s[1] = s.st_mtimespec.tv_sec;      _s[2] = s.st_atimespec.tv_sec;
-  _n[1] = s.st_mtimespec.tv_nsec;     _n[2] = s.st_atimespec.tv_nsec;
+  _mod._s = s.st_mtimespec.tv_sec;    _acc._s = s.st_atimespec.tv_sec;
+  _mod._n = s.st_mtimespec.tv_nsec;   _acc._n = s.st_atimespec.tv_nsec;
 #else
-  _s[1] = s.st_mtim.tv_sec;           _s[2] = s.st_atim.tv_sec;
-  _n[1] = s.st_mtim.tv_nsec;          _n[2] = s.st_atim.tv_nsec;
+  _mod._s = s.st_mtim.tv_sec;         _acc._s = s.st_atim.tv_sec;
+  _mod._n = s.st_mtim.tv_nsec;        _acc._n = s.st_atim.tv_nsec;
 #endif
 
-  return *this;
+  return _mod;
 }
 
 
-muTime &
-muTime::getTimeOfFile(FILE *file) {
+muTime
+muFileTime::getTimeOfFile(FILE *file) {
   struct stat  s;
   off_t        size = 0;
 
@@ -80,14 +95,14 @@ muTime::getTimeOfFile(FILE *file) {
     fprintf(stderr, "Failed to stat() FILE*: %s\n", strerror(errno)), exit(1);
 
 #ifdef __APPLE__
-  _s[1] = s.st_mtimespec.tv_sec;      _s[2] = s.st_atimespec.tv_sec;
-  _n[1] = s.st_mtimespec.tv_nsec;     _n[2] = s.st_atimespec.tv_nsec;
+  _mod._s = s.st_mtimespec.tv_sec;    _acc._s = s.st_atimespec.tv_sec;
+  _mod._n = s.st_mtimespec.tv_nsec;   _acc._n = s.st_atimespec.tv_nsec;
 #else
-  _s[1] = s.st_mtim.tv_sec;           _s[2] = s.st_atim.tv_sec;
-  _n[1] = s.st_mtim.tv_nsec;          _n[2] = s.st_atim.tv_nsec;
+  _mod._s = s.st_mtim.tv_sec;         _acc._s = s.st_atim.tv_sec;
+  _mod._n = s.st_mtim.tv_nsec;        _acc._n = s.st_atim.tv_nsec;
 #endif
 
-  return *this;
+  return _mod;
 }
 
 }  //  namespace merylutil::system::v1

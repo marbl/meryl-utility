@@ -184,6 +184,7 @@ SUBMAKEFILES += tests/alignTest-ssw.mk \
                 tests/stringsTest.mk \
                 tests/systemTest.mk \
                 tests/testHTSlib.mk \
+                tests/timeTest.mk \
                 tests/toHexTest.mk \
                 tests/typesTest.mk
 endif

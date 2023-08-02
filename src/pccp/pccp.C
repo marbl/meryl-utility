@@ -41,12 +41,13 @@ public:
   //  If it wasn't opened, it existed already and we didn't do the copy.
   ~cpBufState() {
     if (otFile) {
-      merylutil::muTime times;
+      merylutil::muFileTime times;
 
       merylutil::closeFile(inFile);
       merylutil::closeFile(otFile);
 
-      times.getTimeOfFile(inPath).setTimeOfFile(otPath);
+      times.getTimeOfFile(inPath);
+      times.setTimeOfFile(otPath);
     }
   };
 

@@ -445,20 +445,20 @@ sizeOfFile(FILE *file) {
 
 uint64
 timeOfFile(char const *prefix, char separator, char const *suffix) {
-  muTime mt;
+  muFileTime mt;
 
   mt.getTimeOfFile(prefix, separator, suffix);
 
-  return (uint64)floor(mt.seconds());
+  return mt.lastModifyTime().getTime_int64();
 }
 
 uint64
 timeOfFile(FILE *file) {
-  muTime mt;
+  muFileTime mt;
 
   mt.getTimeOfFile(file);
 
-  return (uint64)floor(mt.seconds());
+  return mt.lastModifyTime().getTime_int64();
 }
 
 }  //  namespace merylutil::files::v1

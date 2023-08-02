@@ -43,8 +43,8 @@ static const uint32 MT_LOWER_MASK = 0x7fffffffUL;  //  least significant r bits
 
 class mtRandom {
 public:
-  mtRandom()           { mtSetSeed(getpid() * time(NULL)); };
-  mtRandom(uint32 s)   { mtSetSeed(s);                     };
+  mtRandom();           //  Initialize with seed getpid() * time()
+  mtRandom(uint32 s);   //  Initialize with seed s
   mtRandom(uint32 *init_key, uint32 key_length);
 
   void     mtSetSeed(uint32 s);

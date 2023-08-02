@@ -60,12 +60,23 @@
    email: m-mat @ math.sci.hiroshima-u.ac.jp (remove space)
 */
 
-#include <stdlib.h>
-#include <math.h>
-
 #include "mt19937ar-v1.H"
 
+#include <stdlib.h>
+#include <math.h>
+#include <time.h>
+
 namespace merylutil::inline math::inline v1 {
+
+
+mtRandom::mtRandom() {
+  mtSetSeed(getpid() * time(NULL));
+}
+
+mtRandom::mtRandom(uint32 s) {
+  mtSetSeed(s);
+}
+
 
 //  initialize with a single seed
 void

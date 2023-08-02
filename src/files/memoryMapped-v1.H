@@ -22,6 +22,9 @@
 
 #include "types.H"
 
+#include <sys/stat.h>
+
+
 //  The BSD's are able to map to an arbitrary position in the file, but the
 //  Linux's can only map to multiples of pagesize.  Thus, this class maps the
 //  whole file into address space, then passes out pointers to pieces in it.

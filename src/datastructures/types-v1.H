@@ -61,10 +61,6 @@
 
 #include <assert.h>
 #include <errno.h>
-#include <time.h>
-
-#include <sys/types.h>
-#include <sys/stat.h>
 
 #include <omp.h>
 

@@ -104,6 +104,7 @@ allocateArray(TT*& array, uint64 allocSize, _raAct op=_raAct::clearNew) {
 
 
 
+//  Return a copy of the NUL terminated string 'fr'.
 template<typename TT>
 TT *
 duplicateString(TT const *fr) {
@@ -115,6 +116,28 @@ duplicateString(TT const *fr) {
   TT     *to = new TT [ln+1];
 
   memcpy(to, fr, sizeof(TT) * (ln+1));
+
+  return(to);
+}
+
+
+
+//  Copy NUL terminated string 'fr' into 'to' (re)allocating
+//  space as needed.  Return the 'to' pointer.
+template<typename TT, typename LL>
+TT *
+duplicateString(TT const *fr, TT *&to, LL &toLen, LL &toMax) {
+
+  if (fr == nullptr) {
+    toLen = 0;
+    increaseArray(to, toLen+1, toMax, 16, _raAct::doNothing);
+    to[0] = 0;
+  }
+  else {
+    toLen = strlen(fr);
+    increaseArray(to, toLen+1, toMax, 16, _raAct::doNothing);
+    memcpy(to, fr, sizeof(TT) * (toLen+1));
+  }
 
   return(to);
 }

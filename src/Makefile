@@ -133,7 +133,7 @@ define SET_DEFAULT_FLAGS
 
     #  Enable gobs of warnings.
 
-    #CFLAGS   += -pedantic
+    CFLAGS   += -pedantic
     CFLAGS   += -Wall -Wextra -Wformat
     CFLAGS   += -Wno-char-subscripts
     CFLAGS   += -Wno-sign-compare
@@ -142,7 +142,7 @@ define SET_DEFAULT_FLAGS
     CFLAGS   += -Wno-unused-variable
     CFLAGS   += -Wno-deprecated-declarations
 
-    #CXXFLAGS += -pedantic
+    CXXFLAGS += -pedantic
     CXXFLAGS += -Wall -Wextra -Wformat
     CXXFLAGS += -Wno-char-subscripts
     CXXFLAGS += -Wno-sign-compare

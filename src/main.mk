@@ -25,6 +25,7 @@ SOURCES      := \
                 \
                 datastructures/strings-v1.C \
                 datastructures/keyAndValue-v1.C \
+                datastructures/regex-v1.C \
                 datastructures/splitToWords-v1.C \
                 datastructures/stringList-v1.C \
                 datastructures/types-v1.C \
@@ -179,6 +180,7 @@ SUBMAKEFILES += tests/alignTest-ssw.mk \
                 tests/parasailTest.mk \
                 tests/testVectorSupport.mk \
                 tests/readLines.mk \
+                tests/regexTest.mk \
                 tests/sequenceTest.mk \
                 tests/stddevTest.mk \
                 tests/stringsTest.mk \

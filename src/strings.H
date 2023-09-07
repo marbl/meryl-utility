@@ -22,6 +22,8 @@
 
 #include "datastructures/strings-v1.H"
 
+#include "datastructures/regex-v1.H"
+
 #include "datastructures/keyAndValue-v1.H"
 #include "datastructures/splitToWords-v1.H"
 #include "datastructures/stringList-v1.H"

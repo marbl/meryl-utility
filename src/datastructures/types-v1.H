@@ -94,8 +94,8 @@ typedef   int8_t            int8;
 //  integers.  This only really makes sense for the unsigned flavor, e.g.,
 //  when used for bit packed quantities.
 
-constexpr inline uint128   build_uint128(uint64 a, uint64 b)    { return(((uint128)a << 64) | ((uint128)b)); };
-constexpr inline  int128   build_int128 ( int64 a,  int64 b)    { return( ((int128)a << 64) |  ((int128)b)); };
+constexpr inline uint128   build_uint128(uint64 a, uint64 b)    { return(((uint128)a << 64) | ((uint128)b)); }
+constexpr inline  int128   build_int128 ( int64 a,  int64 b)    { return( ((int128)a << 64) |  ((int128)b)); }
 
 //  Some handy constants.
 //
@@ -253,10 +253,10 @@ inline bool   isLetter(char c)     { return((('a' <= c) && (c <= 'z')) ||
 
 inline bool   isWhiteSpace(char c) { return(isSpace(c) ||
                                             isTab(c) ||
-                                            isEndOfLine(c)); };
+                                            isEndOfLine(c)); }
 
-inline bool   isComment(char c)    { return((c == '!') || (c == '#') || (c == 0));        };
-inline bool   isDelimiter(char c)  { return((c == ':') || (c == '='));                    };
+inline bool   isComment(char c)    { return((c == '!') || (c == '#') || (c == 0)); }
+inline bool   isDelimiter(char c)  { return((c == ':') || (c == '='));             }
 
 inline bool   isBinDigit(char c)   { return((('0' <= c) && (c <= '1')));  }
 inline bool   isOctDigit(char c)   { return((('0' <= c) && (c <= '7')));  }
@@ -268,8 +268,8 @@ inline bool   isHexDigit(char c)   { return((('0' <= c) && (c <= '9')) ||
 bool          isBinNumber (char const *s);
 bool          isOctNumber (char const *s);
 bool          isDecNumber (char const *s, char dot='.');
-bool inline   isDecInteger(char const *s)   { return(isDecNumber(s,  0));  };
-bool inline   isDecFloat  (char const *s)   { return(isDecNumber(s, '.')); };
+bool inline   isDecInteger(char const *s)   { return(isDecNumber(s,  0));  }
+bool inline   isDecFloat  (char const *s)   { return(isDecNumber(s, '.')); }
 bool          isHexNumber (char const *s);
 
 //  Disallow the usual character tests becuse of their goofy return values.

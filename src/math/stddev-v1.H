@@ -41,10 +41,10 @@ public:
     _mn = mn;
     _sn = sn;
     _nn = nn;
-  };
+  }
 
   ~stdDev() {
-  };
+  }
 
   void     insert(TT val) {
     double m0 = _mn;
@@ -60,7 +60,7 @@ public:
     _mn = m0 + (val - m0) / n0;
     _sn = s0 + (val - m0) * (val - _mn);
     _nn = n0;
-  };
+  }
 
   void     remove(TT val) {
     uint32 n0 = _nn - 1;
@@ -84,34 +84,34 @@ public:
     _nn = n0;
     _mn = m0;
     _sn = s0;
-  };
+  }
 
   void     finalize(void) {
     _sn  = stddev();
     _nn  |= 0x80000000;
-  };
+  }
 
   uint32   size(void) {
     return(_nn & 0x7fffffff);
-  };
+  }
 
   double   mean(void) {
     return(_mn);
-  };
+  }
 
   double   variance(void) {
     if (_nn & 0x80000000)
       return(_sn * _sn);
     else
       return((_nn < 2) ? (0.0) : (_sn / (_nn-1)));
-  };
+  }
 
   double   stddev(void) {
     if (_nn & 0x80000000)
       return(_sn);
     else
       return(sqrt(variance()));
-  };
+  }
 
 private:
   double   _mn;  //  mean
@@ -180,7 +180,7 @@ computeStdDev(TT *dist, uint64 distLen, double &mean, double &stddev, bool isSor
 
   if (numSamples > 1)
     stddev = sqrt(stddev / (numSamples - 1));
-};
+}
 
 template<typename TT>
 void
@@ -292,7 +292,7 @@ computeMedianAbsoluteDeviation(TT *dist, uint64 distLen, TT &median, TT &mad, bo
   std::sort(m.begin(), m.end());
 
   mad = m[ m.size()/2 ];
-};
+}
 
 template<typename TT>
 void
@@ -309,7 +309,7 @@ computeExponentialMovingAverage(TT alpha, TT ema, TT value) {
   assert(alpha <= 1.0);
 
   return(alpha * value + (1 - alpha) * ema);
-};
+}
 
 
 
@@ -329,10 +329,10 @@ public:
     _finalized = false;
 
     clearStatistics();
-  };
+  }
   ~histogramStatistics() {
     delete [] _histogram;
-  };
+  }
 
   void               add(uint64 data, uint32 count=1) {
     while (_histogramAlloc <= data)
@@ -343,16 +343,16 @@ public:
 
     _histogram[data] += count;
     _finalized = false;
-  };
+  }
 
 
-  uint64             numberOfObjects(void)  { finalizeData(); return(_numObjs);  };
+  uint64             numberOfObjects(void)  { finalizeData(); return(_numObjs);  }
 
-  double             mean(void)             { finalizeData(); return(_mean);     };
-  double             stddev(void)           { finalizeData(); return(_stddev);   };
+  double             mean(void)             { finalizeData(); return(_mean);     }
+  double             stddev(void)           { finalizeData(); return(_stddev);   }
 
-  uint64             median(void)           { finalizeData(); return(_median);   };
-  uint64             mad(void)              { finalizeData(); return(_mad);      };
+  uint64             median(void)           { finalizeData(); return(_median);   }
+  uint64             mad(void)              { finalizeData(); return(_mad);      }
 
   void               clearStatistics(void) {
     _numObjs  = 0;
@@ -364,7 +364,7 @@ public:
 
     _median   = 0;
     _mad      = 0;
-  };
+  }
 
   void               finalizeData(void) {
 
@@ -458,21 +458,21 @@ public:
     delete [] maddata;
 
     _finalized = true;
-  };
+  }
 
   uint64           histogram(uint64 ii) {
     return(_histogram[ii]);
-  };
+  }
   uint64           histogramMax(void) {
     return(_histogramMax);
-  };
+  }
 
   void             writeHistogram(FILE *F, char *label) {
     fprintf(F, "#%s\tquantity\n", label);
 
     for (uint64 ii=0; ii <= _histogramMax; ii++)
       fprintf(F, F_U64"\t" F_U64 "\n", ii, _histogram[ii]);
-  };
+  }
 
 private:
   bool            _finalized;

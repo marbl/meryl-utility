@@ -44,16 +44,37 @@ int AS_configure(int argc, char **argv, uint32 maxThreads=uint32max);
 int sprintf(std::vector<char const *> &ev, char const *fmt, ...);
 int sprintf(std::vector<char const *> &ev, char const *fmt, va_list ap);
 
+int sprintf(std::vector<char const *> *ev, char const *fmt, ...);
+int sprintf(std::vector<char const *> *ev, char const *fmt, va_list ap);
+
 
 //  A helper.
-//    If 'fatal', print message to stderr and exit(1).
-//    Else, returns false.
+//
+//  If 'fatal', print message to stderr and exit(1).
+//  Else, return false.
 //
 //  To be used in functions that can switch from returning fatal errors
-//  (which was the default behavior) to returning true/false.  See
-//  accessing-v1.C for examples.
+//  (which was the default behavior) to returning true/false.
 //
-bool fatalError(bool fatal, char const *fmt, ...);
+//    bool doSomething(bool crash-on-failure) {
+//      [...]
+//      if (something-failed)
+//        return fatalError(crash-on-failure, "no good");
+//
+//  If crash-on-failure is true, we print 'no good' and exit the program.
+//  If not true, we (silently) return false.
+//
+//  The vector variant behaves the same if no vector is supplied.
+//
+//  If a vector is supplied, the error message is appended to it
+//  and false is always returned.
+//
+//  fmt is expected to end WITHOUT a new line.  One will be added
+//  when printed to the screen / when the error list is reported.
+//
+bool fatalError(bool fatal,                                char const *fmt, ...);
+bool fatalError(bool fatal, std::vector<char const *> *ev, char const *fmt, ...);
+bool fatalError(            std::vector<char const *> *ev, char const *fmt, ...);
 
 
 //  Return true of an external command is exists and is executable.

@@ -134,8 +134,24 @@ sprintf(std::vector<char const *> &ev, char const *fmt, ...) {
 
   ev.push_back(str);
 
-  return(ret);
+  return ret;
 }
+
+int
+sprintf(std::vector<char const *> *ev, char const *fmt, ...) {
+  int      ret = 0;
+  va_list  ap;
+
+  va_start(ap, fmt);
+
+  if (ev)  ret = sprintf(*ev, fmt, ap);
+  else     ret = vfprintf(stderr, fmt, ap);
+
+  va_end(ap);
+
+  return ret;
+}
+
 
 int
 sprintf(std::vector<char const *> &ev, char const *fmt, va_list ap) {
@@ -146,7 +162,17 @@ sprintf(std::vector<char const *> &ev, char const *fmt, va_list ap) {
 
   ev.push_back(str);
 
-  return(ret);
+  return ret;
+}
+
+int
+sprintf(std::vector<char const *> *ev, char const *fmt, va_list ap) {
+  int      ret = 0;
+
+  if (ev) ret = sprintf(*ev, fmt, ap);
+  else    ret = vfprintf(stderr, fmt, ap);
+
+  return ret;
 }
 
 
@@ -161,7 +187,37 @@ fatalError(bool fatal, char const *fmt, ...) {
   va_end(ap);
 
   if (fatal == true)
-    exit(1);
+    fprintf(stderr, "\nStop.\n"), exit(1);
+
+  return(false);
+}
+
+bool
+fatalError(bool fatal, std::vector<char const *> *ev, char const *fmt, ...) {
+  va_list  ap;
+
+  va_start(ap, fmt);
+  if ((fatal == true) && (fmt != nullptr))
+    sprintf(ev, fmt, ap);
+  va_end(ap);
+
+  if ((fatal == true) && (ev == nullptr))
+    fprintf(stderr, "\nStop.\n"), exit(1);
+
+  return(false);
+}
+
+bool
+fatalError(std::vector<char const *> *ev, char const *fmt, ...) {
+  va_list  ap;
+
+  va_start(ap, fmt);
+  if (fmt != nullptr)
+    sprintf(ev, fmt, ap);
+  va_end(ap);
+
+  if (ev == nullptr)
+    fprintf(stderr, "\nStop.\n"), exit(1);
 
   return(false);
 }

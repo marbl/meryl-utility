@@ -104,7 +104,7 @@ compressedFileReader::reopen(int32 nThreads) {
       break;
 
     case cftZSTD:
-      snprintf(cmd, FILENAME_MAX, "zstd -q -c -d -T%d '%s'", _nThreads, _filename);
+      snprintf(cmd, FILENAME_MAX, "zstd -q -c -d -f -k '%s'", _filename);
       _file = popen(cmd, "r");
       _pipe = true;
       break;

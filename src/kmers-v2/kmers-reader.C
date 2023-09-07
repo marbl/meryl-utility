@@ -21,6 +21,19 @@
 
 namespace merylutil::inline kmers::v2 {
 
+
+stuffedBits *
+merylFileReader::openMasterIndex(void) {
+  char   N[FILENAME_MAX+1];
+
+  snprintf(N, FILENAME_MAX, "%s/merylIndex", _inName);
+
+  if (fileExists(N) == false)
+    return nullptr;
+  else
+    return new stuffedBits(N);
+}
+
 //  Clear all members and allocate buffers.
 void
 merylFileReader::initializeFromMasterI_v00(void) {
@@ -39,179 +52,125 @@ merylFileReader::initializeFromMasterI_v00(void) {
 
 //  Initialize for the original.
 void
-merylFileReader::initializeFromMasterI_v01(stuffedBits  *masterIndex,
-                                           bool          doInitialize) {
+merylFileReader::initializeFromMasterI_v01(stuffedBits  *masterIndex) {
 
-  if (doInitialize == true) {
-    initializeFromMasterI_v00();
+  initializeFromMasterI_v00();
 
-    _prefixSize    = masterIndex->getBinary(32);
-    _suffixSize    = masterIndex->getBinary(32);
+  _prefixSize    = masterIndex->getBinary(32);
+  _suffixSize    = masterIndex->getBinary(32);
 
-    _numFilesBits  = masterIndex->getBinary(32);
-    _numBlocksBits = masterIndex->getBinary(32);
+  _numFilesBits  = masterIndex->getBinary(32);
+  _numBlocksBits = masterIndex->getBinary(32);
 
-    _numFiles      = (uint64)1 << _numFilesBits;    //  The same for all formats, but
-    _numBlocks     = (uint64)1 << _numBlocksBits;   //  awkward to do outside of here.
-  }
+  _numFiles      = (uint64)1 << _numFilesBits;    //  The same for all formats, but
+  _numBlocks     = (uint64)1 << _numBlocksBits;   //  awkward to do outside of here.
 
-  //  If we didn't initialize, set the file position to the start
-  //  of the statistics.
-  else {
-    masterIndex->setPosition(64 + 64 + 32 + 32 + 32 + 32);
-  }
+  _statsVersion  = 1;
+  _statsOffset   = masterIndex->getPosition();   assert(_statsOffset == 64 + 64 + 32 + 32 + 32 + 32);
 }
 
 
 
 //  Initialize for the format that includes multi sets.
 void
-merylFileReader::initializeFromMasterI_v02(stuffedBits  *masterIndex,
-                                           bool          doInitialize) {
+merylFileReader::initializeFromMasterI_v02(stuffedBits  *masterIndex) {
 
-  if (doInitialize == true) {
-    initializeFromMasterI_v00();
+  initializeFromMasterI_v00();
 
-    _prefixSize    = masterIndex->getBinary(32);
-    _suffixSize    = masterIndex->getBinary(32);
+  _prefixSize    = masterIndex->getBinary(32);
+  _suffixSize    = masterIndex->getBinary(32);
 
-    _numFilesBits  = masterIndex->getBinary(32);
-    _numBlocksBits = masterIndex->getBinary(32);
+  _numFilesBits  = masterIndex->getBinary(32);
+  _numBlocksBits = masterIndex->getBinary(32);
 
-    uint32 flags   = masterIndex->getBinary(32);
+  uint32 flags   = masterIndex->getBinary(32);
 
-    _isMultiSet    = flags & (uint32)0x0001;        //  This is new in v02.
+  _isMultiSet    = flags & (uint32)0x0001;        //  This is new in v02.
 
-    _numFiles      = (uint64)1 << _numFilesBits;    //  The same for all formats, but
-    _numBlocks     = (uint64)1 << _numBlocksBits;   //  awkward to do outside of here.
-  }
+  _numFiles      = (uint64)1 << _numFilesBits;    //  The same for all formats, but
+  _numBlocks     = (uint64)1 << _numBlocksBits;   //  awkward to do outside of here.
 
-  //  If we didn't initialize, set the file position to the start
-  //  of the statistics.
-  else {
-    masterIndex->setPosition(64 + 64 + 32 + 32 + 32 + 32 + 32);
-  }
+  _statsVersion  = 2;
+  _statsOffset   = masterIndex->getPosition();   assert(_statsOffset == 64 + 64 + 32 + 32 + 32 + 32 + 32);
 }
 
 
 
 void
-merylFileReader::initializeFromMasterI_v03(stuffedBits  *masterIndex,
-                                           bool          doInitialize) {
-  initializeFromMasterI_v02(masterIndex, doInitialize);
+merylFileReader::initializeFromMasterI_v03(stuffedBits  *masterIndex) {
+  initializeFromMasterI_v02(masterIndex);
+
+  _statsVersion  = 3;
 }
 
 
 
 void
-merylFileReader::initializeFromMasterI_v04(stuffedBits  *masterIndex,
-                                           bool          doInitialize) {
-  initializeFromMasterI_v02(masterIndex, doInitialize);
+merylFileReader::initializeFromMasterI_v04(stuffedBits  *masterIndex) {
+  initializeFromMasterI_v02(masterIndex);
+
+  _statsVersion  = 4;
 }
 
 
 
-void
-merylFileReader::initializeFromMasterIndex(bool  doInitialize,
-                                           bool  loadStatistics,
-                                           bool  beVerbose) {
-  char   N[FILENAME_MAX+1];
+bool
+merylFileReader::initializeFromMasterIndex(std::vector<char const *> *errors) {
 
-  snprintf(N, FILENAME_MAX, "%s/merylIndex", _inName);
+  stuffedBits  *masterIndex = openMasterIndex();
 
-  if (fileExists(N) == false)
-    fprintf(stderr, "ERROR: '%s' doesn't appear to be a meryl input; file '%s' doesn't exist.\n",
-            _inName, N), exit(1);
+  if (masterIndex == nullptr)
+    return fatalError(errors, "Input '%s' isn't a meryl database; master index file not found.", _inName);
 
-  //  Open the master index.
+  uint64  m1 = masterIndex->getBinary(64);    //  Based on the magic number in the index,
+  uint64  m2 = masterIndex->getBinary(64);    //  initialize!
 
-  stuffedBits  *masterIndex = new stuffedBits(N);
+  if      ((m1 == 0x646e496c7972656dllu) &&   //  merylInd
+           (m2 == 0x31302e765f5f7865llu))     //  ex__v.01
+    initializeFromMasterI_v01(masterIndex);
 
-  //  Based on the magic number, initialzie.
+  else if ((m1 == 0x646e496c7972656dllu) &&   //  merylInd
+           (m2 == 0x32302e765f5f7865llu))     //  ex__v.02
+    initializeFromMasterI_v02(masterIndex);
 
-  uint64  m1 = masterIndex->getBinary(64);
-  uint64  m2 = masterIndex->getBinary(64);
-  uint32  vv = 1;
+  else if ((m1 == 0x646e496c7972656dllu) &&   //  merylInd
+           (m2 == 0x33302e765f5f7865llu))     //  ex__v.03
+    initializeFromMasterI_v03(masterIndex);
 
-  if        ((m1 == 0x646e496c7972656dllu) &&   //  merylInd
-             (m2 == 0x31302e765f5f7865llu)) {   //  ex__v.01
-    initializeFromMasterI_v01(masterIndex, doInitialize);
-    vv = 1;
+  else if ((m1 == 0x646e496c7972656dllu) &&   //  merylInd
+           (m2 == 0x34302e765f5f7865llu))     //  ex__v.04
+    initializeFromMasterI_v04(masterIndex);
 
-  } else if ((m1 == 0x646e496c7972656dllu) &&   //  merylInd
-             (m2 == 0x32302e765f5f7865llu)) {   //  ex__v.02
-    initializeFromMasterI_v02(masterIndex, doInitialize);
-    vv = 2;
+  delete masterIndex;
 
-  } else if ((m1 == 0x646e496c7972656dllu) &&   //  merylInd
-             (m2 == 0x33302e765f5f7865llu)) {   //  ex__v.03
-    initializeFromMasterI_v03(masterIndex, doInitialize);
-    vv = 3;
-
-  } else if ((m1 == 0x646e496c7972656dllu) &&   //  merylInd
-             (m2 == 0x34302e765f5f7865llu)) {   //  ex__v.04
-    initializeFromMasterI_v04(masterIndex, doInitialize);
-    vv = 4;
-
-  } else {
-    fprintf(stderr, "ERROR: '%s' doesn't look like a meryl input; file '%s' fails magic number check.\n",
-            _inName, N), exit(1);
-  }
-
-  //  Check that the mersize is set and valid.
+  if (_statsVersion == 0)                     //  Failed to initialize.
+    return fatalError(errors, "Input '%s' isn't a meryl database; magic number check failed.", _inName);
 
   uint32  merSize = (_prefixSize + _suffixSize) / 2;
 
-  if (kmer::merSize() == 0)         //  If the global kmer size isn't set yet,
-    kmer::setSize(merSize);         //  set it.
+  if (kmer::merSize() == 0)                   //  If the global kmer size isn't set yet,
+    kmer::setSize(merSize);                   //  set it.
 
-  if (kmer::merSize() != merSize)   //  And if set, make sure we're compatible.
-    fprintf(stderr, "mer size mismatch, can't process this set of files.\n"), exit(1);
+  if (kmer::merSize() != merSize)             //  And if set, make sure we're compatible.
+    return fatalError(errors, "Input '%s' contains %u-mers, but expecting %u-mers.",
+                      _inName, merSize, kmer::merSize());
 
-  //  If loading statistics is enabled, load the stats assuming the file is in
-  //  the proper position.
+  return true;
+}
 
-  if (loadStatistics == true) {
-    _stats = new merylHistogram;
-    _stats->load(masterIndex, vv);
-  }
 
-  //  And report some logging.
 
-  if (beVerbose) {
-    char    m[17] = { 0 };
-
-    for (uint32 i=0, s=0; i<8; i++, s+=8) {
-      m[i + 0] = (m1 >> s) & 0xff;
-      m[i + 8] = (m2 >> s) & 0xff;
-    }
-
-    fprintf(stderr, "Opened '%s'.\n", _inName);
-    fprintf(stderr, "  magic          0x%016lx%016lx '%s'\n", m1, m2, m);
-    fprintf(stderr, "  prefixSize     %u\n", _prefixSize);
-    fprintf(stderr, "  suffixSize     %u\n", _suffixSize);
-    fprintf(stderr, "  numFilesBits   %u (%u files)\n", _numFilesBits, _numFiles);
-    fprintf(stderr, "  numBlocksBits  %u (%u blocks)\n", _numBlocksBits, _numBlocks);
-  }
-
-  delete masterIndex;
+merylFileReader::merylFileReader(const char *inputName, std::vector<char const *> *errors) {
+  strncpy(_inName, inputName, FILENAME_MAX);
+  initializeFromMasterIndex(errors);
 }
 
 
 
 merylFileReader::merylFileReader(const char *inputName,
-                                 bool        beVerbose) {
+                                 uint32      threadFile, std::vector<char const *> *errors) {
   strncpy(_inName, inputName, FILENAME_MAX);
-  initializeFromMasterIndex(true, false, beVerbose);
-}
-
-
-
-merylFileReader::merylFileReader(const char *inputName,
-                                 uint32      threadFile,
-                                 bool        beVerbose) {
-  strncpy(_inName, inputName, FILENAME_MAX);
-  initializeFromMasterIndex(true, false, beVerbose);
+  initializeFromMasterIndex(errors);
   enableThreads(threadFile);
 }
 
@@ -235,9 +194,24 @@ merylFileReader::~merylFileReader() {
 
 
 void
-merylFileReader::loadStatistics(void) {
-  if (_stats == NULL)
-    initializeFromMasterIndex(false, true, false);
+merylFileReader::loadStatistics(std::vector<char const *> *errors) {
+
+  if (_stats)    //  Already have stats, don't load again.
+    return;
+
+  stuffedBits  *masterIndex = openMasterIndex();
+
+  if (masterIndex) {
+    masterIndex->setPosition(_statsOffset);
+
+    _stats = new merylHistogram;
+    _stats->load(masterIndex, _statsVersion);
+  }
+  else {
+    fatalError(errors, "Failed to load statistics for input '%s'; master index file not found.", _inName);
+  }
+
+  delete masterIndex;
 }
 
 
@@ -326,10 +300,6 @@ merylFileReader::nextMer(void) {
 
   _prefix = _block->prefix();
   _nKmers = _block->nKmers();
-
-#ifdef SHOW_LOAD
-  fprintf(stdout, "LOADED prefix %016lx nKmers %lu\n", _prefix, _nKmers);
-#endif
 
   //  Make sure we have space for the decoded data
 

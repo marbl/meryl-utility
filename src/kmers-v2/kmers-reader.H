@@ -28,20 +28,20 @@ namespace merylutil::inline kmers::v2 {
 
 class merylFileReader {
 private:
-  void    initializeFromMasterI_v00(void);
-  void    initializeFromMasterI_v01(stuffedBits  *masterIndex, bool doInitialize);
-  void    initializeFromMasterI_v02(stuffedBits  *masterIndex, bool doInitialize);
-  void    initializeFromMasterI_v03(stuffedBits  *masterIndex, bool doInitialize);
-  void    initializeFromMasterI_v04(stuffedBits  *masterIndex, bool doInitialize);
-  void    initializeFromMasterIndex(bool  doInitialize, bool  loadStatistics, bool  beVerbose);
+  stuffedBits  *openMasterIndex(void);
+
+  void          initializeFromMasterI_v00(void);
+  void          initializeFromMasterI_v01(stuffedBits  *masterIndex);
+  void          initializeFromMasterI_v02(stuffedBits  *masterIndex);
+  void          initializeFromMasterI_v03(stuffedBits  *masterIndex);
+  void          initializeFromMasterI_v04(stuffedBits  *masterIndex);
+  bool          initializeFromMasterIndex(std::vector<char const *> *errors = nullptr);
 
 public:
-  merylFileReader(const char *inputName,
-                  bool        beVerbose=false);
+  merylFileReader(const char *inputName, std::vector<char const *> *errors=nullptr);
 
   merylFileReader(const char *inputName,
-                  uint32      threadFile,
-                  bool        beVerbose=false);
+                  uint32      threadFile, std::vector<char const *> *errors=nullptr);
 
   ~merylFileReader();
 
@@ -59,7 +59,7 @@ public:
   };
 
 public:
-  void    loadStatistics(void);
+  void    loadStatistics(std::vector<char const *> *errors = nullptr);
   void    dropStatistics(void);
 
 public:
@@ -124,6 +124,8 @@ private:
   bool                       _isMultiSet    = false;
 
   merylHistogram            *_stats         = nullptr;
+  uint32                     _statsVersion  = 0;
+  uint64                     _statsOffset   = 0;
 
   FILE                      *_datFile       = nullptr;
 

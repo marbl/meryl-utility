@@ -74,7 +74,9 @@
 
 //  Make the basic int types a bit more friendly.
 
+__extension__
 typedef unsigned __int128  uint128;
+__extension__
 typedef          __int128   int128;
 
 typedef uint64_t           uint64;

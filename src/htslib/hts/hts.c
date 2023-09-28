@@ -45,7 +45,7 @@ DEALINGS IN THE SOFTWARE.  */
 #ifdef HAVE_LZMA_H
 #include <lzma.h>
 #else
-#include "os/lzma_stub.h"
+#include "htslib/os/lzma_stub.h"
 #endif
 #endif
 
@@ -77,7 +77,7 @@ KHASH_INIT2(s2i,, kh_cstr_t, int64_t, 1, kh_str_hash_func, kh_str_hash_equal)
 HTSLIB_EXPORT
 int hts_verbose = HTS_LOG_WARNING;
 
-const char *hts_version()
+const char *hts_version(void)
 {
     return HTS_VERSION_TEXT;
 }
@@ -4169,7 +4169,7 @@ int hts_itr_multi_next(htsFile *fd, hts_itr_t *iter, void *r)
                         return -1;
                     }
                     if (iter->is_cram) {
-                        cram_range r = { HTS_IDX_NOCOOR };
+                      cram_range r = { HTS_IDX_NOCOOR, 0, 0 };
                         cram_set_option(fp, CRAM_OPT_RANGE_NOSEEK, &r);
                     }
 
@@ -4872,7 +4872,7 @@ int hts_resize_array_(size_t item_size, size_t num, size_t size_sz,
     return 0;
 }
 
-void hts_lib_shutdown()
+void hts_lib_shutdown(void)
 {
     hfile_shutdown(1);
 }
@@ -4886,7 +4886,7 @@ void hts_set_log_level(enum htsLogLevel level)
     hts_verbose = level;
 }
 
-enum htsLogLevel hts_get_log_level()
+enum htsLogLevel hts_get_log_level(void)
 {
     return hts_verbose;
 }

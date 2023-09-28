@@ -945,7 +945,7 @@ void hfile_shutdown(int do_close_plugin)
     pthread_mutex_unlock(&plugins_lock);
 }
 
-static void hfile_exit()
+static void hfile_exit(void)
 {
     hfile_shutdown(0);
     pthread_mutex_destroy(&plugins_lock);
@@ -1047,12 +1047,12 @@ static int init_add_plugin(void *obj, int (*init)(struct hFILE_plugin *),
  * Returns 0 on success,
  *        <0 on failure
  */
-static int load_hfile_plugins()
+static int load_hfile_plugins(void)
 {
     static const struct hFILE_scheme_handler
-        data = { hopen_mem, hfile_always_local, "built-in", 80 },
-        file = { hopen_fd_fileuri, hfile_always_local, "built-in", 80 },
-        preload = { hopen_preload, is_preload_url_remote, "built-in", 80 };
+      data = { hopen_mem, hfile_always_local, "built-in", 80, NULL },
+      file = { hopen_fd_fileuri, hfile_always_local, "built-in", 80, NULL },
+      preload = { hopen_preload, is_preload_url_remote, "built-in", 80, NULL };
 
     schemes = kh_init(scheme_string);
     if (schemes == NULL)
@@ -1116,7 +1116,7 @@ static hFILE *hopen_unknown_scheme(const char *fname, const char *mode)
 static const struct hFILE_scheme_handler *find_scheme_handler(const char *s)
 {
     static const struct hFILE_scheme_handler unknown_scheme =
-        { hopen_unknown_scheme, hfile_always_local, "built-in", 0 };
+      { hopen_unknown_scheme, hfile_always_local, "built-in", 0, NULL };
 
     char scheme[12];
     int i;

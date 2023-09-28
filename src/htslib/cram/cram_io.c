@@ -56,7 +56,7 @@ OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 #ifdef HAVE_LZMA_H
 #include <lzma.h>
 #else
-#include "../os/lzma_stub.h"
+#include "htslib/os/lzma_stub.h"
 #endif
 #endif
 #include <sys/types.h>

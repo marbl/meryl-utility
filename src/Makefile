@@ -126,8 +126,10 @@ define SET_DEFAULT_FLAGS
       LDFLAGS  += -L`jemalloc-config --libdir` -Wl,-rpath,`jemalloc-config --libdir` -ljemalloc `jemalloc-config --libs`
     endif
 
-    #  htslib and meryl-utility need this for SIMD support.
-
+    #  htslib and meryl-utility need mxsave for detecting SIMD support.
+    #  parasail SIMD support is disabled, and might need some of:
+    #    -mmmx -msse -msse2 -msse3 -mssse3 -msse4.1 -msse4.2 -msse4 -mavx -mavx2
+    #
     ifeq ($$(MACHINETYPE), amd64)
       CFLAGS   += -mxsave
       CXXFLAGS += -mxsave
@@ -135,6 +137,7 @@ define SET_DEFAULT_FLAGS
 
     #  Enable gobs of warnings.
 
+    CFLAGS   += -DMACHINETYPE_${MACHINETYPE}
     CFLAGS   += -pedantic
     CFLAGS   += -Wall -Wextra -Wformat
     CFLAGS   += -Wno-char-subscripts
@@ -144,6 +147,7 @@ define SET_DEFAULT_FLAGS
     CFLAGS   += -Wno-unused-variable
     CFLAGS   += -Wno-deprecated-declarations
 
+    CXXFLAGS += -DMACHINETYPE_${MACHINETYPE}
     CXXFLAGS += -pedantic
     CXXFLAGS += -Wall -Wextra -Wformat
     CXXFLAGS += -Wno-char-subscripts
@@ -157,6 +161,7 @@ define SET_DEFAULT_FLAGS
       CFLAGS   += -Wno-format
 
       CXXFLAGS += -Wno-format
+      CXXFLAGS += -Wno-unused-private-field
       CXXFLAGS += -std=c++20
     endif
 

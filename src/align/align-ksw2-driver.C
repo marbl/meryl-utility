@@ -175,6 +175,7 @@ ksw2Lib::align(char const *seqA_, uint32 seqlenA_, int32 bgnA_, int32 endA_,
   //  ksw_extz
   //  ksw_extz2_sse
 
+#ifdef __SSE2__
   ksw_extz2_sse(nullptr,               //  kalloc memory pool
                 _lenA, _intA,          //  query
                 _lenB, _intB,          //  target
@@ -186,6 +187,19 @@ ksw2Lib::align(char const *seqA_, uint32 seqlenA_, int32 bgnA_, int32 endA_,
                 _endBonus,             //  ?? (only in the sse version)
                 _flags,                //  KSW_EZ_ flags
                 &ez);                  //  output scores and cigar
+#else
+  ksw_extz(nullptr,               //  kalloc memory pool
+           _lenA, _intA,          //  query
+           _lenB, _intB,          //  target
+           5,                     //  alphabet size, sqrt of scoreMatrix size
+           _scoreMatrix,          //  scores!
+           _gapOpen, _gapExtend,  //  penalties!  gap of length ; costs -(gapo + l * gape)
+           _bandWidth,            //  bandwidth; negative disables
+           _zDrop,                //  off-diagonal drop-off to stop extension; negative disables
+           //_endBonus,           //  ?? (only in the sse version)
+           _flags,                //  KSW_EZ_ flags
+           &ez);                  //  output scores and cigar
+#endif
 
   //  Parse the results.
   //

@@ -23,6 +23,25 @@
 #include <immintrin.h>
 #endif
 
+
+//https://android.googlesource.com/platform/ndk/+/ndk-release-r21/sources/android/cpufeatures/cpu-features.c
+#ifdef __aarch64__
+#warning aarch64
+//#include <uapi/asm/hwcap.h>
+#endif
+
+//https://developer.arm.com/documentation/ddi0406/c/System-Level-Architecture/The-CPUID-Identification-Scheme/The-CPUID-registers/Organization-of-the-CPUID-registers?lang=en
+
+#ifdef __arm__
+#warning arm
+//#include <asm/hwcap.h>
+//#include <uapi/asm/hwcap.h>
+#endif
+
+#ifdef __mips__
+#warning mips
+#endif
+
 #include "cpuIdent-v1.H"
 
 //

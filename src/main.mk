@@ -78,9 +78,9 @@ SOURCES      := \
                 \
                 sequence/dnaSeq-v1.C \
                 sequence/dnaSeqFile-v1.C \
-                sequence/sequence-v1.C \
-                \
-                htslib/hts/bcf_sr_sort.c \
+                sequence/sequence-v1.C
+
+SOURCES      += htslib/hts/bcf_sr_sort.c \
                 htslib/hts/bgzf.c \
                 htslib/hts/errmod.c \
                 htslib/hts/faidx.c \
@@ -122,24 +122,40 @@ SOURCES      := \
                 htslib/htscodecs/pack.c \
                 htslib/htscodecs/rANS_static.c \
                 htslib/htscodecs/rANS_static32x16pr.c \
+                htslib/htscodecs/rANS_static32x16pr_neon.c \
                 htslib/htscodecs/rANS_static4x16pr.c \
                 htslib/htscodecs/rle.c \
                 htslib/htscodecs/tokenise_name3.c \
-                htslib/htscodecs/utils.c \
-                \
-                parasail/cpuid.c \
+                htslib/htscodecs/utils.c
+
+#SOURCES      += htslib/htscodecs/rANS_static32x16pr_avx2.c \
+#                htslib/htscodecs/rANS_static32x16pr_avx512.c \
+#                htslib/htscodecs/rANS_static32x16pr_sse4.c
+
+SOURCES      += parasail/cpuid.c \
+                parasail/cigar.c \
                 parasail/memory.c \
                 parasail/sg.c \
                 parasail/sg_trace.c \
-                parasail/sg_qx_dispatch.c \
                 parasail/sg_qb_de_dispatch.c \
                 parasail/sg_qe_db_dispatch.c \
-                parasail/cigar.c
+                parasail/sg_qx_dispatch.c \
+                parasail/sg_trace.c
 
-#                htslib/htscodecs/rANS_static32x16pr_avx2.c \
-#                htslib/htscodecs/rANS_static32x16pr_avx512.c \
-#                htslib/htscodecs/rANS_static32x16pr_neon.c \
-#                htslib/htscodecs/rANS_static32x16pr_sse4.c \
+#SOURCES      += parasail/memory_altivec.c \
+#                parasail/memory_avx2.c \
+#                parasail/memory_neon.c \
+#                parasail/memory_sse.c \
+#                parasail/sg_trace_striped_altivec_128_16.c \
+#                parasail/sg_trace_striped_altivec_128_32.c \
+#                parasail/sg_trace_striped_avx2_256_16.c \
+#                parasail/sg_trace_striped_avx2_256_32.c \
+#                parasail/sg_trace_striped_neon_128_16.c \
+#                parasail/sg_trace_striped_neon_128_32.c \
+#                parasail/sg_trace_striped_sse2_128_16.c \
+#                parasail/sg_trace_striped_sse2_128_32.c \
+#                parasail/sg_trace_striped_sse41_128_16.c \
+#                parasail/sg_trace_striped_sse41_128_32.c
 
 ifeq (${BUILDSTACKTRACE}, 1)
 SOURCES      += system/libbacktrace/atomic.c \

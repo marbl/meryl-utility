@@ -40,6 +40,18 @@ uint64   getPhysicalMemorySize(void);
 
 uint64   getPageSize(void);
 
+//
+//  getMaxMemoryAllowed() returns the memory limit for this process, in
+//  bytes.  It is the minimum of the physical memory or any grid-imposed
+//  memory limit (SLURM_JOB_CPUS_PER_NODE * SLURM_MEM_PER_CPU,
+//  SLURM_MEM_PER_NODE or PBS_RESC_MEM).  If the minimum from those is zero,
+//  uint64max is returned insteadm.
+//
+//  getAllowedMemory() parses memstr for a memory size (allowing SI suffixes,
+//  e.g., GB and GiB).  If memstr is nullptr, getMaxMemoryAllowed() is
+//  returned instead.  Note that the value parsed from memstr is allowed to
+//  exceed the limits imposed by getMaxMemoryAllowed().
+//
 uint64   getMaxMemoryAllowed(void);
 uint64   getAllowedMemory(char const *memstr, std::vector<char const *> &err);
 

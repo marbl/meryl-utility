@@ -220,15 +220,18 @@ getMaxMemoryAllowed(void) {
   cpu = getenv("SLURM_JOB_CPUS_PER_NODE");
   env = getenv("SLURM_MEM_PER_CPU");
   if (env && cpu)
-    maxmem = strtouint64(cpu) * strtouint64(env) * 1024 * 1024;
+    maxmem = std::min(maxmem, strtouint64(cpu) * strtouint64(env) * 1024 * 1024);
 
   env = getenv("SLURM_MEM_PER_NODE");
   if (env)
-    maxmem = strtouint64(env) * 1024 * 1024;
+    maxmem = std::min(maxmem, strtouint64(env) * 1024 * 1024);
 
   env = getenv("PBS_RESC_MEM");
   if (env)
-    maxmem = strtouint64(env);
+    maxmem = std::min(maxmem, strtouint64(env));
+
+  if (maxmem == 0)
+    maxmem = uint64max;
 
   return(maxmem);
 }

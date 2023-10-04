@@ -196,7 +196,7 @@ SUBMAKEFILES += tests/alignTest-ssw.mk \
                 tests/parasailTest.mk \
                 tests/testVectorSupport.mk \
                 tests/readLines.mk \
-                tests/regexTest.mk \
+                tests/regexTest-v1.mk \
                 tests/sequenceTest.mk \
                 tests/stddevTest.mk \
                 tests/stringsTest.mk \

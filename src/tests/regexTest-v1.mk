@@ -1,5 +1,5 @@
-TARGET   := regexTest
-SOURCES  := regexTest.C
+TARGET   := regexTest-v1
+SOURCES  := regexTest-v1.C
 
 SRC_INCDIRS := .. ../utility
 

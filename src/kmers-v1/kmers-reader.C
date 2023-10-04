@@ -332,8 +332,8 @@ dumpMerylDataFile(char *name) {
   D = new stuffedBits;
 
   fprintf(stdout, "\n");
-  fprintf(stdout, "            prefix   nKmers kCode uBits bBits                 k1 cCode                 c1                 c2\n");
-  fprintf(stdout, "------------------ -------- ----- ----- ----- ------------------ ----- ------------------ ------------------\n");
+  fprintf(stdout, "            prefix   nKmers kCode uBits bBits                 k1 cCode                 c1                 c2  blockSize\n");
+  fprintf(stdout, "------------------ -------- ----- ----- ----- ------------------ ----- ------------------ ------------------  -----(MB)\n");
 
   while (D->loadFromFile(F)) {
     uint64 position   = D->getPosition();
@@ -361,8 +361,8 @@ dumpMerylDataFile(char *name) {
       exit(1);
     }
 
-    fprintf(stdout, "0x%016lx %8lu %5u %5u %5u 0x%016lx %5u 0x%016lx 0x%016lx\n",
-            prefix, nKmers, kCode, unaryBits, binaryBits, k1, cCode, c1, c2);
+    fprintf(stdout, "0x%016lx %8lu %5u %5u %5u 0x%016lx %5u 0x%016lx 0x%016lx  %9.3f\n",
+            prefix, nKmers, kCode, unaryBits, binaryBits, k1, cCode, c1, c2, D->getLength() / 8 / 1024.0 / 1024.0);
   }
 
   delete D;

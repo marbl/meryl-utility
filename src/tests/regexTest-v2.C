@@ -1,4 +1,3 @@
-
 /******************************************************************************
  *
  *  This file is part of meryl-utility, a collection of miscellaneous code
@@ -17,16 +16,32 @@
  *  contains full conditions and disclaimers.
  */
 
-#ifndef MERYLUTIL_STRINGS_H
-#define MERYLUTIL_STRINGS_H
+#include "strings.H"
 
-#include "datastructures/strings-v1.H"
 
-#include "datastructures/regex-v1.H"
-#include "datastructures/regex-v2.H"
+int
+main(int argc, char const **argv) {
 
-#include "datastructures/keyAndValue-v1.H"
-#include "datastructures/splitToWords-v1.H"
-#include "datastructures/stringList-v1.H"
+  if (argc < 3) {
+    fprintf(stderr, "usage: %s <regEx-string> <text-string> ...\n", argv[0]);
+    exit(1);
+  }
 
-#endif  //  MERYLUTIL_STRINGS_H
+  merylutil::regEx  re;
+
+  re.construct(argv[1]);
+
+  for (uint32 arg=2; arg<argc; arg++) {
+    fprintf(stdout, "MATCH: '%s'\n", argv[arg]);
+
+    if (re.match(argv[arg]))
+      fprintf(stdout, "  success!\n");
+    else
+      fprintf(stdout, "  failure\n");
+
+    for (uint64 ii=0; ii<re.numCaptures(); ii++)
+      fprintf(stdout, "  %2lu %3lu-%3lu '%s'\n", ii, re.getCaptureBgn(ii), re.getCaptureEnd(ii), re.getCapture(ii));
+  }
+
+  return 0;
+}

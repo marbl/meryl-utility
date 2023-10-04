@@ -25,7 +25,14 @@ SOURCES      := \
                 \
                 datastructures/strings-v1.C \
                 datastructures/keyAndValue-v1.C \
+                \
                 datastructures/regex-v1.C \
+                datastructures/regex-v2.C \
+                datastructures/regex-v2-build.C \
+                datastructures/regex-v2-convert.C \
+                datastructures/regex-v2-match.C \
+                datastructures/regex-v2-parse.C \
+                \
                 datastructures/splitToWords-v1.C \
                 datastructures/stringList-v1.C \
                 datastructures/types-v1.C \
@@ -177,8 +184,7 @@ endif
 
 SRC_INCDIRS  := .
 
-SUBMAKEFILES := pccp/pccp.mk \
-                regex/regex.mk
+SUBMAKEFILES := pccp/pccp.mk
 
 ifeq ($(BUILDTESTS), 1)
 SUBMAKEFILES += tests/alignTest-ssw.mk \
@@ -197,6 +203,7 @@ SUBMAKEFILES += tests/alignTest-ssw.mk \
                 tests/testVectorSupport.mk \
                 tests/readLines.mk \
                 tests/regexTest-v1.mk \
+                tests/regexTest-v2.mk \
                 tests/sequenceTest.mk \
                 tests/stddevTest.mk \
                 tests/stringsTest.mk \

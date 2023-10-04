@@ -26,7 +26,8 @@ RegEx::RegEx() {
 }
 
 RegEx::~RegEx() {
-  regfree(_rx);
+  if (_rx)
+    regfree(_rx);
 
   delete    _rx;
   delete [] _rm;
@@ -62,8 +63,47 @@ RegEx::compile(char const *pattern, std::vector<char const *> *errors) {
 }
 
 
+#if 0
+//  Untested.  Was supposed to allow compilation of patters composed from
+//  various strings:
+//     char const *hexdigit = "[0-9A-Fa-f]";
+//     compile_concat("number=0x", hexdigit, hexdigit, "...")
+//
+bool
+RegEx::compile_concat(char const *pattern, ...) {
+  char    *pat, *p;
+  uint32   patLen = strlen(pattern) + 1;       //  For the NUL byte.
+  va_list  ap;
+
+  va_start(ap, pattern);
+  for (char const *a = va_arg(ap, char const *); a; a = va_arg(ap, char const *))
+    patLen += strlen(a);
+  va_end(ap);
+
+  pat = p = new char [patLen];
+
+  for (char const *a=pattern; *a; )
+    *p++ = *a++;
+  *p = 0;
+
+  va_start(ap, pattern);
+  for (char const *a = va_arg(ap, char const *); a; a = va_arg(ap, char const *)) {
+    while (*a)
+      *p++ = *a++;
+    *p = 0;
+  }
+  va_end(ap);
+
+  return compile(pat);
+}
+#endif
+
+
 bool
 RegEx::match(char const *line, std::vector<char const *> *errors) {
+
+  if (_rx == nullptr)
+    return false;
 
   for (uint32 ii=0; ii<_rmLen; ii++)           //  Initialize all submatches
     _rm[ii].rm_so = _rm[ii].rm_eo = -1;        //  to empty intervals.

@@ -37,6 +37,8 @@ public:
     return compile(pattern, &errors);
   }
 
+  //ol        compile_concat(char const *pattern, ...);
+
   bool        match(char const *line, std::vector<char const *> *errors = nullptr);
   bool        match(char const *line, std::vector<char const *> &errors) {
     return match(line, &errors);

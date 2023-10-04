@@ -21,5 +21,6 @@
 #define MERYLUTIL_ARRAYS_H
 
 #include "datastructures/arrays-v1.H"
+#include "datastructures/stacks-v1.H"
 
 #endif  //  MERYLUTIL_ARRAYS_H

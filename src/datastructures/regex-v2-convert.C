@@ -37,13 +37,11 @@
 
 namespace merylutil::inline regex::inline v2 {
 
-static bool verbose = true;
-
 bool
 regEx::convert(void) {
   uint64       olLen = 0;
 
-  if (verbose) {
+  if (vConvert) {
     fprintf(stderr, "\n");
     fprintf(stderr, "CONVERTING\n");
     fprintf(stderr, "\n");
@@ -52,9 +50,8 @@ regEx::convert(void) {
   merylutil::stack<regExToken>  st;   //  Operation stack.
 
   for (uint64 tt=0; tt<tlLen; tt++) {
-    if (verbose) {
-      fprintf(stderr, "---\n");
-      fprintf(stderr, "sym %2u %-10s %c %2d\n", tt, tl[tt].name(), tl[tt]._sym, tl[tt]._id);
+    if (vConvert) {
+      fprintf(stderr, "tl[%03d] -- process %s\n", tt, tl[tt].display());
     }
 
     if ((tl[tt]._type == regExTokenType::rtAlternation) ||
@@ -62,25 +59,25 @@ regEx::convert(void) {
         (tl[tt]._type == regExTokenType::rtClosure)) {
       while ((st.depth() > 0) && (st.top()._type != regExTokenType::rtGroupBegin) && (st.top()._type <= tl[tt]._type)) {
         tl[olLen++] = st.pop();
-        if (verbose)
-          fprintf(stderr, "pop %2u %-10s %c %2d\n", olLen-1, tl[olLen-1].name(), tl[olLen-1]._sym, tl[olLen-1]._id);
+        if (vConvert)
+          fprintf(stderr, "tl[%03d] <- pop-op  %s\n", olLen-1, tl[olLen-1].display());
       }
-      if (verbose)
-        fprintf(stderr, "push   %-10s %c %2d\n", tl[tt].name(), tl[tt]._sym, tl[tt]._id);
+      if (vConvert)
+        fprintf(stderr, "        -- push\n");
       st.push(tl[tt]);
     }
 
     else if (tl[tt]._type == regExTokenType::rtGroupBegin) {
-      if (verbose)
-        fprintf(stderr, "push   %-10s %c %2d\n", tl[tt].name(), tl[tt]._sym, tl[tt]._id);
+      if (vConvert)
+        fprintf(stderr, "        -- push\n");
       st.push(tl[tt]);
     }
 
     else if (tl[tt]._type == regExTokenType::rtGroupEnd) {
       while ((st.depth() > 0) && (st.top()._type != regExTokenType::rtGroupBegin)) {
         tl[olLen++] = st.pop();
-        if (verbose)
-          fprintf(stderr, "end %2u %-10s %c %2d\n", olLen-1, tl[olLen-1].name(), tl[olLen-1]._sym, tl[olLen-1]._id);
+        if (vConvert)
+          fprintf(stderr, "tl[%03d] <- pop-end %s\n", olLen-1, tl[olLen-1].display());
       }
 
       //  Should always have an rtGroupBegin on the stack, if not,
@@ -99,8 +96,14 @@ regEx::convert(void) {
         tl[olLen] = tl[tt];
 
       olLen++;
-      if (verbose)
-        fprintf(stderr, "    %2u %-10s %c %2d\n", olLen-1, tl[olLen-1].name(), tl[olLen-1]._sym, tl[olLen-1]._id);
+      if (vConvert)
+        fprintf(stderr, "tl[%03d] <- copy    %s\n", olLen-1, tl[olLen-1].display());
+    }
+
+    if (vConvert) {
+      for (uint64 ii=st.depth(); ii-- > 0; )
+        fprintf(stderr, "        -- st[%03lu] %s\n", ii, st[ii].display());
+      fprintf(stderr, "\n");
     }
   }
 

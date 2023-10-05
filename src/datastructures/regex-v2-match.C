@@ -28,14 +28,10 @@
 
 namespace merylutil::inline regex::inline v2 {
 
-
-static bool verbose = true;
-
-
 bool
 regEx::match(char const *query) {
 
-  if (verbose) {
+  if (vMatch) {
     fprintf(stderr, "\n");
     fprintf(stderr, "MATCHING\n");
     fprintf(stderr, "\n");
@@ -48,7 +44,7 @@ regEx::match(char const *query) {
 
   for (uint64 ii=0; ii<capsLen; ii++) {
     bgnP[ii] = uint64max;
-    endP[ii] = uint64max;
+    endP[ii] = 0;
     caps[ii] = nullptr;
   }
 
@@ -76,7 +72,7 @@ regEx::match(char const *query) {
     char ch = query[pp];   //  Letter to process.
 
     if (sAlen == 0) {   //  If no states to explore, quit and use acceptance of the
-      if (verbose)
+      if (vMatch)
         fprintf(stderr, "BREAK because no states to explore.\n");
       //accept = lastacc;
       break;            //  last letter - this lets us accept patterns shorter than the text.
@@ -86,7 +82,7 @@ regEx::match(char const *query) {
     lastacc = thisacc;
     thisacc = false;
 
-    if (verbose) {
+    if (vMatch) {
       fprintf(stderr, "\n");
       fprintf(stderr, "ADVANCE on character '%c' with %u states to explore\n", ch, sAlen);
     }
@@ -105,19 +101,26 @@ regEx::match(char const *query) {
     for (uint64 ii=0; ii<sAlen; ii++) {
       regExState *S = sA[ii];
       regExToken  T = sA[ii]->_tok;
+      uint64      g = sA[ii]->_tok._grpIdent;
 
-      if (T.isMatch(ch)) {
-        thisacc |= followStates(S->_match, sB, sBlen);
-        if (verbose)
-          fprintf(stderr, "        on character '%c' match to %lu with accept %d\n", ch, S->_id, thisacc);
-      } else {
-      }
+      if (T.isMatch(ch) == false)
+        continue;
+      
+      thisacc |= followStates(S->_match, sB, sBlen);
 
-      if (T.isMatch(ch) && (T._grpIdent < capsLen) && (bgnP[T._grpIdent] == uint64max))   bgnP[T._grpIdent] = pp;
-      if (T.isMatch(ch) && (T._grpIdent < capsLen))                                       endP[T._grpIdent] = pp + 1;
+      if (vMatch)
+        fprintf(stderr, "        on character '%c' match to %lu with accept %d\n", ch, S->_id, thisacc);
+
+      bgnP[0] = std::min(bgnP[0], pp);
+      endP[0] = std::max(endP[0], pp+1);
+
+      assert(g < capsLen);
+
+      bgnP[g] = std::min(bgnP[g], pp);
+      endP[g] = std::max(endP[g], pp+1);
     }
 
-    if (verbose)
+    if (vMatch)
       fprintf(stderr, "        on character '%c' with %u states to explore next lastacc:%d thisacc:%d\n", ch, sBlen, lastacc, thisacc);
 
     std::swap(sA,    sB);
@@ -131,7 +134,7 @@ regEx::match(char const *query) {
 
   accept = lastacc;
 
-  if (verbose)
+  if (vMatch)
     fprintf(stderr, "lens %u %u acc %d\n", sAlen, sBlen, accept);
   delete [] states;
 

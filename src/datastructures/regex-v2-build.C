@@ -25,18 +25,16 @@
 
 namespace merylutil::inline regex::inline v2 {
 
-static bool verbose = true;
-
 
 regExExpr
 regEx::concat(regExState *rs, uint64 &rsLen, regExExpr a, regExExpr b) {
 
-  if (verbose)
+  if (vBuild)
     fprintf(stderr, "concat() %lu..%lu -> %lu..%lu:\n",
             a._bgn->_id, a._end->_id,
             b._bgn->_id, b._end->_id);
 
-  a._end->addEpsilon(b._bgn);
+  a._end->addEpsilon(b._bgn, vBuild);
 
   return regExExpr(a._bgn, b._end);
 }
@@ -47,18 +45,18 @@ regEx::alternate(regExState *rs, uint64 &rsLen, regExExpr a, regExExpr b) {
   regExState  *bgn = &rs[rsLen++];
   regExState  *end = &rs[rsLen++];
 
-  if (verbose)
+  if (vBuild)
     fprintf(stderr, "alternate() %lu -> %lu..%lu | %lu..%lu -> %lu\n",
             bgn->_id,
             a._bgn->_id, a._end->_id,
             b._bgn->_id, b._end->_id,
             end->_id);
 
-  bgn->addEpsilon(a._bgn);
-  bgn->addEpsilon(b._bgn);
+  bgn->addEpsilon(a._bgn, vBuild);
+  bgn->addEpsilon(b._bgn, vBuild);
 
-  a._end->addEpsilon(end);
-  b._end->addEpsilon(end);
+  a._end->addEpsilon(end, vBuild);
+  b._end->addEpsilon(end, vBuild);
 
   return regExExpr(bgn, end);
 }
@@ -81,7 +79,7 @@ findReachable(regExState *a, std::set<uint64> &reachable) {
 
 
 regExExpr
-regExExpr::duplicate(regExState *rs, uint64 &rsLen) {
+regExExpr::duplicate(regExState *rs, uint64 &rsLen, bool verbose) {
   std::set<uint64>         reachable;
   std::map<uint64,uint64>  idMap;
   regExExpr                ne;
@@ -140,27 +138,27 @@ regEx::closure(regExState *rs, uint64 &rsLen, regExExpr a, uint64 min, uint64 ma
   regExExpr   *nnndups = nullptr;
   regExExpr   *mmmdups = nullptr;
 
-  if (verbose)
+  if (vBuild)
     fprintf(stderr, "closure() %lu -> %lu..%lu -> %lu\n",
             bgn->_id,
             a._bgn->_id, a._end->_id,
             end->_id);
 
   if ((min == 0) && (max ==uint64max)) {
-    bgn->addEpsilon(end);
-    bgn->addEpsilon(a._bgn);
+    bgn->addEpsilon(end, vBuild);
+    bgn->addEpsilon(a._bgn, vBuild);
 
-    a._end->addEpsilon(end);
-    a._end->addEpsilon(a._bgn);
+    a._end->addEpsilon(end, vBuild);
+    a._end->addEpsilon(a._bgn, vBuild);
     goto finishclosure;
   }
 
   if ((min == 0) && (max == 1)) {
-    bgn->addEpsilon(end);
-    bgn->addEpsilon(a._bgn);
+    bgn->addEpsilon(end, vBuild);
+    bgn->addEpsilon(a._bgn, vBuild);
 
-    a._end->addEpsilon(end);
-    //_end->addEpsilon(a._bgn);   //  Just like '*' but can't traverse multiple times.
+    a._end->addEpsilon(end, vBuild);
+    //_end->addEpsilon(a._bgn, vBuild);   //  Just like '*' but can't traverse multiple times.
     goto finishclosure;
   }
 
@@ -170,21 +168,21 @@ regEx::closure(regExState *rs, uint64 &rsLen, regExExpr a, uint64 min, uint64 ma
   for (uint64 ii=0; ii<nnn; ii++)
     nnndups[ii] = a.duplicate(rs, rsLen);
 
-  bgn->addEpsilon(nnndups[0]._bgn);                    //  Enter the chain of 'a' copies
+  bgn->addEpsilon(nnndups[0]._bgn, vBuild);                    //  Enter the chain of 'a' copies
 
   for (uint64 ii=0; ii<nnn-1; ii++)
-    nnndups[ii]._end->addEpsilon(nnndups[ii+1]._bgn);  //  Leave 'a' to next copy.
+    nnndups[ii]._end->addEpsilon(nnndups[ii+1]._bgn, vBuild);  //  Leave 'a' to next copy.
 
-  nnndups[nnn-1]._end->addEpsilon(end);                //  Leave (last copy of) 'a' to accepting.
+  nnndups[nnn-1]._end->addEpsilon(end, vBuild);                //  Leave (last copy of) 'a' to accepting.
 
   //  If 'max' is infinite, add 'a' itself as a normal closure.
 
   if (max == uint64max) {
-    //ndups[nnn-1]._end->addEpsilon(end);               //   Skip all of 'a'; exists already.
-    nnndups[nnn-1]._end->addEpsilon(a._bgn);            //   Enter 'a'.
+    //ndups[nnn-1]._end->addEpsilon(end, vBuild);               //   Skip all of 'a'; exists already.
+    nnndups[nnn-1]._end->addEpsilon(a._bgn, vBuild);            //   Enter 'a'.
 
-    a._end->addEpsilon(end);                            //   Leave 'a' to accepting.
-    a._end->addEpsilon(a._bgn);                         //   Leave 'a' back to the start of it.
+    a._end->addEpsilon(end, vBuild);                            //   Leave 'a' to accepting.
+    a._end->addEpsilon(a._bgn, vBuild);                         //   Leave 'a' back to the start of it.
   }
 
   //  Otherwise, add 'mmm' copies of a, chained together, but allowing any one
@@ -195,15 +193,15 @@ regEx::closure(regExState *rs, uint64 &rsLen, regExExpr a, uint64 min, uint64 ma
     for (uint64 ii=0; ii<mmm; ii++)
       mmmdups[ii] = a.duplicate(rs, rsLen);
 
-    //ndups[nnn-1]._end->addEpsilon(end);               //  Skip all of 'a'; exists already.
-    nnndups[nnn-1]._end->addEpsilon(mmmdups[0]._bgn);   //  Enter the chain of 'a' copies
+    //ndups[nnn-1]._end->addEpsilon(end, vBuild);               //  Skip all of 'a'; exists already.
+    nnndups[nnn-1]._end->addEpsilon(mmmdups[0]._bgn, vBuild);   //  Enter the chain of 'a' copies
 
     for (uint64 ii=0; ii<mmm-1; ii++) {
-      mmmdups[ii]._end->addEpsilon(mmmdups[ii+1]._bgn);  //  Leave 'a' to next copy.
-      mmmdups[ii]._end->addEpsilon(end);                 //  Leave 'a' to accepting.
+      mmmdups[ii]._end->addEpsilon(mmmdups[ii+1]._bgn, vBuild);  //  Leave 'a' to next copy.
+      mmmdups[ii]._end->addEpsilon(end, vBuild);                 //  Leave 'a' to accepting.
     }
 
-    mmmdups[mmm-1]._end->addEpsilon(end);                //  Leave (last copy of) 'a' to accepting.
+    mmmdups[mmm-1]._end->addEpsilon(end, vBuild);                //  Leave (last copy of) 'a' to accepting.
   }
 
  finishclosure:
@@ -217,11 +215,11 @@ regEx::symbol(regExState *rs, uint64 &rsLen, regExToken tok) {
   regExState  *mat = &rs[rsLen++];
   regExState  *end = &rs[rsLen++];
 
-  if (verbose)
+  if (vBuild)
     fprintf(stderr, "symbol() %lu -> %lu -> %lu for %s\n", bgn->_id, mat->_id, end->_id, tok.display());
 
-  bgn->addEpsilon(mat);
-  mat->addMatch(tok, end);
+  bgn->addEpsilon(mat, vBuild);
+  mat->addMatch(tok, end, vBuild);
 
   return regExExpr(bgn, end);
 }
@@ -258,7 +256,7 @@ regEx::build(void) {
   for (uint64 ii=0; ii<rsMax; ii++)
     rs[ii]._id = ii;
 
-  if (verbose) {
+  if (vBuild) {
     fprintf(stderr, "\n");
     fprintf(stderr, "BUILDING\n");
     fprintf(stderr, "\n");
@@ -303,7 +301,7 @@ regEx::build(void) {
     }
   }
 
-  if (verbose)
+  if (vBuild)
     fprintf(stderr, "stLen %u rsLen %u\n", st.depth(), rsLen);
 
   assert(st.depth() == 1);

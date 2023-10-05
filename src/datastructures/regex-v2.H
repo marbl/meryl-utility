@@ -160,7 +160,7 @@ public:
   regExState() {};
   ~regExState() {};
 
-  void         addMatch(regExToken tok, regExState *to) {
+  void         addMatch(regExToken tok, regExState *to, bool verbose=false) {
 
     if (_match)
       fprintf(stderr, "ERROR: can't add second match rule to state id=%lu.\n", _id);
@@ -170,12 +170,13 @@ public:
     assert(_match == nullptr);
     assert(_lambda[0] == nullptr);
 
-    fprintf(stderr, "  addMatch()   %-3u match  -> %u\n", _id, to->_id);
+    if (verbose)
+      fprintf(stderr, "  addMatch()   %-3u match  -> %u\n", _id, to->_id);
 
     _tok   = tok;
     _match = to;
   }
-  void         addEpsilon(regExState *to) {
+  void         addEpsilon(regExState *to, bool verbose=false) {
 
     if (_match)
       fprintf(stderr, "ERROR: can't add epsilon to state id=%lu; has existing _match rule.\n", _id);
@@ -189,7 +190,8 @@ public:
     else if (_lambda[1] == nullptr)  _lambda[1] = to;
     else                             assert(0);
 
-    fprintf(stderr, "  addEpsilon() %-3u lambda -> %u\n", _id, to->_id);
+    if (verbose)
+      fprintf(stderr, "  addEpsilon() %-3u lambda -> %u\n", _id, to->_id);
   }
 
   uint64      _id         = 0;
@@ -208,7 +210,7 @@ public:
   regExExpr(regExState *b=nullptr, regExState *e=nullptr) : _bgn(b), _end(e) {};
   ~regExExpr() {};
 
-  regExExpr     duplicate(regExState *rs, uint64 &rsLen);
+  regExExpr     duplicate(regExState *rs, uint64 &rsLen, bool verbose=false);
 
   regExState  *_bgn;
   regExState  *_end;
@@ -218,7 +220,8 @@ public:
 
 class regEx {
 public:
-  regEx()  {};
+  regEx()  {
+  };
   ~regEx() {
     delete [] tl;
     delete [] rs;
@@ -229,11 +232,23 @@ public:
   };
 
 public:
+  void        enableVerbose(char which='a') {
+    if ((which == 'a') || (which == 'p'))  vParse   = true;
+    if ((which == 'a') || (which == 'c'))  vConvert = true;
+    if ((which == 'a') || (which == 'b'))  vBuild   = true;
+    if ((which == 'a') || (which == 'm'))  vMatch   = true;
+  }
+  void        disableVerbose(char which='a') {
+    if ((which == 'a') || (which == 'p'))  vParse   = false;
+    if ((which == 'a') || (which == 'c'))  vConvert = false;
+    if ((which == 'a') || (which == 'b'))  vBuild   = false;
+    if ((which == 'a') || (which == 'm'))  vMatch   = false;
+  }
+
+public:
   bool        construct(char const *pattern) {
     parse(pattern);
-    //displayTokens();
     convert();
-    //displayTokens();
     build();
     return true;
   }
@@ -258,12 +273,11 @@ private:
   bool        build(void);
 
 private:
-  void        displayTokens(void) {
-    for (uint64 ii=0; ii<tlLen; ii++)
-      fprintf(stderr, "%s\n", tl[ii].display());
-  }
+  bool         vParse   = false;
+  bool         vConvert = false;
+  bool         vBuild   = false;
+  bool         vMatch   = false;
 
-private:
   uint64       tlMax = 0;         //  A list of tokens, the output of parse().
   uint64       tlLen = 0;
   regExToken  *tl    = nullptr;

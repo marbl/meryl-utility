@@ -35,7 +35,6 @@ struct groupState {
   uint64  ident = 0;
 };
 
-
 bool
 regEx::parse(char const *str) {
   uint64                        tokIdent = 0;
@@ -43,6 +42,12 @@ regEx::parse(char const *str) {
 
   merylutil::stack<groupState>  groupStates;   //  Stack of group information
   merylutil::stack<uint64>      capIdent;      //  Ident of the capture groups
+
+  if (vParse) {
+    fprintf(stderr, "\n");
+    fprintf(stderr, "PARSING\n");
+    fprintf(stderr, "\n");
+  }
 
   resizeArray(tl, 0, tlMax, 1024);   //  Allocate an initial 1024 nodes.
   tlLen = 0;                         //  Recycle any existing token list.
@@ -114,7 +119,7 @@ regEx::parse(char const *str) {
     //  If the group is a capture group, remember the ident so we can set match states.
 
     if (toka._type == regExTokenType::rtGroupBegin) {
-      groupStates.push(groupState{ .pfx = toka._pfx, .cap = toka._cap, .depth = 0, .ident = grpIdent });
+      groupStates.push(groupState{ .pfx=toka._pfx, .cap=toka._cap, .depth=0, .ident=grpIdent });
 
       if (toka._cap == true) {
         capIdent.push(grpIdent);
@@ -188,6 +193,13 @@ regEx::parse(char const *str) {
   //  Close the overall capture group.
   //tl[tlLen++] = makeGroupEnd(0);
   tl[tlLen++] = { ._id=tokIdent++, ._type=regExTokenType::rtGroupEnd, ._grpIdent=0 };
+
+  if (vParse) {
+    for (uint64 ii=0; ii<tlLen; ii++)
+      fprintf(stderr, "tl[%03lu] -- %s\n", ii, tl[ii].display());
+    fprintf(stderr, "\n");
+  }
+
 
   return true;
 }

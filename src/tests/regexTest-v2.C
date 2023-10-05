@@ -29,6 +29,7 @@ main(int argc, char const **argv) {
 
   merylutil::regEx  re;
 
+  re.enableVerbose();
   re.construct(argv[1]);
 
   for (uint32 arg=2; arg<argc; arg++) {

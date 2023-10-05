@@ -33,28 +33,29 @@ regExToken::display(char *str) {
 
   switch (_type) {
     case regExTokenType::rtGroupBegin:
-      app += sprintf(app, "group bgn  %2u %-10s capture:%d grpIdent:%u prefix:%d", _id, name(), _cap, _grpIdent, _pfx);
+      app += sprintf(app, "group bgn  id:%2u grp:%03lu%s%s", _id, _grpIdent, _cap ? " CAP" : "", _pfx ? " PFX" : "");
       break;
     case regExTokenType::rtGroupEnd:
-      app += sprintf(app, "group end  %2u %-10s            grpIdent:%u", _id, name(), _grpIdent);
+      app += sprintf(app, "group end  id:%2u grp:%03lu", _id, _grpIdent);
       break;
     case regExTokenType::rtAlternation:
-      app += sprintf(app, "alternat   %2u %-10s", _id, name());
+      app += sprintf(app, "alternat   id:%2u", _id);
       break;
     case regExTokenType::rtClosure:
-      app += sprintf(app, "closure    %2u %-10s min:%u max:%u", _id, name(), _min, _max);
+      app += sprintf(app, "closure    id:%2u         min:%u max:%u", _id, _min, _max);
       break;
     case regExTokenType::rtConcat:
-      app += sprintf(app, "concat     %2u %-10s", _id, name());
+      app += sprintf(app, "concat     id:%2u", _id);
       break;
     case regExTokenType::rtLineStart:
-      app += sprintf(app, "line-start %2u %-10s", _id, name());
+      app += sprintf(app, "line-start id:%2u", _id);
       break;
     case regExTokenType::rtLineEnd:
-      app += sprintf(app, "line-end   %2u %-10s", _id, name());
+      app += sprintf(app, "line-end   id:%2u", _id);
       break;
     case regExTokenType::rtCharClass:
-      app += sprintf(app, "charact    %2u %-10s ", _id, name());
+      app += sprintf(app, "charact    id:%2u grp:%03lu ", _id, _grpIdent);
+
       if (_sym != 0) {
         app += sprintf(app, "'%c'", _sym);
       }
@@ -104,14 +105,14 @@ regExToken::display(char *str) {
           cc=ee;
         }
 
-        app += sprintf(app, "]  grpIdent %u", _grpIdent);
+        app += sprintf(app, "]");
       }
       break;
     case regExTokenType::rtNone:
-      app += sprintf(app, "NONE       %2u %-10s", _id, name());
+      app += sprintf(app, "NONE       id:%2u", _id);
       break;
     default:
-      app += sprintf(app, "DEFAULT    %2u %-10s", _id, name());
+      app += sprintf(app, "DEFAULT    id:%2u", _id);
       break;
   }
 

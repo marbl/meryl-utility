@@ -43,8 +43,11 @@ public:
   T       pop(void);
   T      &top(void);
 
+  T      &operator[](uint64 i);
+
   T       push(T const item);
   void    exchange(void);
+
 
 private:
   uint64  _Smax = 0;
@@ -70,6 +73,15 @@ stack<T>::top(void) {
     fprintf(stderr, "ERROR: stack::top() has no elements to return.\n");
   assert(_Stop >= 1);
   return _S[_Stop-1];
+}
+
+template <typename T>
+T&
+stack<T>::operator[](uint64 i) {
+  if (_Stop <= i)
+    fprintf(stderr, "ERROR: stack::operator[]() has only %lu elements, cannot access element %lu.\n", _Stop, i);
+  assert(i < _Stop);
+  return _S[i];
 }
 
 

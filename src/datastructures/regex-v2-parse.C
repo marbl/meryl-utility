@@ -28,12 +28,143 @@
 
 namespace merylutil::inline regex::inline v2 {
 
+
+//  Returns 0..255 and advances nn over the character.
+//
+//  If the string is '\xDD', then the character returned is decoded from DD interpreted as hex digits.
+//  Non-hex-digits in D are decoded to nonsense.
+//
+uint8
+decodeCharClassChar(char const *str, uint64 &nn) {
+  char  cl = 0;
+
+  if      ((str[nn+0] == '\\') && (str[nn+1] == 'x') && isHexDigit(str[nn+2]) && isHexDigit(str[nn+2])) {
+    nn++;  cl |= asciiHexToInteger(str[nn]) << 4;
+    nn++;  cl |= asciiHexToInteger(str[nn]);
+    nn++;
+  }
+
+  else {
+    cl = str[nn++];
+  }
+
+  return cl;
+}
+
+
+
+//  Recognizes abbreviated character classes (\d etc) and non-abbreviated ('[:digit:]').
+//  Returns fist letter in range and sets all bits to enable the full range.
+//
+//  If not a character class, returns str[nn].
+//
+bool
+regExToken::matchCharacterClassToken(char const *str, uint64 &nn) {
+  uint64  zz = 0;
+  uint64  n1 = nn+1;
+
+  fprintf(stderr, "matchCharacterClassToken()- nn=%lu '%s'\n", nn, str+nn);
+
+  if       (str[nn] == '\\') {
+    if      (str[n1] == 'a')  matchCharacterClassToken("[:alpha:]", zz);
+    else if (str[n1] == 'w')  matchCharacterClassToken("[:alpha:]", zz), matchLetter('_');
+    else if (str[n1] == 's')  matchCharacterClassToken("[:space:]", zz);
+    else if (str[n1] == 'd')  matchCharacterClassToken("[:digit:]", zz);
+    else if (str[n1] == 'l')  matchCharacterClassToken("[:lower:]", zz);
+    else if (str[n1] == 'u')  matchCharacterClassToken("[:upper:]", zz);
+    else if (str[n1] == 'p')  matchCharacterClassToken("[:print:]", zz);
+
+    else if (str[n1] == 'W')  { regExToken d;  d.matchCharacterClassToken("[:alnum:]", zz); d.matchLetter('_'); d.invertMatch(); mergeMatches(d); }
+    else if (str[n1] == 'D')  { regExToken d;  d.matchCharacterClassToken("[:digit:]", zz);                     d.invertMatch(); mergeMatches(d); }
+    else if (str[n1] == 'S')  { regExToken d;  d.matchCharacterClassToken("[:blank:]", zz);                     d.invertMatch(); mergeMatches(d); }
+
+    else                      matchLetter(str[n1]);
+
+    nn += 2;
+  }
+
+  else if ((str[nn] == '[') &&
+           (str[n1] == ':')) {
+    if      (strncmp(str+n1, "[:alnum:]",   9) == 0)  { matchCharacterClass("[A-Za-z0-9]", zz);              nn +=  9; }
+    else if (strncmp(str+nn, "[:alpha:]",   9) == 0)  { matchCharacterClass("[A-Za-z]", zz);                 nn +=  9; }
+    else if (strncmp(str+nn, "[:blank:]",   9) == 0)  { matchLetters(" \t");                                 nn +=  9; }
+    else if (strncmp(str+nn, "[:cntrl:]",   9) == 0)  { matchCharacterClass("[\x00-\x1F\x7F]", zz);          nn +=  9; }
+    else if (strncmp(str+nn, "[:digit:]",   9) == 0)  { matchCharacterClass("[0-9]", zz);                    nn +=  9; }
+    else if (strncmp(str+nn, "[:graph:]",   9) == 0)  { matchCharacterClass("[\x21-\x7E]", zz);              nn +=  9; }
+    else if (strncmp(str+nn, "[:lower:]",   9) == 0)  { matchCharacterClass("[a-z]", zz);                    nn +=  9; }
+    else if (strncmp(str+nn, "[:print:]",   9) == 0)  { matchCharacterClass("[\x20-\x7E]", zz);              nn +=  9; }
+    else if (strncmp(str+nn, "[:punct:]",   9) == 0)  { matchLetters("][!\"#$%&'()*+,./:;<=>?@\\^_`{|}~-");  nn +=  9; }
+    else if (strncmp(str+nn, "[:space:]",   9) == 0)  { matchLetters(" \t\r\n\v\f");                         nn +=  9; }
+    else if (strncmp(str+nn, "[:upper:]",   9) == 0)  { matchCharacterClass("[A-Z]", zz);                    nn +=  9; }
+    else if (strncmp(str+nn, "[:xdigit:]", 10) == 0)  { matchCharacterClass("[0-9A-Za-z]", zz);              nn += 10; }
+    else {
+      return false;
+    }
+  }
+
+  else {            //  Not starting with either '\' or '[:', so
+    return false;   //  not something we decode.
+  }
+
+  return true;
+}
+
+
+          
+//  Matches character classes specified either as an escaped class ('\d') or
+//  as a range '[a-zGH]'.  Ranges can be specified using hex notation
+//  ('\xDD') or with explicit letters: [\x00- ] would match everything before
+//  (and including) a space.
+//
+//  A single '^' at the start of the class will invert the sense.
+//
+//  Control characters ARE NOT 
+void
+regExToken::matchCharacterClass(char const *str, uint64 &nn) {
+  uint64 iv = 0;   //  If non-zero, invert the class at the end.
+  uint8  c1 = 0;   //  The begin character in the range.
+  uint8  c2 = 0;   //  The ending character in the range (possible the same as c1).
+
+  _type = regExTokenType::rtCharClass;
+
+  assert(str[nn] == '[');
+  fprintf(stderr, "matchCharacterClass()- nn=%lu '%s' (on ENTRY)\n", nn, str+nn);
+
+  if (str[++nn] == '^')   //  Skip over the opening '[' then test for the invert symbol;
+    iv = ++nn;            //  if found, set the flag and move past the invert symbol.
+
+  while ((str[nn] != 0) && (str[nn] != ']')) {
+    fprintf(stderr, "matchCharacterClass()- nn=%lu '%s' (in LOOP)\n", nn, str+nn);
+
+    if (matchCharacterClassToken(str, nn) == true)
+      continue;
+
+    c1 = decodeCharClassChar(str, nn);      //  Decode the first letter.
+    c2 = c1;                                //  Make the range a single letter.
+
+    if ((str[nn] != 0) && (str[nn] == '-')) {
+      nn += 1;                              //  Skip the dash.
+      c2 = decodeCharClassChar(str, nn);   //  Decode the second letter.
+    }
+
+    matchRange(c1, c2);
+  }
+
+  assert(str[nn] != 0);   //  We failed if we're at the end of the string.
+
+  if (iv)
+    invertMatch();
+}
+
+
+
 struct groupState {
   bool    pfx   = false;
   bool    cap   = false;
   uint64  depth = 0;
   uint64  ident = 0;
 };
+
 
 bool
 regEx::parse(char const *str) {
@@ -55,6 +186,7 @@ regEx::parse(char const *str) {
   //  Make an initial capture group to get the entirety of the match.
   //tl[tlLen++] = makeGroupBegin(true, ++grpIdent);
   tl[tlLen++] = { ._id=tokIdent++, ._type=regExTokenType::rtGroupBegin, ._cap=true, ._grpIdent=++grpIdent };
+  capsLen = 1;
 
   for (uint64 ss=0, nn=0; str[ss]; ss = nn) {    //  ss is the (constant) start of this token
     regExToken  toka = { ._id=tokIdent++ };      //  nn is the (computed) start of the next token
@@ -67,9 +199,9 @@ regEx::parse(char const *str) {
     //             - '^' at the start inverts the sense
     //             - ']' and '-' must be escaped
 
-    if      (str[ss] == '\\') toka.matchCharacter(str, nn);
-    else if (str[ss] == '[')  toka.matchCharacterClass(str, nn);
-    else if (str[ss] == '.')  toka.matchAll();
+    if      (str[ss] == '\\')   toka.matchCharacterClassToken(str, nn);
+    else if (str[ss] == '[')    toka.matchCharacterClass(str, nn);
+    else if (str[ss] == '.')    toka.matchAll();
 
     //  Grouping and capturing.
     //   (..)  - group the enclosed pattern into a single entity (see .H)

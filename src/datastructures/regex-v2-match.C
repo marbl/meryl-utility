@@ -63,83 +63,77 @@ regEx::match(char const *query) {
   regExState **sB = states + rsLen;  uint64 sBlen = 0;
 
   bool         accept  = false;
-  bool         lastacc = false;
-  bool         thisacc = false;
 
-  lastacc = thisacc = followStates(re._bgn, sA, sAlen);
+  accept = followStates(re._bgn, sA, sAlen);
 
   for (uint64 pp=0; query[pp]; pp++) {
     char ch = query[pp];   //  Letter to process.
-
-    if (sAlen == 0) {   //  If no states to explore, quit and use acceptance of the
-      if (vMatch)
-        fprintf(stderr, "BREAK because no states to explore.\n");
-      //accept = lastacc;
-      break;            //  last letter - this lets us accept patterns shorter than the text.
-    }
-
-    sBlen   = 0;
-    lastacc = thisacc;
-    thisacc = false;
 
     if (vMatch) {
       fprintf(stderr, "\n");
       fprintf(stderr, "ADVANCE on character '%c' with %u states to explore\n", ch, sAlen);
     }
 
-    //  valgrind ../build/bin/regex '({p}abc(123)(456)def)hij' abc123hij
-    //  (456) isn't being treated as an atom in the prefix group
-
     //  Explore each of the states in our list.
-    //  If the state has a match to letter 'ch' follow the link and add
+    //
+    //  If the state doesn't match our letter, skip it.
+    //
+    //  has a match to letter 'ch' follow the link and add
     //  either the node it points to, or the nodes via lambda edges.  Remember
     //  if any of those are accepting states.
 
-    //  This fails to claim acceptance if we reach the end of the regex before the
-    //  end of the string.
+    bool  hasMatches = false;
+    bool  newAccept  = false;
 
     for (uint64 ii=0; ii<sAlen; ii++) {
-      regExState *S = sA[ii];
-      regExToken  T = sA[ii]->_tok;
-      uint64      g = sA[ii]->_tok._grpIdent;
-
-      if (T.isMatch(ch) == false)
-        continue;
-      
-      thisacc |= followStates(S->_match, sB, sBlen);
-
-      if (vMatch)
-        fprintf(stderr, "        on character '%c' match to %lu with accept %d\n", ch, S->_id, thisacc);
-
-      bgnP[0] = std::min(bgnP[0], pp);
-      endP[0] = std::max(endP[0], pp+1);
+      regExState *S = sA[ii];                             //  The state to explore.
+      regExToken  T = sA[ii]->_tok;                       //  The token we need to match.
+      uint64      g = sA[ii]->_tok._grpIdent;             //  Capture group associated with this state.
 
       assert(g < capsLen);
 
-      bgnP[g] = std::min(bgnP[g], pp);
+      if (T.isMatch(ch) == false)                         //  No match, nothing further to do.
+        continue;
+
+      hasMatches = true;                                  //  Remember some state had a match, and follow
+      newAccept |= followStates(S->_match, sB, sBlen);    //  links from this state out.
+
+      if (vMatch)
+        fprintf(stderr, "        on character '%c' match to %lu with accept %d\n", ch, S->_id, newAccept);
+
+      bgnP[0] = std::min(bgnP[0], pp);                    //  Always add matches to the first capture group.
+      endP[0] = std::max(endP[0], pp+1);
+
+      bgnP[g] = std::min(bgnP[g], pp);                    //  And add matches to any secondary capture groups.
       endP[g] = std::max(endP[g], pp+1);
+    }  //  Over all states in the current multiset.
+
+    if (sBlen == 0) {
+      if (vMatch)
+        fprintf(stderr, "        on character '%c' - STOP:  no next states.  accept:%d\n", ch, accept);
+    }
+    if (hasMatches == false) {
+      if (vMatch)
+        fprintf(stderr, "        on character '%c' - STOP:  no matches.      accept:%d\n", ch, accept);
+      break;
     }
 
-    if (vMatch)
-      fprintf(stderr, "        on character '%c' with %u states to explore next lastacc:%d thisacc:%d\n", ch, sBlen, lastacc, thisacc);
+    accept = newAccept;                                   //  Matches found!  Remember the new acceptance status.
 
-    std::swap(sA,    sB);
-    std::swap(sAlen, sBlen);
-  }
+    if (vMatch)
+      fprintf(stderr, "        on character '%c' with %u states to explore next accept:%d\n", ch, sBlen, accept);
+
+    std::swap(sA,    sB);                                 //  Swap state lists so we iterate over the states
+    std::swap(sAlen, sBlen);  sBlen = 0;                  //  we discovered above in the next iteration.
+  }  //  Over all letters in query.
 
   //  All done.  CAses for finishing the loop:
-  //    Matched to end of string:       accept == 
-  //    Matched to all but last letter: accept incorrect
-  //    Matched to not last letter:     accept == lastacc
+  //    Matched to end of string:             accept == thisaccept
+  //    Matched to all but last letter:       accept == thisaccept     BREAK above
+  //    Matched to not last letter:           accept == thisaccept     BREAK above
+  //    Matched to end of pattern via lambda: accept == lastaccept     BREAK above
 
-  accept = lastacc;
-
-  if (vMatch)
-    fprintf(stderr, "lens %u %u acc %d\n", sAlen, sBlen, accept);
-  delete [] states;
-
-  //  If we ended up in the terminal state, declare the match a success.
-
+  //accept = thisacc;
 
   //  Copy the captures to individual strings.
 

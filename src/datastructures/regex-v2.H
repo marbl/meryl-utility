@@ -86,45 +86,35 @@ enum class regExTokenType {
   rtNone,
 };
 
-inline
-char const *toString(regExTokenType t) {
-  switch (t) {
-    case regExTokenType::rtGroupBegin:   return "GroupBegin";   break;
-    case regExTokenType::rtGroupEnd:     return "GroupEnd";     break;
-    case regExTokenType::rtAlternation:  return "Alternation";  break;
-    case regExTokenType::rtClosure:      return "Closure";      break;
-    case regExTokenType::rtConcat:       return "Concat";       break;
-    case regExTokenType::rtLineStart:    return "LineStart";    break;
-    case regExTokenType::rtLineEnd:      return "LineEnd";      break;
-    case regExTokenType::rtCharClass:    return "CharClass";    break;
-    case regExTokenType::rtNone:         return "None";         break;
-    default:                             return "UNKNOWN";      break;
-  }
-}
-
 
 
 class regExToken {
 public:
-  char const *name(void)     { return toString(_type); }
   char const *display(char *str=nullptr);
 
   void   setMatch(uint8 c)   {             (_syms[c>>6] |= (uint64one << (c & 0x3f)));  }
   bool   isMatch(uint8 c)    { return 0 != (_syms[c>>6] &  (uint64one << (c & 0x3f)));  }
 
 public:
-  void   matchLetter(char c) { _type    = regExTokenType::rtCharClass;  setMatch(c);                                             }
-  void   matchNone(void)     { _type    = regExTokenType::rtCharClass;  for (uint8 ii=0; ii<4; ii++)  _syms[ii] = uint64zero;   }
-  void   matchAll(void)      { _type    = regExTokenType::rtCharClass;  for (uint8 ii=0; ii<4; ii++)  _syms[ii] = uint64max;    }
-  void   invertMatch(void)   {                                          for (uint8 ii=0; ii<4; ii++)  _syms[ii] = ~_syms[ii];   }
+  void   matchLetter(uint8 c)                  {                                 setMatch(c);              }
+  void   matchLetters(char const *s)           { for (uint16 ii=0; s[ii]; ii++)  setMatch(s[ii]);          }
+  void   matchRange(uint8 a, uint8 b)          { for (uint16  c=a;  c<=b;  c++)  setMatch(c);              } 
 
+  void   matchNone(void)                       { for (uint8  ii=0; ii< 4; ii++)  _syms[ii] = uint64zero;   }
+  void   matchAll(void)                        { for (uint8  ii=0; ii< 4; ii++)  _syms[ii] = uint64max;    }
+  void   invertMatch(void)                     { for (uint8  ii=0; ii< 4; ii++)  _syms[ii] = ~_syms[ii];   }
+
+  void   mergeMatches(regExToken const &d)     { for (uint8  ii=0; ii< 4; ii++)  _syms[ii] |= d._syms[ii];  }
 private:
-  char    decodeCharacter(char const *str, uint64 &nn);
+  bool    decodeCharClassToken(char const *str, uint64 &nn);
 
 public:
-  void    matchSymbol(char sym)                               { _type = regExTokenType::rtCharClass;  matchLetter(sym);                      }
-  void    matchCharacter(char const *str, uint64 &nn)         { _type = regExTokenType::rtCharClass;  matchLetter(decodeCharacter(str, nn)); }
-  void    matchCharacterClass(char const *str, uint64 &nn);
+  void    matchSymbol(char sym)                               { _type = regExTokenType::rtCharClass;  matchLetter(sym);       }
+  void    matchCharacter(char const *str, uint64 &nn)         { _type = regExTokenType::rtCharClass;  matchLetter(str[nn++]); }
+  void    matchHexCharacter(char const *str, uint64 &nn);
+
+  bool    matchCharacterClassToken(char const *str, uint64 &nn);
+  void    matchCharacterClass     (char const *str, uint64 &nn);
 
   void    makeClosure(char const *str, uint64 ss, uint64 &nn);
   void    makeClosure(uint64 min, uint64 max) { _type = regExTokenType::rtClosure; _min=min; _max=max; };

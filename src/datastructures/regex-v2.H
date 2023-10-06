@@ -77,9 +77,9 @@ namespace merylutil::inline regex::inline v2 {
 enum class regExTokenType {
   rtGroupBegin,
   rtGroupEnd,
-  rtAlternation,
   rtClosure,
   rtConcat,
+  rtAlternation,
   rtLineStart,
   rtLineEnd,
   rtCharClass,

@@ -57,7 +57,7 @@ char const *max8 =  "127";
 bool
 test_strto(void) {
 
-  fprintf(stderr, "Testing conversion of string to unsigned integers.\n");
+  fprintf(stdout, "Testing conversion of string to unsigned integers.\n");
 
   assert(strtouint128(minu128) == uint128min);
   assert(strtouint128(maxu128) == uint128max);
@@ -74,7 +74,7 @@ test_strto(void) {
   assert(strtouint8(minu8) == uint8min);
   assert(strtouint8(maxu8) == uint8max);
 
-  fprintf(stderr, "Testing conversion of string to signed integers.\n");
+  fprintf(stdout, "Testing conversion of string to signed integers.\n");
 
   assert(strtoint128(min128) == int128min);
   assert(strtoint128(max128) == int128max);
@@ -91,7 +91,7 @@ test_strto(void) {
   assert(strtoint8(min8) == int8min);
   assert(strtoint8(max8) == int8max);
 
-  fprintf(stderr, "Testing conversion of string to signed integers.\n");
+  fprintf(stdout, "Testing conversion of string to signed integers.\n");
 
   char  outstr[13], *outp;
 
@@ -102,7 +102,7 @@ test_strto(void) {
     outp = toDec(tt, outstr);
 
     if ((tt < 25) || (tt > uint32max-25) || ((tt % 1844751) == 0))
-      fprintf(stderr, "tt %10u len %d -- out '%s'\n", tt, (int32)(outp - outstr), outstr);
+      fprintf(stdout, "tt %10u len %d -- out '%s'\n", tt, (int32)(outp - outstr), outstr);
 
     if      (tt < 10)            assert(outstr+1  == outp);
     else if (tt < 100)           assert(outstr+2  == outp);
@@ -124,7 +124,7 @@ test_strto(void) {
       break;               //  '==100' assert above when we wrap around.)
   }
 
-  fprintf(stderr, "Tests passed.\n");
+  fprintf(stdout, "Tests passed.\n");
 
   return(true);
 }
@@ -132,6 +132,57 @@ test_strto(void) {
 
 
 
+void
+test_asciiHexToInt(void) {
+
+  fprintf(stdout, "     ");
+  for (uint32 jj=0; jj<16; jj++) {
+    fprintf(stdout, "  .%x", jj);
+  }
+  fprintf(stdout, "\n");
+  fprintf(stdout, "     ");
+  for (uint32 jj=0; jj<16; jj++) {
+    fprintf(stdout, "  --", jj);
+  }
+  fprintf(stdout, "\n");
+
+
+  for (uint32 ii=0; ii<16; ii++) {
+    fprintf(stdout, "  %x. |", ii);
+
+    for (uint32 jj=0; jj<16; jj++) {
+      assert(asciiHexToInteger(jj << 4 | ii) < 16);
+      fprintf(stdout, "%4u", asciiHexToInteger(jj << 4 | ii));
+    }
+
+    fprintf(stdout, "\n");
+  }
+
+  fprintf(stdout, "0123456789ABCDEFabcdef: ");
+  fprintf(stdout, "%4d", asciiHexToInteger('0'));
+  fprintf(stdout, "%4d", asciiHexToInteger('1'));
+  fprintf(stdout, "%4d", asciiHexToInteger('2'));
+  fprintf(stdout, "%4d", asciiHexToInteger('3'));
+  fprintf(stdout, "%4d", asciiHexToInteger('4'));
+  fprintf(stdout, "%4d", asciiHexToInteger('5'));
+  fprintf(stdout, "%4d", asciiHexToInteger('6'));
+  fprintf(stdout, "%4d", asciiHexToInteger('7'));
+  fprintf(stdout, "%4d", asciiHexToInteger('8'));
+  fprintf(stdout, "%4d", asciiHexToInteger('9'));
+  fprintf(stdout, "%4d", asciiHexToInteger('A'));
+  fprintf(stdout, "%4d", asciiHexToInteger('B'));
+  fprintf(stdout, "%4d", asciiHexToInteger('C'));
+  fprintf(stdout, "%4d", asciiHexToInteger('D'));
+  fprintf(stdout, "%4d", asciiHexToInteger('E'));
+  fprintf(stdout, "%4d", asciiHexToInteger('F'));
+  fprintf(stdout, "%4d", asciiHexToInteger('a'));
+  fprintf(stdout, "%4d", asciiHexToInteger('b'));
+  fprintf(stdout, "%4d", asciiHexToInteger('c'));
+  fprintf(stdout, "%4d", asciiHexToInteger('d'));
+  fprintf(stdout, "%4d", asciiHexToInteger('e'));
+  fprintf(stdout, "%4d", asciiHexToInteger('f'));
+  fprintf(stdout, "\n");
+}
 
 
 
@@ -143,26 +194,17 @@ main(int argc, char **argv) {
   omp_set_num_threads(1);
 
   while (arg < argc) {
-    if      (strcmp(argv[arg], "-h") == 0) {
-      err++;
-    }
-
-    else if (strcmp(argv[arg], "-something") == 0) {
-      //testSomething();
-    }
-
+    if      (strcmp(argv[arg], "-c") == 0)   test_strto();
+    else if (strcmp(argv[arg], "-h") == 0)   test_asciiHexToInt();
     else {
-      err++;
+      fprintf(stderr, "usage: %s [-h | -c]\n", argv[0]);
+      fprintf(stderr, "  -h   show table of conversion of asciiHexToInteger.\n");
+      fprintf(stderr, "  -c   run test converting strings to integers; takes 150 seconds.\n");
+      return 1;
     }
 
     arg++;
   }
 
-  if (err)
-    fprintf(stderr, "ERROR: didn't parse command line.\n"), exit(1);
-
-
-  test_strto();
-
-  exit(0);
+  return 0;
 }

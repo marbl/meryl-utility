@@ -127,32 +127,21 @@ regEx::match(char const *query) {
     std::swap(sAlen, sBlen);  sBlen = 0;                  //  we discovered above in the next iteration.
   }  //  Over all letters in query.
 
-  //  All done.  CAses for finishing the loop:
-  //    Matched to end of string:             accept == thisaccept
-  //    Matched to all but last letter:       accept == thisaccept     BREAK above
-  //    Matched to not last letter:           accept == thisaccept     BREAK above
-  //    Matched to end of pattern via lambda: accept == lastaccept     BREAK above
-
-  //accept = thisacc;
-
   //  Copy the captures to individual strings.
 
-  for (uint64 ii=0; ii<capsLen; ii++) {
-    if     ((bgnP[ii] == uint64max) && (endP[ii] == uint64max))
-      bgnP[ii] = endP[ii] = 0;
-    else if (bgnP[ii] == uint64max)
-      assert(0);  //  bgnP not set but endP is
-    else if (endP[ii] == uint64max)
-      assert(0);  //  endP not set but bgnP is
-  }
-
   capstorLen = 0;
-  for (uint64 ii=0; ii<capsLen; ii++)
+
+  for (uint64 ii=0; ii<capsLen; ii++) {
+    if ((bgnP[ii] == uint64max) && (endP[ii] == 0))       //  No matches for this capture group.
+      bgnP[ii] = endP[ii] = 0;
+
     capstorLen += endP[ii] - bgnP[ii] + 1;
+  }
 
   resizeArray(capstor, 0, capstorMax, capstorLen, _raAct::doNothing);
 
   capstorLen = 0;
+
   for (uint64 ii=0; ii<capsLen; ii++) {
     caps[ii] = capstor + capstorLen;
 
@@ -163,7 +152,6 @@ regEx::match(char const *query) {
   }
 
   assert(capstorLen <= capstorMax);
-
 
   return accept;
 }

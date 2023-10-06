@@ -310,11 +310,18 @@ int inline isnumber(char c) = delete;
 //    (d & 0xf)        //  Decodes '0'-'9' as 0-9, 'a' - 'f' as 1-6
 //    (d >> 6)         //  Decodes digits as 0, letters as 1.
 //   ((d >> 6) << 3)   //  Decodes digits as 0, letters as 8.
+//      the above was for an older implementation, but the
+//      same idea applies the current implementation.
 
-inline uint8  asciiBinToInteger(char d)   { return(d - '0'); }   //  Pretty trivial.
-inline uint8  asciiOctToInteger(char d)   { return(d - '0'); }
-inline uint8  asciiDecToInteger(char d)   { return(d - '0'); }
-inline uint8  asciiHexToInteger(char d)   { return(((uint8)d & 0xf) + ((uint8)d >> 6) + (((uint8)d >> 6) << 3)); }
+inline uint8  asciiBinToInteger(char d)   { return d - '0'; }   //  Pretty trivial.
+inline uint8  asciiOctToInteger(char d)   { return d - '0'; }
+inline uint8  asciiDecToInteger(char d)   { return d - '0'; }
+inline uint8  asciiHexToInteger(char d)   {
+  uint8  n = (uint8)d      & 0xf;  //  [0-9] -> 0-9; [AaQq] -> 1, [BbRr] -> 2, ..., [FfVv] -> 6, [GgWw] -> 7, ..., [Oo_<del>] -> f
+  uint8  s = (uint8)d >> 6 & 0x1;  //  [@-\xff] -> 1
+
+  return (n + 9 * s) & 0xf;
+}
 
 //  Convert an integer to a printable letter.  If it's not a printable
 //  letter, returns '.'.

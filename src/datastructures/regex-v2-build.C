@@ -139,62 +139,76 @@ regEx::closure(regExState *rs, uint64 &rsLen, regExExpr a, uint64 min, uint64 ma
   regExExpr   *mmmdups = nullptr;
 
   if (vBuild)
-    fprintf(stderr, "closure() %lu -> %lu..%lu -> %lu\n",
+    fprintf(stderr, "closure() %lu -> %lu..%lu -> %lu   (min %lu max %lu)\n",
             bgn->_id,
             a._bgn->_id, a._end->_id,
-            end->_id);
+            end->_id, min, max);
 
-  if ((min == 0) && (max ==uint64max)) {
-    bgn->addEpsilon(end, vBuild);
-    bgn->addEpsilon(a._bgn, vBuild);
+  if ((min == 0) && (max == uint64max)) {   //  Basic Kleene star, no minimum, no maximum.
+    bgn->addEpsilon(end, vBuild);           //   - no matches, jump straight to the exi.
+    bgn->addEpsilon(a._bgn, vBuild);        //   - or enter 'a'
 
-    a._end->addEpsilon(end, vBuild);
-    a._end->addEpsilon(a._bgn, vBuild);
+    a._end->addEpsilon(end, vBuild);        //   - from end of 'a', jump to the exit.
+    a._end->addEpsilon(a._bgn, vBuild);     //   - or go back to the start of 'a'.
     goto finishclosure;
   }
 
-  if ((min == 0) && (max == 1)) {
-    bgn->addEpsilon(end, vBuild);
+  if ((min == 0) && (max == 1)) {           //  For zero or one, it's just like star,
+    bgn->addEpsilon(end, vBuild);           //  but without the 'go back' lambda.
     bgn->addEpsilon(a._bgn, vBuild);
 
     a._end->addEpsilon(end, vBuild);
-    //_end->addEpsilon(a._bgn, vBuild);   //  Just like '*' but can't traverse multiple times.
+    //_end->addEpsilon(a._bgn, vBuild);     //  Do not go back to the start!
     goto finishclosure;
   }
 
   //  Add 'nnn' copies of 'a', chained together.
 
-  nnndups = new regExExpr [nnn];
-  for (uint64 ii=0; ii<nnn; ii++)
-    nnndups[ii] = a.duplicate(rs, rsLen);
+  if (nnn > 0) {
+    nnndups = new regExExpr [nnn];
+    for (uint64 ii=0; ii<nnn; ii++)
+      nnndups[ii] = a.duplicate(rs, rsLen);
 
-  bgn->addEpsilon(nnndups[0]._bgn, vBuild);                    //  Enter the chain of 'a' copies
+    bgn->addEpsilon(nnndups[0]._bgn, vBuild);                    //  Enter the chain of 'a' copies
 
-  for (uint64 ii=0; ii<nnn-1; ii++)
-    nnndups[ii]._end->addEpsilon(nnndups[ii+1]._bgn, vBuild);  //  Leave 'a' to next copy.
+    for (uint64 ii=0; ii<nnn-1; ii++) {
+      nnndups[ii]._end->addEpsilon(nnndups[ii+1]._bgn, vBuild);  //  Leave 'a' to next copy.
+      //ndups[ii]._end->addEpsilon(end, vBuild);                 //  But NO short-cut to accepting yet!
+    }
 
-  nnndups[nnn-1]._end->addEpsilon(end, vBuild);                //  Leave (last copy of) 'a' to accepting.
+    nnndups[nnn-1]._end->addEpsilon(end, vBuild);                //  Leave (last copy of) 'a' to accepting.
+  }
 
   //  If 'max' is infinite, add 'a' itself as a normal closure.
 
   if (max == uint64max) {
-    //ndups[nnn-1]._end->addEpsilon(end, vBuild);               //   Skip all of 'a'; exists already.
-    nnndups[nnn-1]._end->addEpsilon(a._bgn, vBuild);            //   Enter 'a'.
+    if (nnn > 0) {                                               //  Enter 'a' from either the last
+      //ndups[nnn-1]._end->addEpsilon(end, vBuild);              //  in the chain of min's or from
+      nnndups[nnn-1]._end->addEpsilon(a._bgn, vBuild);           //  the newly created bgn state.
+    } else {                                                     //
+      bgn->addEpsilon(end, vBuild);                              //  If from the chain, we've already
+      bgn->addEpsilon(a._bgn, vBuild);                           //  got the short-cut to the end.
+    }
 
-    a._end->addEpsilon(end, vBuild);                            //   Leave 'a' to accepting.
-    a._end->addEpsilon(a._bgn, vBuild);                         //   Leave 'a' back to the start of it.
+    a._end->addEpsilon(end, vBuild);                             //   Leave 'a' to accepting.
+    a._end->addEpsilon(a._bgn, vBuild);                          //   Leave 'a' back to the start of it.
   }
 
   //  Otherwise, add 'mmm' copies of a, chained together, but allowing any one
   //  to jump to the accepting state.
 
-  else {
+  else if (mmm > 0) {
     mmmdups = new regExExpr [mmm];
     for (uint64 ii=0; ii<mmm; ii++)
       mmmdups[ii] = a.duplicate(rs, rsLen);
 
-    //ndups[nnn-1]._end->addEpsilon(end, vBuild);               //  Skip all of 'a'; exists already.
-    nnndups[nnn-1]._end->addEpsilon(mmmdups[0]._bgn, vBuild);   //  Enter the chain of 'a' copies
+    if (nnn > 0) {                                               //  Enter the chain of 'a' copies from
+      //ndups[nnn-1]._end->addEpsilon(end, vBuild);              //  either the last in the chain of
+      nnndups[nnn-1]._end->addEpsilon(mmmdups[0]._bgn, vBuild);  //  min's or from the newly created
+    } else {                                                     //  bgn state.
+      bgn->addEpsilon(end, vBuild);                              //
+      bgn->addEpsilon(mmmdups[0]._bgn, vBuild);                  //  Like above, we've already got
+    }                                                            //  the short-cut to the end.
 
     for (uint64 ii=0; ii<mmm-1; ii++) {
       mmmdups[ii]._end->addEpsilon(mmmdups[ii+1]._bgn, vBuild);  //  Leave 'a' to next copy.
@@ -296,6 +310,7 @@ regEx::build(void) {
         break;
 
       default:
+        fprintf(stderr, "ERROR: unknown type: %s\n", tl[tt].display());
         assert(0);
         break;
     }

@@ -100,18 +100,16 @@ public:
   void   matchLetters(char const *s)           { for (uint16 ii=0; s[ii]; ii++)  setMatch(s[ii]);          }
   void   matchRange(uint8 a, uint8 b)          { for (uint16  c=a;  c<=b;  c++)  setMatch(c);              } 
 
-  void   matchNone(void)                       { for (uint8  ii=0; ii< 4; ii++)  _syms[ii] = uint64zero;   }
-  void   matchAll(void)                        { for (uint8  ii=0; ii< 4; ii++)  _syms[ii] = uint64max;    }
   void   invertMatch(void)                     { for (uint8  ii=0; ii< 4; ii++)  _syms[ii] = ~_syms[ii];   }
 
   void   mergeMatches(regExToken const &d)     { for (uint8  ii=0; ii< 4; ii++)  _syms[ii] |= d._syms[ii];  }
+
 private:
   bool    decodeCharClassToken(char const *str, uint64 &nn);
 
 public:
-  void    matchSymbol(char sym)                               { _type = regExTokenType::rtCharClass;  matchLetter(sym);       }
-  void    matchCharacter(char const *str, uint64 &nn)         { _type = regExTokenType::rtCharClass;  matchLetter(str[nn++]); }
-  void    matchHexCharacter(char const *str, uint64 &nn);
+  void    matchAllSymbols(void)                { _type = regExTokenType::rtCharClass;  matchRange(0x00, 0xff); }
+  void    matchSymbol(char sym)                { _type = regExTokenType::rtCharClass;  matchLetter(sym);       }
 
   bool    matchCharacterClassToken(char const *str, uint64 &nn);
   void    matchCharacterClass     (char const *str, uint64 &nn);

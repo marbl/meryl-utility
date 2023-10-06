@@ -121,15 +121,42 @@ regExToken::display(char *str) {
 
 
 
-//  Decodes a closure range "{a,b}"
+//  Decodes a closure range:
+//    #1 - {a,b}
+//    #2 - {a}
+//    #3 - {a,}
+//    #4 - {,b}
+//
+//  It's pretty tricky code.
+//    1)  Skip any open brace.  We'll either be on 'a' or a comma now.
+//    2)  If on 'a' (#1, #2, #3), decode it into _min.
+//        We'll be on the comma or closing brace now.
+//    3)  If on the closing brace (#2), set _max to _min.  We're done.
+//    4)  If on the comma (#1, #3, #4), skip over it.
+//    5)  If on 'b' (#1 and #4), decode it into _max.
+//        We'll be on the closing brace now.
+//        For case #3, _max will remain at uint64max.
+//    6)  Update string pointer and ensure we're at the closing brace.
 void
 regExToken::makeClosure(char const *str, uint64 ss, uint64 &nn) {
   char const *dec = str + nn;
 
   _type = regExTokenType::rtClosure;
+  _min  = 0;
+  _max  = uint64max;
 
-  _min=0;          if (*dec != ',') dec = strtonumber(dec+1, _min);   assert(*dec == ',');   dec++;
-  _max=uint64max;  if (*dec != '}') dec = strtonumber(dec,   _max);   assert(*dec == '}');
+  //fprintf(stderr, "makeClosure()-- '%s'\n", str+nn);
+
+  if (dec[0] == '{')  dec++;
+  if (dec[0] != ',')  dec = strtonumber(dec, _min);
+  if (dec[0] == '}')  _max = _min;
+  if (dec[0] == ',')  dec++;
+  if (dec[0] != '}')  dec = strtonumber(dec, _max);
+  if (dec[0] != '}')  fprintf(stderr, "Failed to decode closure range '%s'\n", str + nn);
+
+  assert(dec[0] == '}');
+
+  //fprintf(stderr, "makeClosure()-- '%s' -> %lu %lu\n", str+nn, _min, _max);
 
   nn = dec - str;
 }

@@ -63,6 +63,8 @@ regExToken::matchCharacterClassToken(char const *str, uint64 &nn) {
   uint64  zz = 0;
   uint64  n1 = nn+1;
 
+  _type = regExTokenType::rtCharClass;
+
   fprintf(stderr, "matchCharacterClassToken()- nn=%lu '%s'\n", nn, str+nn);
 
   if       (str[nn] == '\\') {
@@ -76,7 +78,7 @@ regExToken::matchCharacterClassToken(char const *str, uint64 &nn) {
 
     else if (str[n1] == 'W')  { regExToken d;  d.matchCharacterClassToken("[:alnum:]", zz); d.matchLetter('_'); d.invertMatch(); mergeMatches(d); }
     else if (str[n1] == 'D')  { regExToken d;  d.matchCharacterClassToken("[:digit:]", zz);                     d.invertMatch(); mergeMatches(d); }
-    else if (str[n1] == 'S')  { regExToken d;  d.matchCharacterClassToken("[:blank:]", zz);                     d.invertMatch(); mergeMatches(d); }
+    else if (str[n1] == 'S')  { regExToken d;  d.matchCharacterClassToken("[:space:]", zz);                     d.invertMatch(); mergeMatches(d); }
 
     else                      matchLetter(str[n1]);
 
@@ -199,9 +201,9 @@ regEx::parse(char const *str) {
     //             - '^' at the start inverts the sense
     //             - ']' and '-' must be escaped
 
-    if      (str[ss] == '\\')   toka.matchCharacterClassToken(str, nn);
-    else if (str[ss] == '[')    toka.matchCharacterClass(str, nn);
-    else if (str[ss] == '.')    toka.matchAll();
+    if      (str[ss] == '\\')   toka.matchCharacterClassToken(str, nn), nn--;   //  Eats 2, but needs to
+    else if (str[ss] == '[')    toka.matchCharacterClass(str, nn);              //    eat only one in this
+    else if (str[ss] == '.')    toka.matchAllSymbols();                         //    loop.
 
     //  Grouping and capturing.
     //   (..)  - group the enclosed pattern into a single entity (see .H)

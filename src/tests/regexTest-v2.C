@@ -21,18 +21,25 @@
 
 int
 main(int argc, char const **argv) {
+  merylutil::regEx  re;
+  int               arg = 1;
+  int               err = 0;
 
   if (argc < 3) {
-    fprintf(stderr, "usage: %s <regEx-string> <text-string> ...\n", argv[0]);
+    fprintf(stderr, "usage: %s [-v] <regEx-string> <text-string> ...\n", argv[0]);
     exit(1);
   }
 
-  merylutil::regEx  re;
+  for (arg=1; arg<argc; arg++) {
+    if   (strcmp(argv[arg], "-v") == 0)
+      re.enableVerbose();
+    else
+      break;
+  }
 
-  re.enableVerbose();
-  re.construct(argv[1]);
+  re.construct(argv[arg++]);
 
-  for (uint32 arg=2; arg<argc; arg++) {
+  for (; arg<argc; arg++) {
     fprintf(stdout, "MATCH: '%s'\n", argv[arg]);
 
     if (re.match(argv[arg]))

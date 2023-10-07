@@ -249,6 +249,26 @@ regEx::parse(char const *str) {
     while (tlLen + 1 + 1 + 2 * (groupStates.empty() ? 0 : groupStates.top().depth) + 1 >= tlMax)
       resizeArray(tl, tlLen, tlMax, tlMax + 1024);
 
+    //  If we're in a prefix group, append a non-capture group begin before
+    //  every symbol except the first:
+    //    ({p}1234) -> (1(2(3(4?)?0?)?)?)
+    //                   ^ ^ ^ - appended group begin
+    //  and also count how many of these we have.
+
+    if ((groupStates.empty() == false) &&                 //  Groups exist
+        (groupStates.top().pfx == true) &&                //  The last one is a prefix group
+        ((toka._type == regExTokenType::rtCharClass) ||   //  The current token is a matching operator,
+         (toka._type == regExTokenType::rtGroupBegin)) && //   or a group begin
+        (groupStates.top().depth++ > 0))                  //  And not the first   (Also count how many)
+      tl[tlLen++] = { ._id=tokIdent++, ._type=regExTokenType::rtGroupBegin, ._cap=false };
+
+    if ((groupStates.empty() == false) &&
+        (groupStates.top().pfx == true) &&
+        (toka._type == regExTokenType::rtAlternation)) {
+      fprintf(stderr, "Alteration not supported in prefix groups.\n");
+      assert(0);
+    }
+
     //  If a new group created, push on state for prefix creation.
     //  If the group is a capture group, remember the ident so we can set match states.
 
@@ -260,18 +280,6 @@ regEx::parse(char const *str) {
         capsLen = std::max(capsLen, grpIdent+1);
       }
     }
-
-    //  If we're in a prefix group, append a non-capture group begin before
-    //  every symbol except the first:
-    //    ({p}1234) -> (1(2(3(4?)?0?)?)?)
-    //                   ^ ^ ^ - appended group begin
-    //  and also count how many of these we have.
-
-    if ((groupStates.empty() == false) &&               //  Groups exist?
-        (groupStates.top().pfx == true) &&              //  The last one is a prefix group?
-        (toka._type == regExTokenType::rtCharClass) &&  //  The current token is a matching operator?
-        (groupStates.top().depth++ > 0))                //  And not the first?  (Also count how many)
-      tl[tlLen++] = { ._id=tokIdent++, ._type=regExTokenType::rtGroupBegin, ._cap=false };
 
     //  If this is a match operator, and there is an active capture group, assign the match
     //  to the capture group.  The default group is '0', the overall match.

@@ -37,7 +37,7 @@ main(int argc, char const **argv) {
       break;
   }
 
-  re.construct(argv[arg++]);
+  re.compile(argv[arg++]);
 
   for (; arg<argc; arg++) {
     fprintf(stdout, "MATCH: '%s'\n", argv[arg]);

@@ -33,10 +33,10 @@ regExToken::display(char *str) {
 
   switch (_type) {
     case regExTokenType::rtGroupBegin:
-      app += sprintf(app, "group bgn  id:%2u grp:%03lu%s%s", _id, _grpIdent, _cap ? " CAP" : "", _pfx ? " PFX" : "");
+      app += sprintf(app, "group bgn  id:%2u cap:%03lu grp:%03lu%s%s", _id, _capIdent, _grpIdent, _cap ? " CAP" : "", _pfx ? " PFX" : "");
       break;
     case regExTokenType::rtGroupEnd:
-      app += sprintf(app, "group end  id:%2u grp:%03lu", _id, _grpIdent);
+      app += sprintf(app, "group end  id:%2u cap:%03lu grp:%03lu", _id, _capIdent, _grpIdent);
       break;
     case regExTokenType::rtAlternation:
       app += sprintf(app, "alternat   id:%2u", _id);
@@ -54,7 +54,7 @@ regExToken::display(char *str) {
       app += sprintf(app, "line-end   id:%2u", _id);
       break;
     case regExTokenType::rtCharClass:
-      app += sprintf(app, "charact    id:%2u grp:%03lu ", _id, _grpIdent);
+      app += sprintf(app, "charact    id:%2u cap:%03lu ", _id, _capIdent);
 
       if (_sym != 0) {
         app += sprintf(app, "'%c'", _sym);
@@ -161,52 +161,6 @@ regExToken::makeClosure(char const *str, uint64 ss, uint64 &nn) {
   nn = dec - str;
 }
 
-
-
-//  Decodes a group begin "({group}", "({capture}", "({prefix}" (and abbreviations)
-//  ({group,prefix}
-//  ({capture,prefix}
-//  {{capture}
-//  {{c}
-//
-//  ((:group:)
-//
-void
-regExToken::makeGroupBegin(char const *str, uint64 ss, uint64 &nn, uint64 grpIdent) {
-  uint64  err = 0;
-
-  _type     = regExTokenType::rtGroupBegin;
-  _cap      = true;
-  _grpIdent = grpIdent;
-  _pfx      = false;
-
-  if (str[nn+1] == '{') {   //  Skip over the opening '(' then test for the modifier symbol;
-    nn += 2;                //  if found, skip both '(' and '{' and decode the modifiers.
-
-    while ((str[nn] != 0) && (str[nn] != '}')) {
-      if      (strncmp(str+nn, "group", 5) == 0)    { _cap = false;  nn += 5;  }
-      else if (strncmp(str+nn, "capture", 7) == 0)  { _cap = true;   nn += 7;  }
-      else if (strncmp(str+nn, "prefix", 6) == 0)   { _pfx = true;   nn += 6;  }
-      else if (str[nn] == 'g')                      { _cap = false;  nn += 1;  }
-      else if (str[nn] == 'c')                      { _cap = true;   nn += 1;  }
-      else if (str[nn] == 'p')                      { _pfx = true;   nn += 1;  }
-      else if (str[nn] == ',')                      {                nn += 1;  }
-      else
-        err = ++nn;
-    }
-  }
-
-  if (err > 0) {
-    fprintf(stderr, "ERROR: expecting 'group', 'capture', 'prefix' in '%s'.\n", str+ss);
-  }
-}
-
-
-void
-regExToken::makeGroupEnd(uint64 grpIdent) {
-  _type     = regExTokenType::rtGroupEnd;
-  _grpIdent = grpIdent;
-}
 
 
 }  //    merylutil::regex::v2

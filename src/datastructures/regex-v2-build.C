@@ -218,6 +218,9 @@ regEx::closure(regExState *rs, uint64 &rsLen, regExExpr a, uint64 min, uint64 ma
     mmmdups[mmm-1]._end->addEpsilon(end, vBuild);                //  Leave (last copy of) 'a' to accepting.
   }
 
+  delete [] nnndups;   //  We're done with these expressions; the nodes
+  delete [] mmmdups;   //  are saved elsewhere.
+
  finishclosure:
   return regExExpr(bgn, end);
 }

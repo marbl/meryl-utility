@@ -65,7 +65,7 @@ regExToken::matchCharacterClassToken(char const *str, uint64 &nn) {
 
   _type = regExTokenType::rtCharClass;
 
-  fprintf(stderr, "matchCharacterClassToken()- nn=%lu '%s'\n", nn, str+nn);
+  //fprintf(stderr, "matchCharacterClassToken()- nn=%lu '%s'\n", nn, str+nn);
 
   if       (str[nn] == '\\') {
     if      (str[n1] == 'a')  matchCharacterClassToken("[:alpha:]", zz);
@@ -130,13 +130,13 @@ regExToken::matchCharacterClass(char const *str, uint64 &nn) {
   _type = regExTokenType::rtCharClass;
 
   assert(str[nn] == '[');
-  fprintf(stderr, "matchCharacterClass()- nn=%lu '%s' (on ENTRY)\n", nn, str+nn);
+  //fprintf(stderr, "matchCharacterClass()- nn=%lu '%s' (on ENTRY)\n", nn, str+nn);
 
   if (str[++nn] == '^')   //  Skip over the opening '[' then test for the invert symbol;
     iv = ++nn;            //  if found, set the flag and move past the invert symbol.
 
   while ((str[nn] != 0) && (str[nn] != ']')) {
-    fprintf(stderr, "matchCharacterClass()- nn=%lu '%s' (in LOOP)\n", nn, str+nn);
+    //fprintf(stderr, "matchCharacterClass()- nn=%lu '%s' (in LOOP)\n", nn, str+nn);
 
     if (matchCharacterClassToken(str, nn) == true)
       continue;
@@ -160,21 +160,94 @@ regExToken::matchCharacterClass(char const *str, uint64 &nn) {
 
 
 
+
+
+
+//  Decodes a group begin "({group}", "({capture}", "({prefix}" (and abbreviations)
+//  ({group,prefix}
+//  ({capture,prefix}
+//  {{capture}
+//  {{c}
+//
+//  ((:group:)
+//
+void
+regExToken::makeGroupBegin(bool pfx, bool cap,
+                           uint64 &grpIdent,
+                           uint64 &capIdent) {
+  _type     = regExTokenType::rtGroupBegin;
+
+  _pfx      =  pfx;
+  _cap      =  cap;
+  _capIdent = (cap) ? ++capIdent : capIdent;
+  _grpIdent =         ++grpIdent;
+}
+
+void
+regExToken::makeGroupBegin(char const *str, uint64 ss, uint64 &nn,
+                           uint64 &grpIdent,
+                           uint64 &capIdent) {
+  bool    pfx = false;
+  bool    cap = false;
+  uint64  err = 0;
+
+  if ((str != nullptr) &&     //  If a string supplied,
+      (str[nn+1] == '{')) {   //  Skip over the opening '(' then test for the modifier symbol;
+    nn += 2;                  //  if found, skip both '(' and '{' and decode the modifiers.
+
+    while ((str[nn] != 0) && (str[nn] != '}')) {
+      if      (strncmp(str+nn, "group", 5) == 0)    { cap = false;  nn += 5;  }
+      else if (strncmp(str+nn, "capture", 7) == 0)  { cap = true;   nn += 7;  }
+      else if (strncmp(str+nn, "prefix", 6) == 0)   { pfx = true;   nn += 6;  }
+      else if (str[nn] == 'g')                      { cap = false;  nn += 1;  }
+      else if (str[nn] == 'c')                      { cap = true;   nn += 1;  }
+      else if (str[nn] == 'p')                      { pfx = true;   nn += 1;  }
+      else if (str[nn] == ',')                      {               nn += 1;  }
+      else
+        err = ++nn;
+    }
+  }
+
+  if (err > 0)
+    fprintf(stderr, "ERROR: expecting 'group', 'capture', 'prefix' in '%s'.\n", str+ss);
+
+  makeGroupBegin(pfx, cap, grpIdent, capIdent);
+}
+
+
+void
+regExToken::makeGroupEnd(uint64 grpIdent, uint64 capIdent) {
+  _type     = regExTokenType::rtGroupEnd;
+  _grpIdent = grpIdent;
+  _capIdent = capIdent;
+}
+
+
+
+
+
+
+
 struct groupState {
   bool    pfx   = false;
   bool    cap   = false;
   uint64  depth = 0;
-  uint64  ident = 0;
+  uint64  cid   = 0;
+  uint64  gid   = 0;
 };
+
 
 
 bool
 regEx::parse(char const *str) {
-  uint64                        tokIdent = 0;
-  uint64                        grpIdent = uint64max;  //  Is pre-incremented to 0 on first use.
+  uint64                        tokIdent = uint64max;
+  uint64                        grpIdent = uint64max;
+  uint64                        capIdent = uint64max;
+  regExToken                    toka     = { ._id=++tokIdent };
 
   merylutil::stack<groupState>  groupStates;   //  Stack of group information
-  merylutil::stack<uint64>      capIdent;      //  Ident of the capture groups
+  merylutil::stack<groupState>  prefxStates;   //  Stack of group information
+
 
   if (vParse) {
     fprintf(stderr, "\n");
@@ -186,12 +259,18 @@ regEx::parse(char const *str) {
   tlLen = 0;                         //  Recycle any existing token list.
 
   //  Make an initial capture group to get the entirety of the match.
-  //tl[tlLen++] = makeGroupBegin(true, ++grpIdent);
-  tl[tlLen++] = { ._id=tokIdent++, ._type=regExTokenType::rtGroupBegin, ._cap=true, ._grpIdent=++grpIdent };
-  capsLen = 1;
 
+  toka.makeGroupBegin(false, true, grpIdent, capIdent);
+
+  tl[tlLen++] = toka;
+
+  groupStates.push(groupState{ .pfx=toka._pfx, .cap=toka._cap, .depth=0, .cid=toka._capIdent, .gid=toka._grpIdent });
+
+
+
+                            
   for (uint64 ss=0, nn=0; str[ss]; ss = nn) {    //  ss is the (constant) start of this token
-    regExToken  toka = { ._id=tokIdent++ };      //  nn is the (computed) start of the next token
+    toka = { ._id=++tokIdent };                  //  nn is the (computed) start of the next token
 
     //  Handle escaped letters and character classes.
     //   /xHH   - matches character represented by hex digits HH
@@ -208,8 +287,8 @@ regEx::parse(char const *str) {
     //  Grouping and capturing.
     //   (..)  - group the enclosed pattern into a single entity (see .H)
 
-    else if (str[ss] == '(')  toka.makeGroupBegin(str, ss, nn, ++grpIdent);
-    else if (str[ss] == ')')  toka.makeGroupEnd(groupStates.top().ident);
+    else if (str[ss] == '(')  toka.makeGroupBegin(str, ss, nn, grpIdent, capIdent);
+    else if (str[ss] == ')')  toka.makeGroupEnd(groupStates.top().gid, groupStates.top().cid);
 #warning mismatched parens will crash the above
 
     //  Handle closures and alternation.
@@ -246,7 +325,7 @@ regEx::parse(char const *str) {
     //    Up to 2 * prefixDepth if we're at the end of a prefix group.
     //    Possible one concatenation operator,
     //    
-    while (tlLen + 1 + 1 + 2 * (groupStates.empty() ? 0 : groupStates.top().depth) + 1 >= tlMax)
+    while (tlLen + 1 + 1 + 2 * groupStates.top().depth + 1 >= tlMax)
       resizeArray(tl, tlLen, tlMax, tlMax + 1024);
 
     //  If we're in a prefix group, append a non-capture group begin before
@@ -255,41 +334,30 @@ regEx::parse(char const *str) {
     //                   ^ ^ ^ - appended group begin
     //  and also count how many of these we have.
 
-    if ((groupStates.empty() == false) &&                 //  Groups exist
-        (groupStates.top().pfx == true) &&                //  The last one is a prefix group
+    if ((groupStates.top().pfx == true) &&                //  The last one is a prefix group
         ((toka._type == regExTokenType::rtCharClass) ||   //  The current token is a matching operator,
          (toka._type == regExTokenType::rtGroupBegin)) && //   or a group begin
-        (groupStates.top().depth++ > 0))                  //  And not the first   (Also count how many)
-      tl[tlLen++] = { ._id=tokIdent++, ._type=regExTokenType::rtGroupBegin, ._cap=false };
+        (groupStates.top().depth++ > 0)) {                //  And not the first   (Also count how many)
+      tl[tlLen++] = { ._id=++tokIdent, ._type=regExTokenType::rtGroupBegin, ._grpIdent=++grpIdent };
+      prefxStates.push(groupState{ .gid=grpIdent });
+    }
 
-    if ((groupStates.empty() == false) &&
-        (groupStates.top().pfx == true) &&
-        (toka._type == regExTokenType::rtAlternation)) {
+    if ((groupStates.top().pfx == true) &&                //  Blow up on alternation in prefix groups,
+        (toka._type == regExTokenType::rtAlternation)) {  //  because it makes no sense.
       fprintf(stderr, "Alteration not supported in prefix groups.\n");
       assert(0);
     }
 
-    //  If a new group created, push on state for prefix creation.
-    //  If the group is a capture group, remember the ident so we can set match states.
+    //  If this is a new group, remember group state.
 
-    if (toka._type == regExTokenType::rtGroupBegin) {
-      groupStates.push(groupState{ .pfx=toka._pfx, .cap=toka._cap, .depth=0, .ident=grpIdent });
+    if (toka._type == regExTokenType::rtGroupBegin)
+      groupStates.push(groupState{ .pfx=toka._pfx, .cap=toka._cap, .depth=0, .cid=toka._capIdent, .gid=toka._grpIdent });
 
-      if (toka._cap == true) {
-        capIdent.push(grpIdent);
-        capsLen = std::max(capsLen, grpIdent+1);
-      }
-    }
+    //  If this is a match operator, assign the match
+    //  to the current capture group.
 
-    //  If this is a match operator, and there is an active capture group, assign the match
-    //  to the capture group.  The default group is '0', the overall match.
-
-    if ((toka._type == regExTokenType::rtCharClass) && (capIdent.empty() == false))
-      toka._grpIdent = capIdent.top();
-
-    //  Append whatever token we made.
-
-    tl[tlLen++] = toka;
+    if (toka._type == regExTokenType::rtCharClass)
+      toka._capIdent = groupStates.top().cid;
 
     //  If we've just seen a group-end symbol, pop off the group-info for this group.
     //  If this is closing a prefix-group, terminate all the interal groups we made.
@@ -299,14 +367,18 @@ regEx::parse(char const *str) {
 
       if (gs.pfx == true) {
         while (gs.depth-- > 1) {
-          tl[tlLen++] = { ._id=tokIdent++, ._type=regExTokenType::rtClosure, ._min=0, ._max=1 };
-          tl[tlLen++] = { ._id=tokIdent++, ._type=regExTokenType::rtGroupEnd                  };
+          groupState ps = prefxStates.pop();
+
+          tl[tlLen++] = { ._id=++tokIdent, ._type=regExTokenType::rtGroupEnd, ._grpIdent=ps.gid };
+          tl[tlLen++] = { ._id=++tokIdent, ._type=regExTokenType::rtClosure,  ._min=0, ._max=1 };
         }
       }
-
-      if (gs.cap == true)
-        capIdent.pop();
     }
+
+    //  Append whatever token we made.
+
+    tl[tlLen++] = toka;
+
 
     nn++;  //  Move to the next input character.
 
@@ -327,19 +399,23 @@ regEx::parse(char const *str) {
         (str[ss] != '(') && (str[ss] != '|') &&
         (str[nn] != '*') && (str[nn] != '{') && (str[nn] != '?') && (str[nn] != '+') &&
         (str[nn] != '|') && (str[nn] != ')'))
-      tl[tlLen++] = { ._id=tokIdent++, ._type=regExTokenType::rtConcat };
+      tl[tlLen++] = { ._id=++tokIdent, ._type=regExTokenType::rtConcat };
 
     assert(tlLen <= tlMax);
   }
 
   //  Close the overall capture group.
-  //tl[tlLen++] = makeGroupEnd(0);
-  tl[tlLen++] = { ._id=tokIdent++, ._type=regExTokenType::rtGroupEnd, ._grpIdent=0 };
+  tl[tlLen++] = { ._id=++tokIdent, ._type=regExTokenType::rtGroupEnd, ._capIdent=0, ._grpIdent=0 };
+
+  assert(groupStates.top().gid == 0);
+  assert(groupStates.top().cid == 0);
+
+  capsLen = capIdent + 1;
 
   if (vParse) {
     for (uint64 ii=0; ii<tlLen; ii++)
       fprintf(stderr, "tl[%03lu] -- %s\n", ii, tl[ii].display());
-    fprintf(stderr, "\n");
+    fprintf(stderr, " -- %lu capture groups\n", capsLen);
   }
 
 

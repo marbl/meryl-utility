@@ -119,11 +119,12 @@ public:
   void    makeAlternation(void)               { _type = regExTokenType::rtAlternation;  };
   void    makeConcatenation(void)             { _type = regExTokenType::rtConcat;       };
 
-  void    makeGroupBegin(char const *str, uint64 ss, uint64 &nn, uint64 grpIdent);
-  void    makeGroupEnd  (                                        uint64 grpIdent);
+  void    makeGroupBegin(bool pfx, bool cap,                     uint64 &grpIdent, uint64 &capIdent);
+  void    makeGroupBegin(char const *str, uint64 ss, uint64 &nn, uint64 &grpIdent, uint64 &capIdent);
+  void    makeGroupEnd  (                                        uint64  grpIdent, uint64  capIdent);
 
-  void    matchLineStart(void)                { _type = regExTokenType::rtLineStart;    };
-  void    matchLineEnd(void)                  { _type = regExTokenType::rtLineEnd;      };
+  void    matchLineStart(void)                { _type = regExTokenType::rtLineStart; };
+  void    matchLineEnd(void)                  { _type = regExTokenType::rtLineEnd;   };
 
 public:
   uint64           _id        = 0;
@@ -132,10 +133,10 @@ public:
   uint64           _syms[4]   = { 0, 0, 0, 0 };
   char             _sym       = 0;
 
-  bool             _cap       = false;
   bool             _pfx       = false;
-
-  uint64           _grpIdent  = 0;   //  group ident of any capture group, default to 'all'
+  bool             _cap       = false;
+  uint64           _capIdent  = 0;        //  ID of the capture group this token belongs to.
+  uint64           _grpIdent  = 0;        //  If a group begin/end, the id of that group - independent from capIdent!
 
   uint64           _min       = 0;
   uint64           _max       = uint64max;
@@ -234,10 +235,40 @@ public:
   }
 
 public:
-  bool        construct(char const *pattern) {
+  bool        compile(char const *p1, char const *p2=nullptr, ...) {
+    char const *pattern = p1;
+    char const *pconcat = nullptr;
+
+    if (p2) {
+      uint64      pl = 1 + strlen(p1) + strlen(p2);
+      char       *p = nullptr;
+      va_list     ap;
+
+      va_start(ap, p2);
+      for (char const *a = va_arg(ap, char const *); a; a = va_arg(ap, char const *))
+        pl += strlen(a);
+      va_end(ap);
+
+      pattern = pconcat = p = new char [pl];
+
+      for (char const *a=p1; *a; )  *p++ = *a++;    //  Append p1.
+      for (char const *a=p2; *a; )  *p++ = *a++;    //  Append p2.
+
+      va_start(ap, p2);                             //  Append additional patterns.
+      for (char const *a = va_arg(ap, char const *); a; a = va_arg(ap, char const *))
+        while (*a)
+          *p++ = *a++;
+      va_end(ap);
+
+      *p = 0;
+    }
+
     parse(pattern);
     convert();
     build();
+
+    delete [] pconcat;
+
     return true;
   }
   bool        match(char const *query);

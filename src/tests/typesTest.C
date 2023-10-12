@@ -142,7 +142,7 @@ test_asciiHexToInt(void) {
   fprintf(stdout, "\n");
   fprintf(stdout, "     ");
   for (uint32 jj=0; jj<16; jj++) {
-    fprintf(stdout, "  --", jj);
+    fprintf(stdout, "  --");
   }
   fprintf(stdout, "\n");
 

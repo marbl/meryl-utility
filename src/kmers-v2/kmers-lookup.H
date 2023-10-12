@@ -161,7 +161,7 @@ merylExactLookup::value_value(kmvalu value) {
   value &= _valueMask;
 
   return(value + _valueOffset);      //  Otherwise, return the value.
-};
+}
 
 
 
@@ -315,7 +315,7 @@ merylExactLookup::value(kmer k) {
   }
 
   return(0);
-};
+}
 
 }  //  namespace merylutil::kmers::v2
 

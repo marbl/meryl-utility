@@ -51,7 +51,7 @@ regEx::convert(void) {
 
   for (uint64 tt=0; tt<tlLen; tt++) {
     if (vConvert) {
-      fprintf(stderr, "tl[%03d] -- process %s\n", tt, tl[tt].display());
+      fprintf(stderr, "tl[%03lu] -- process %s\n", tt, tl[tt].display());
     }
 
     if ((tl[tt]._type == regExTokenType::rtAlternation) ||
@@ -60,7 +60,7 @@ regEx::convert(void) {
       while ((st.depth() > 0) && (st.top()._type != regExTokenType::rtGroupBegin) && (st.top()._type <= tl[tt]._type)) {
         tl[olLen++] = st.pop();
         if (vConvert)
-          fprintf(stderr, "tl[%03d] <- pop-op  %s\n", olLen-1, tl[olLen-1].display());
+          fprintf(stderr, "tl[%03lu] <- pop-op  %s\n", olLen-1, tl[olLen-1].display());
       }
       if (vConvert)
         fprintf(stderr, "        -- push\n");
@@ -77,7 +77,7 @@ regEx::convert(void) {
       while ((st.depth() > 0) && (st.top()._type != regExTokenType::rtGroupBegin)) {
         tl[olLen++] = st.pop();
         if (vConvert)
-          fprintf(stderr, "tl[%03d] <- pop-end %s\n", olLen-1, tl[olLen-1].display());
+          fprintf(stderr, "tl[%03lu] <- pop-end %s\n", olLen-1, tl[olLen-1].display());
       }
 
       //  Should always have an rtGroupBegin on the stack, if not,
@@ -97,7 +97,7 @@ regEx::convert(void) {
 
       olLen++;
       if (vConvert)
-        fprintf(stderr, "tl[%03d] <- copy    %s\n", olLen-1, tl[olLen-1].display());
+        fprintf(stderr, "tl[%03lu] <- copy    %s\n", olLen-1, tl[olLen-1].display());
     }
 
     if (vConvert) {

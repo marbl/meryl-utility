@@ -48,7 +48,8 @@ main(int argc, char const **argv) {
       fprintf(stdout, "  failure\n");
 
     for (uint64 ii=0; ii<re.numCaptures(); ii++)
-      fprintf(stdout, "  %2lu %3lu-%3lu '%s'\n", ii, re.getCaptureBgn(ii), re.getCaptureEnd(ii), re.getCapture(ii));
+      fprintf(stdout, "  %2lu %s %3lu-%3lu '%s'\n", ii,
+              re.getCaptureValid(ii) ? "valid" : "inval", re.getCaptureBgn(ii), re.getCaptureEnd(ii), re.getCapture(ii));
   }
 
   return 0;

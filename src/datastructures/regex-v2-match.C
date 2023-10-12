@@ -28,6 +28,60 @@
 
 namespace merylutil::inline regex::inline v2 {
 
+
+
+//  Explore edges out of current to find nodes to explore next.
+//
+//  If we're not at a node, do nothing.
+//  If this node has a match symbol, we want to expore it.
+//  If not, follow lambda edges to find other match nodes.
+//   - by construction, a node has either a match link or lambda links.
+//
+void
+regEx::findNodes(uint64      previous,
+                 regExState *current,
+                 uint64      currentPos,
+                 regExMatch *&match, uint64 &matchLen, uint64 &matchMax,
+                 uint64 *sB, uint64 &sBlen) {
+
+  if (current == nullptr) {
+  }
+  else if ((current->_match) ||               //  Save 'current' for exploration if it
+           (current->_accepting)) {           //  has a match node OR is accepting.
+    match[matchLen]._state     = current;     //    Link to state to explore.
+    match[matchLen]._prevMatch = previous;    //    Link to state we came from.
+    match[matchLen]._stringIdx = currentPos;  //    Position in string we're exploring.
+
+    sB[sBlen++] = matchLen++;
+
+    assert(current->_lambda[0] == nullptr);
+    assert(current->_lambda[1] == nullptr);
+  }
+  else {
+    findNodes(previous, current->_lambda[0], currentPos, match, matchLen, matchMax, sB, sBlen);
+    findNodes(previous, current->_lambda[1], currentPos, match, matchLen, matchMax, sB, sBlen);
+  }
+}
+
+
+//  Return true if we can get to an accepting state following lambda edges.
+bool
+regEx::isAccepting(regExState *current) {
+  if (current == nullptr)
+    return false;
+  return current->_accepting | isAccepting(current->_lambda[0]) | isAccepting(current->_lambda[1]);
+}
+
+
+  //  Initialze the list of next-states with all that are reachable via a
+  //  lambda from the root node.
+  //
+  //  Then find a new set of next-states that are reachable from any state in
+  //  the current list by following an edge for the current query letter.
+  //
+  //  If a match is found and we're in a capture group, remember
+  //  the min/max string coords for that capture group.
+
 bool
 regEx::match(char const *query) {
 
@@ -40,125 +94,142 @@ regEx::match(char const *query) {
     fprintf(stderr, "\n");
   }
 
-  //  Allocate and clear space for capture results.  capsLen is computed in
-  //  parsing.
+  uint64       matchLen = 0;
+  uint64       matchMax = 1024;
+  regExMatch  *match    = new regExMatch [matchMax];
 
-  resizeArray(bgnP, endP, caps, 0, capsMax, capsLen);
+  uint64  *active = new uint64 [rsLen + rsLen];
+  uint64  *sA = active + 0;      uint64 sAlen = 0;
+  uint64  *sB = active + rsLen;  uint64 sBlen = 0;
 
-  for (uint64 ii=0; ii<capsLen; ii++) {
-    bgnP[ii] = uint64max;
-    endP[ii] = 0;
-    caps[ii] = nullptr;
-  }
+  uint64   acceptLen = 0;
+  uint64  *accept    = new uint64 [rsLen + rsLen];
 
-  assert(capsLen > 0);
 
-  //  Initialze the list of next-states with all that are reachable via a
-  //  lambda from the root node.
-  //
-  //  Then find a new set of next-states that are reachable from any state in
-  //  the current list by following an edge for the current query letter.
-  //
-  //  If a match is found and we're in a capture group, remember
-  //  the min/max string coords for that capture group.
+  //  Find the initial set of nodes to explore by following links out of re._bgn.
+  findNodes(uint64max, re._bgn, 0, match, matchLen, matchMax, sA, sAlen);
 
-  regExState  **states = new regExState * [rsLen + rsLen];
 
-  regExState **sA = states + 0;      uint64 sAlen = 0;
-  regExState **sB = states + rsLen;  uint64 sBlen = 0;
-
-  bool         accept  = false;
-
-  accept = followStates(re._bgn, sA, sAlen);
 
   for (uint64 pp=0; query[pp]; pp++) {
     char ch = query[pp];   //  Letter to process.
 
-    if (vMatch) {
-      fprintf(stderr, "\n");
-      fprintf(stderr, "ADVANCE on character '%c' with %u states to explore\n", ch, sAlen);
-    }
+    if (vMatch)
+      fprintf(stderr, "\nADVANCE ch '%c' with %lu states to explore\n", ch, sAlen);
 
-    //  Explore each of the states in our list.
-    //
-    //  If the state doesn't match our letter, skip it.
-    //
-    //  has a match to letter 'ch' follow the link and add
-    //  either the node it points to, or the nodes via lambda edges.  Remember
-    //  if any of those are accepting states.
+    for (uint64 ii=0; ii<sAlen; ii++) {                //  Over all the nodes in the set
+      regExState *S  = match[ sA[ii] ]._state;         //  to explore....
+      regExToken  T  = match[ sA[ii] ]._state->_tok;
 
-    bool  hasMatches = false;
-    bool  newAccept  = false;
+      if (S->_match == nullptr)                        //  Skip nodes with no match state; these
+        continue;                                      //  are (hopefully) accepting states!
 
-    for (uint64 ii=0; ii<sAlen; ii++) {
-      regExState *S = sA[ii];                             //  The state to explore.
-      regExToken  T = sA[ii]->_tok;                       //  The token we need to match.
-      uint64      c = sA[ii]->_tok._capIdent;             //  Capture group associated with this state.
+      bool  m = T.isMatch(ch);                         //  Test if ch matches what this node is expecting.
 
-      if (T.isMatch(ch) == false)                         //  No match, nothing further to do.
+      if (vMatch)
+        fprintf(stderr, "   [%02lu] -> '%c' -> [%02lu] %s %s\n",
+                S->_id, ch, S->_match->_id, m ? "PASS" : "fail", T.display());
+
+      if (m == false)                                  //  Nope, ch does NOT match what this node is expecting.
         continue;
 
-      hasMatches = true;                                  //  Remember some state had a match, and follow
-      newAccept |= followStates(S->_match, sB, sBlen);    //  links from this state out.
-
-      if (vMatch)
-        fprintf(stderr, "        on character '%c' match to %lu; group:%lu accept:%d\n", ch, S->_id, c, newAccept);
-
-      bgnP[0] = std::min(bgnP[0], pp);                    //  Always add matches to the first capture group.
-      endP[0] = std::max(endP[0], pp+1);
-
-      bgnP[c] = std::min(bgnP[c], pp);                    //  And add matches to any secondary capture groups.
-      endP[c] = std::max(endP[c], pp+1);
-    }  //  Over all states in the current multiset.
-
-    if (sBlen == 0) {
-      if (vMatch)
-        fprintf(stderr, "        on character '%c' - STOP:  no next states.  accept:%d\n", ch, accept);
+      findNodes(sA[ii], S->_match, pp+1,               //  Follow edges out of the match edge to find more
+                match, matchLen, matchMax, sB, sBlen); //  nodes to explore.
     }
-    if (hasMatches == false) {
-      if (vMatch)
-        fprintf(stderr, "        on character '%c' - STOP:  no matches.      accept:%d\n", ch, accept);
-      break;
-    }
-
-    accept = newAccept;                                   //  Matches found!  Remember the new acceptance status.
 
     if (vMatch)
-      fprintf(stderr, "        on character '%c' with %u states to explore next accept:%d\n", ch, sBlen, accept);
+      fprintf(stderr, "        ch '%c' with %lu states to explore next\n", ch, sBlen);
 
-    std::swap(sA,    sB);                                 //  Swap state lists so we iterate over the states
-    std::swap(sAlen, sBlen);  sBlen = 0;                  //  we discovered above in the next iteration.
+    if (sBlen == 0)                                    //  Either no matches out of here, or no more states left.
+      break;                                           //  We're done.  Retain the last list of nodes.
+
+    std::swap(sA,    sB);                              //  Swap state lists so we iterate over the states
+    std::swap(sAlen, sBlen);  sBlen = 0;               //  we discovered above in the next iteration.
   }  //  Over all letters in query.
 
-  //  Copy the captures to individual strings.
 
-  capstorLen = 0;
+  //  Decide if the last set of states was accepting or not.
+  bool acc = false;
+  fprintf(stderr, "Final states:\n");
+  for (uint64 ii=0; ii<sAlen; ii++) {
+    regExState *S  = match[ sA[ii] ]._state;
+    regExToken  T  = match[ sA[ii] ]._state->_tok;
 
-  for (uint64 ii=0; ii<capsLen; ii++) {
-    if ((bgnP[ii] == uint64max) && (endP[ii] == 0))       //  No matches for this capture group.
-      bgnP[ii] = endP[ii] = 0;
+    fprintf(stderr, "   [%02lu] accept:%d %s\n", S->_id, isAccepting(S), T.display());
 
-    capstorLen += endP[ii] - bgnP[ii] + 1;
+    acc |= isAccepting(S);
+  }
+
+  //  By construction (see the end of regex-v2-parse.C) there is always at least
+  //  one capture group, and we have already allocated space for storing those.
+  //
+  //  Allocate space for an array of all empty strings, then set
+  //  the capture group output to be all empty.
+
+  resizeArray(capstor, 0, capstorMax, capsLen, _raAct::doNothing);
+
+  for (uint32 c=0; c<capsLen; c++) {
+    bgnP[c]          = 0;
+    endP[c]          = 0;
+    lenP[c]          = 0;
+    caps[c]          = (c == 0) ? (capstor) : (caps[c-1] + 1);
+    caps[c][0]       = 0;
+  }
+
+  if (sAlen == 0)    //  Bail if there are no states
+    return false;    //  left.  We didn't match.
+
+
+  //  Compute the actual length of each capture, then allocate
+  //  space for results.
+
+  capstorLen = capsLen;
+
+  for (uint64 mi = sA[0]; mi != uint64max; mi = match[mi]._prevMatch) {
+    for (auto c : match[mi]._state->_tok._capGroups)
+      lenP[c]    += 1;
+
+    capstorLen += match[mi]._state->_tok._capGroups.size();
   }
 
   resizeArray(capstor, 0, capstorMax, capstorLen, _raAct::doNothing);
 
-  capstorLen = 0;
-
-  for (uint64 ii=0; ii<capsLen; ii++) {
-    caps[ii] = capstor + capstorLen;
-
-    for (uint64 ss=bgnP[ii]; ss<endP[ii]; ss++)
-      capstor[capstorLen++] = query[ss];
-
-    capstor[capstorLen++] = 0;
+  for (uint32 c=0; c<capsLen; c++) {   //  Update string pointers to new memory.
+    bgnP[c]          = (lenP[c] > 0) ? uint64max : 0;   //  If letters, set bgn to maximum value so
+    endP[c]          = (lenP[c] > 0) ? 0         : 0;   //  that min() below works.
+    caps[c]          = (c == 0) ? (capstor) : (caps[c-1] + lenP[c-1] + 1);
+    caps[c][0]       = 0;
+    caps[c][lenP[c]] = 0;
   }
 
-  assert(capstorLen <= capstorMax);
+  //  Iterate over the match path again and copy letters to outputs.
 
-  delete [] states;
+  for (uint64 mi = sA[0]; mi != uint64max; mi = match[mi]._prevMatch) {
+    regExState  *S = match[mi]._state;
+    uint64       p = match[mi]._prevMatch;
+    uint64      pp = match[mi]._stringIdx;
+    char        ch = query[pp];
 
-  return accept;
+    fprintf(stderr, "accept[%03lu] query[%03lu]='%c'  %s\n", mi, pp, ch, S->_tok.display());
+
+    for (auto c : S->_tok._capGroups) {
+      bgnP[c] = std::min(bgnP[c], pp);
+      endP[c] = std::max(endP[c], pp+1);
+
+      caps[c][--lenP[c]] = ch;
+
+      fprintf(stderr, "            group:%lu '%c' %3lu-%3lu len %3lu\n", c, ch, bgnP[c], endP[c], lenP[c]);
+    }
+  }
+
+  for (uint32 c=0; c<capsLen; c++)
+    fprintf(stderr, "RESULTS:  %02u %02lu-%02lu '%s'\n", c, bgnP[c], endP[c], caps[c]);
+
+  delete [] active;
+  delete [] match;
+  delete [] accept;
+
+  return acc;
 }
 
 }  //  merylutil::regex::v2

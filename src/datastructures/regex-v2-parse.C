@@ -29,65 +29,74 @@
 namespace merylutil::inline regex::inline v2 {
 
 
-//  Returns 0..255 and advances nn over the character.
+
+
+//  Recognizes character classes:
+//     '\d'        -> decimal digits
+//     '[:digit:]' -> decimal digits
 //
-//  If the string is '\xDD', then the character returned is decoded from DD interpreted as hex digits.
-//  Non-hex-digits in D are decoded to nonsense.
+//  Recognized non-printable letters and uselessly escaped letters (both only when allowCharacters == true):
+//     '\xHH'      -> the 8-bit character represented by hex HH
+//     '\OOO'      -> the 8-bit character represented by octal OOO
 //
-uint8
-decodeCharClassChar(char const *str, uint64 &nn) {
-  char  cl = 0;
-
-  if      ((str[nn+0] == '\\') && (str[nn+1] == 'x') && isHexDigit(str[nn+2]) && isHexDigit(str[nn+2])) {
-    nn++;  cl |= asciiHexToInteger(str[nn]) << 4;
-    nn++;  cl |= asciiHexToInteger(str[nn]);
-    nn++;
-  }
-
-  else {
-    cl = str[nn++];
-  }
-
-  return cl;
-}
-
-
-
-//  Recognizes abbreviated character classes (\d etc) and non-abbreviated ('[:digit:]').
-//  Returns fist letter in range and sets all bits to enable the full range.
-//
-//  If not a character class, returns str[nn].
+//  Handles escaped letters:
+//     '\t', '\n', '\v', '\f', '\r'    -> the usual whitespace letters
+//     '\N' (where N is anything else) -> the letter N
 //
 bool
-regExToken::matchCharacterClassToken(char const *str, uint64 &nn) {
-  uint64  zz = 0;
-  uint64  n1 = nn+1;
+regExToken::matchCharacterToken(char const *str, uint64 &nn, bool allowCharacters) {
+  uint64  zz = 0;     //  A dummy.
+  uint64  n1 = nn+1;  //  A handy alias.
 
   _type = regExTokenType::rtCharClass;
 
-  //fprintf(stderr, "matchCharacterClassToken()- nn=%lu '%s'\n", nn, str+nn);
+  //fprintf(stderr, "matchCharacterToken()- nn=%lu '%s'\n", nn, str+nn);
 
   if       (str[nn] == '\\') {
-    if      (str[n1] == 'a')  matchCharacterClassToken("[:alpha:]", zz);
-    else if (str[n1] == 'w')  matchCharacterClassToken("[:alpha:]", zz), matchLetter('_');
-    else if (str[n1] == 's')  matchCharacterClassToken("[:space:]", zz);
-    else if (str[n1] == 'd')  matchCharacterClassToken("[:digit:]", zz);
-    else if (str[n1] == 'l')  matchCharacterClassToken("[:lower:]", zz);
-    else if (str[n1] == 'u')  matchCharacterClassToken("[:upper:]", zz);
-    else if (str[n1] == 'p')  matchCharacterClassToken("[:print:]", zz);
+    if      (str[n1] == 'a')  matchCharacterToken("[:alpha:]", zz);
+    else if (str[n1] == 'w')  matchCharacterToken("[:alpha:]", zz), matchLetter('_');
+    else if (str[n1] == 's')  matchCharacterToken("[:space:]", zz);
+    else if (str[n1] == 'd')  matchCharacterToken("[:digit:]", zz);
+    else if (str[n1] == 'l')  matchCharacterToken("[:lower:]", zz);
+    else if (str[n1] == 'u')  matchCharacterToken("[:upper:]", zz);
+    else if (str[n1] == 'p')  matchCharacterToken("[:print:]", zz);
 
-    else if (str[n1] == 'W')  { regExToken d;  d.matchCharacterClassToken("[:alnum:]", zz); d.matchLetter('_'); d.invertMatch(); mergeMatches(d); }
-    else if (str[n1] == 'D')  { regExToken d;  d.matchCharacterClassToken("[:digit:]", zz);                     d.invertMatch(); mergeMatches(d); }
-    else if (str[n1] == 'S')  { regExToken d;  d.matchCharacterClassToken("[:space:]", zz);                     d.invertMatch(); mergeMatches(d); }
+    else if (str[n1] == 'W')  { regExToken d;  d.matchCharacterToken("[:alnum:]", zz); d.matchLetter('_'); d.invertMatch(); mergeMatches(d); }
+    else if (str[n1] == 'D')  { regExToken d;  d.matchCharacterToken("[:digit:]", zz);                     d.invertMatch(); mergeMatches(d); }
+    else if (str[n1] == 'S')  { regExToken d;  d.matchCharacterToken("[:space:]", zz);                     d.invertMatch(); mergeMatches(d); }
 
-    else                      matchLetter(str[n1]);
+    else if (str[n1] == 't')  matchLetter('\t');  //  0x09 - horizontal tab
+    else if (str[n1] == 'n')  matchLetter('\n');  //  0x0a - line feed
+    else if (str[n1] == 'v')  matchLetter('\v');  //  0x0d - vertical tab
+    else if (str[n1] == 'f')  matchLetter('\f');  //  0x0c - form feed
+    else if (str[n1] == 'r')  matchLetter('\r');  //  0x0d - carriage return
+
+    else if (allowCharacters == false)   //  Characters not allowed, so
+      return false;                      //  no match found.
+
+    else if  ((str[n1] == 'x')                      && isHexDigit(str[nn+2]) && isHexDigit(str[nn+3])) {
+      matchLetter(asciiHexToInteger(str[nn+2]) << 4 |
+                  asciiHexToInteger(str[nn+3]));
+      nn += 2;  //  We match 2 more than the default 2 letters.
+    }
+
+    else if (((str[n1] == '0') || (str[n1] == '1')) && isOctDigit(str[nn+2]) && isOctDigit(str[nn+3])) {
+      matchLetter(asciiOctToInteger(str[nn+1]) << 6 |
+                  asciiOctToInteger(str[nn+2]) << 3 |
+                  asciiOctToInteger(str[nn+3]));
+      nn += 2;  //  We match 2 more than the default 2 letters.
+    }
+
+    else {
+      matchLetter(str[n1]);
+    }
 
     nn += 2;
   }
 
   else if ((str[nn] == '[') &&
            (str[n1] == ':')) {
-    if      (strncmp(str+n1, "[:alnum:]",   9) == 0)  { matchCharacterClass("[A-Za-z0-9]", zz);              nn +=  9; }
+    if      (strncmp(str+nn, "[:alnum:]",   9) == 0)  { matchCharacterClass("[A-Za-z0-9]", zz);              nn +=  9; }
     else if (strncmp(str+nn, "[:alpha:]",   9) == 0)  { matchCharacterClass("[A-Za-z]", zz);                 nn +=  9; }
     else if (strncmp(str+nn, "[:blank:]",   9) == 0)  { matchLetters(" \t");                                 nn +=  9; }
     else if (strncmp(str+nn, "[:cntrl:]",   9) == 0)  { matchCharacterClass("[\x00-\x1F\x7F]", zz);          nn +=  9; }
@@ -99,13 +108,16 @@ regExToken::matchCharacterClassToken(char const *str, uint64 &nn) {
     else if (strncmp(str+nn, "[:space:]",   9) == 0)  { matchLetters(" \t\r\n\v\f");                         nn +=  9; }
     else if (strncmp(str+nn, "[:upper:]",   9) == 0)  { matchCharacterClass("[A-Z]", zz);                    nn +=  9; }
     else if (strncmp(str+nn, "[:xdigit:]", 10) == 0)  { matchCharacterClass("[0-9A-Za-z]", zz);              nn += 10; }
-    else {
+    else
       return false;
-    }
   }
 
-  else {            //  Not starting with either '\' or '[:', so
-    return false;   //  not something we decode.
+  else if (allowCharacters == false) {  //  Not starting with either '\' or '[:', and not
+    return false;                       //  allowing letters, so not something we decode.
+  }
+
+  else {                                //  Otherwise, we do allow matches to single letters
+    matchLetter(str[nn++]);             //  so make the match and advance.
   }
 
   return true;
@@ -113,14 +125,14 @@ regExToken::matchCharacterClassToken(char const *str, uint64 &nn) {
 
 
           
-//  Matches character classes specified either as an escaped class ('\d') or
-//  as a range '[a-zGH]'.  Ranges can be specified using hex notation
-//  ('\xDD') or with explicit letters: [\x00- ] would match everything before
-//  (and including) a space.
+//  Extracts a full character class from within brackets:  '[ (stuff) ]'
+//  Iterates over every letter in the brackets, checking:
+//    Is it a symbolic token - perl style '\d' or ISO style '[:alpha:]'
+//    If not, decode it as a plain letter ('a'), an escaped letter ('\]') or a hex byte ('\xDD').
+//    If after the letter there is a dash ('-') decode a second letter and set a range.
 //
 //  A single '^' at the start of the class will invert the sense.
 //
-//  Control characters ARE NOT 
 void
 regExToken::matchCharacterClass(char const *str, uint64 &nn) {
   uint64 iv = 0;   //  If non-zero, invert the class at the end.
@@ -138,17 +150,27 @@ regExToken::matchCharacterClass(char const *str, uint64 &nn) {
   while ((str[nn] != 0) && (str[nn] != ']')) {
     //fprintf(stderr, "matchCharacterClass()- nn=%lu '%s' (in LOOP)\n", nn, str+nn);
 
-    if (matchCharacterClassToken(str, nn) == true)
+    //  Handle character classes.
+    if (matchCharacterToken(str, nn) == true)
       continue;
 
-    c1 = decodeCharClassChar(str, nn);      //  Decode the first letter.
-    c2 = c1;                                //  Make the range a single letter.
+    //  Decode the letter ('\xHH' or '\OOO' or 'C') at the current position and advance over it.
+    auto decode = [&]() -> uint8 {
+      bool  ishex = (str[nn+0] == '\\') &&  (str[nn+1] == 'x')                        && isHexDigit(str[nn+2]) && isHexDigit(str[nn+3]);
+      bool  isoct = (str[nn+0] == '\\') && ((str[nn+1] == '0') || (str[nn+1] == '1')) && isOctDigit(str[nn+2]) && isOctDigit(str[nn+3]);
 
-    if ((str[nn] != 0) && (str[nn] == '-')) {
-      nn += 1;                              //  Skip the dash.
-      c2 = decodeCharClassChar(str, nn);   //  Decode the second letter.
-    }
+      if      (ishex) { nn += 4;  return                                     asciiHexToInteger(str[nn-2]) << 4 | asciiHexToInteger(str[nn-1]); }
+      else if (isoct) { nn += 4;  return asciiOctToInteger(str[nn-3]) << 6 | asciiOctToInteger(str[nn-2]) << 3 | asciiOctToInteger(str[nn-1]); }
+      else            { nn += 1;  return str[nn-1];                                                                                            }
+    };
 
+    c1 = decode();                                //  Decode the first letter.
+    c2 = c1;                                      //  Make the range a single letter.
+
+    if ((str[nn] != 0) && (str[nn] == '-'))       //  Skip the dash (++nn), then
+      c2 = decode();                              //  decode 2nd letter, then move over it.
+
+    //fprintf(stderr, "matchCharacterClass()- range c1=0x%02x c2=0x%02x nn=%u ch=%c\n", c1, c2, nn, str[nn]);
     matchRange(c1, c2);
   }
 
@@ -224,6 +246,49 @@ regExToken::makeGroupEnd(uint64 grpIdent, uint64 capIdent) {
 
 
 
+//  Decodes a closure range:
+//    #1 - {a,b}
+//    #2 - {a}
+//    #3 - {a,}
+//    #4 - {,b}
+//
+//  It's pretty tricky code.
+//    1)  Skip any open brace.  We'll either be on 'a' or a comma now.
+//    2)  If on 'a' (#1, #2, #3), decode it into _min.
+//        We'll be on the comma or closing brace now.
+//    3)  If on the closing brace (#2), set _max to _min.  We're done.
+//    4)  If on the comma (#1, #3, #4), skip over it.
+//    5)  If on 'b' (#1 and #4), decode it into _max.
+//        We'll be on the closing brace now.
+//        For case #3, _max will remain at uint64max.
+//    6)  Update string pointer and ensure we're at the closing brace.
+void
+regExToken::makeClosure(char const *str, uint64 ss, uint64 &nn) {
+  char const *dec = str + nn;
+
+  _type = regExTokenType::rtClosure;
+  _min  = 0;
+  _max  = uint64max;
+
+  //fprintf(stderr, "makeClosure()-- '%s'\n", str+nn);
+
+  if (dec[0] == '{')  dec++;
+  if (dec[0] != ',')  dec = strtonumber(dec, _min);
+  if (dec[0] == '}')  _max = _min;
+  if (dec[0] == ',')  dec++;
+  if (dec[0] != '}')  dec = strtonumber(dec, _max);
+  if (dec[0] != '}')  fprintf(stderr, "Failed to decode closure range '%s'\n", str + nn);
+
+  if (dec[0] != '}')
+    fprintf(stderr, "ERROR: expecting closure range in '%s'\n", str + ss);
+  assert(dec[0] == '}');
+
+  //fprintf(stderr, "makeClosure()-- '%s' -> %lu %lu\n", str+nn, _min, _max);
+
+  nn = dec - str;
+}
+
+
 
 
 
@@ -272,50 +337,27 @@ regEx::parse(char const *str) {
   for (uint64 ss=0, nn=0; str[ss]; ss = nn) {    //  ss is the (constant) start of this token
     toka = { ._id=++tokIdent };                  //  nn is the (computed) start of the next token
 
-    //  Handle escaped letters and character classes.
-    //   /xHH   - matches character represented by hex digits HH
-    //   /x     - matches any letter x
-    //   .      - matches any character
-    //   [ab-c] - match letters or ranges of letters
-    //             - '^' at the start inverts the sense
-    //             - ']' and '-' must be escaped
+    //fprintf(stderr, "parse()-- ss %lu ch %c\n", ss, str[ss]);
 
-    if      (str[ss] == '\\')   toka.matchCharacterClassToken(str, nn), nn--;   //  Eats 2, but needs to
-    else if (str[ss] == '[')    toka.matchCharacterClass(str, nn);              //    eat only one in this
-    else if (str[ss] == '.')    toka.matchAllSymbols();                         //    loop.
-
-    //  Grouping and capturing.
-    //   (..)  - group the enclosed pattern into a single entity (see .H)
+    if      (str[ss] == '\\')   toka.matchCharacterToken(str, nn, true), nn--;
+    else if (str[ss] == '.')    toka.matchAllSymbols();
+    else if (str[ss] == '[')    toka.matchCharacterClass(str, nn);
 
     else if (str[ss] == '(')  toka.makeGroupBegin(str, ss, nn, grpIdent, capIdent);
     else if (str[ss] == ')')  toka.makeGroupEnd(groupStates.top().gid, groupStates.top().cid);
 #warning mismatched parens will crash the above
-
-    //  Handle closures and alternation.
-    //   *     - zero or more
-    //   ?     - zero or one
-    //   +     - one or more
-    //   {a,b} - at least a, at most b; a=0, b=max if omitted
 
     else if (str[ss] == '*')  toka.makeClosure(0, uint64max);
     else if (str[ss] == '?')  toka.makeClosure(0, 1);
     else if (str[ss] == '+')  toka.makeClosure(1, uint64max);
     else if (str[ss] == '{')  toka.makeClosure(str, ss, nn);
 
-    //  Alternation.  Concatenation is handled at the end.
-
     else if (str[ss] == '|')  toka.makeAlternation();
 
-    //  Positional specifiers.
-    //   ^      - start of the string; must be first letter
-    //   $      - end of the string;   must be last letter
+    else                      toka.matchCharacterToken(str, nn, true), nn--;
 
-    else if (str[ss] == '^')  toka.matchLineStart();
-    else if (str[ss] == '$')  toka.matchLineEnd();
+    nn++;  //  Move to the next input character.
 
-    //  Anything else is a character.
-
-    else                      toka.matchSymbol(str[ss]);
 
     //  Hooray!  Parsing of the token is finished.
 
@@ -328,11 +370,22 @@ regEx::parse(char const *str) {
     while (tlLen + 1 + 1 + 2 * groupStates.top().depth + 1 >= tlMax)
       resizeArray(tl, tlLen, tlMax, tlMax + 1024);
 
+    //  If the last symbol is a group-begin or an alternation and this is an
+    //  alternation, add an epsilon match (use the id from the token to add,
+    //  and bump that id).  We always have a previous symbol, from the
+    //  initial capture group.
+    //
+    if (((tl[tlLen-1]._type == regExTokenType::rtGroupBegin) ||
+         (tl[tlLen-1]._type == regExTokenType::rtAlternation)) &&
+        (toka._type == regExTokenType::rtAlternation)) {
+      tl[tlLen++] = { ._id=toka._id++, ._type=regExTokenType::rtEpsilon, ._capIdent=toka._capIdent, ._grpIdent=toka._grpIdent };
+    }
+
     //  If we're in a prefix group, append a non-capture group begin before
-    //  every symbol except the first:
+    //  every symbol except the first, and count how many were appended:
+    //
     //    ({p}1234) -> (1(2(3(4?)?0?)?)?)
     //                   ^ ^ ^ - appended group begin
-    //  and also count how many of these we have.
 
     if ((groupStates.top().pfx == true) &&                //  The last one is a prefix group
         ((toka._type == regExTokenType::rtCharClass) ||   //  The current token is a matching operator,
@@ -356,8 +409,10 @@ regEx::parse(char const *str) {
     //  If this is a match operator, assign the match
     //  to the current capture group.
 
-    if (toka._type == regExTokenType::rtCharClass)
-      toka._capIdent = groupStates.top().cid;
+    if (toka._type == regExTokenType::rtCharClass) {
+      for (uint32 ii=0; ii<groupStates.depth(); ii++)
+        toka._capGroups.insert(groupStates[ii].cid);
+    }
 
     //  If we've just seen a group-end symbol, pop off the group-info for this group.
     //  If this is closing a prefix-group, terminate all the interal groups we made.
@@ -379,8 +434,6 @@ regEx::parse(char const *str) {
 
     tl[tlLen++] = toka;
 
-
-    nn++;  //  Move to the next input character.
 
     //  Append a concatentaion operator if there is a next symbol and:
     //   - this was NOT a start group or alternation operator
@@ -407,16 +460,21 @@ regEx::parse(char const *str) {
   //  Close the overall capture group.
   tl[tlLen++] = { ._id=++tokIdent, ._type=regExTokenType::rtGroupEnd, ._capIdent=0, ._grpIdent=0 };
 
-  assert(groupStates.top().gid == 0);
-  assert(groupStates.top().cid == 0);
-
-  capsLen = capIdent + 1;
-
   if (vParse) {
     for (uint64 ii=0; ii<tlLen; ii++)
       fprintf(stderr, "tl[%03lu] -- %s\n", ii, tl[ii].display());
-    fprintf(stderr, " -- %lu capture groups\n", capsLen);
+    fprintf(stderr, " -- %lu capture groups\n", capsLen+1);
   }
+
+  assert(groupStates.top().gid == 0);
+  assert(groupStates.top().cid == 0);
+
+  //  Allocate space for resuts.  By construction, there is always at least
+  //  one capture group - the one enclosing the whole match.
+
+  capsLen = capIdent + 1;
+
+  resizeArray(bgnP, endP, lenP, caps, 0, capsMax, capsLen);
 
 
   return true;

@@ -83,6 +83,7 @@ enum class regExTokenType {
   rtLineStart,
   rtLineEnd,
   rtCharClass,
+  rtEpsilon,
   rtNone,
 };
 
@@ -92,26 +93,24 @@ class regExToken {
 public:
   char const *display(char *str=nullptr);
 
-  void   setMatch(uint8 c)   {             (_syms[c>>6] |= (uint64one << (c & 0x3f)));  }
-  bool   isMatch(uint8 c)    { return 0 != (_syms[c>>6] &  (uint64one << (c & 0x3f)));  }
+  void    setMatch(uint8 c)   {             (_syms[c>>6] |= (uint64one << (c & 0x3f)));  }
+  bool    isMatch(uint8 c)    { return 0 != (_syms[c>>6] &  (uint64one << (c & 0x3f)));  }
 
 public:
-  void   matchLetter(uint8 c)                  {                                 setMatch(c);              }
-  void   matchLetters(char const *s)           { for (uint16 ii=0; s[ii]; ii++)  setMatch(s[ii]);          }
-  void   matchRange(uint8 a, uint8 b)          { for (uint16  c=a;  c<=b;  c++)  setMatch(c);              } 
+  void    matchLetter(uint8 c)                  {                                 setMatch(c);              }
+  void    matchLetters(char const *s)           { for (uint16 ii=0; s[ii]; ii++)  setMatch(s[ii]);          }
+  void    matchRange(uint8 a, uint8 b)          { for (uint16  c=a;  c<=b;  c++)  setMatch(c);              } 
 
-  void   invertMatch(void)                     { for (uint8  ii=0; ii< 4; ii++)  _syms[ii] = ~_syms[ii];   }
+  void    invertMatch(void)                     { for (uint8  ii=0; ii< 4; ii++)  _syms[ii] = ~_syms[ii];   }
 
-  void   mergeMatches(regExToken const &d)     { for (uint8  ii=0; ii< 4; ii++)  _syms[ii] |= d._syms[ii];  }
-
-private:
-  bool    decodeCharClassToken(char const *str, uint64 &nn);
+  void    mergeMatches(regExToken const &d)     { for (uint8  ii=0; ii< 4; ii++)  _syms[ii] |= d._syms[ii];  }
 
 public:
   void    matchAllSymbols(void)                { _type = regExTokenType::rtCharClass;  matchRange(0x00, 0xff); }
-  void    matchSymbol(char sym)                { _type = regExTokenType::rtCharClass;  matchLetter(sym);       }
 
-  bool    matchCharacterClassToken(char const *str, uint64 &nn);
+public:
+  bool    matchCharacterToken(char const *str, uint64 &nn, bool allowCharacters=false);
+public:
   void    matchCharacterClass     (char const *str, uint64 &nn);
 
   void    makeClosure(char const *str, uint64 ss, uint64 &nn);
@@ -131,12 +130,13 @@ public:
   regExTokenType   _type      = regExTokenType::rtNone;
 
   uint64           _syms[4]   = { 0, 0, 0, 0 };
-  char             _sym       = 0;
 
   bool             _pfx       = false;
   bool             _cap       = false;
   uint64           _capIdent  = 0;        //  ID of the capture group this token belongs to.
   uint64           _grpIdent  = 0;        //  If a group begin/end, the id of that group - independent from capIdent!
+
+  std::set<uint64> _capGroups = std::set<uint64>();
 
   uint64           _min       = 0;
   uint64           _max       = uint64max;
@@ -146,8 +146,8 @@ public:
 
 class regExState {
 public:
-  regExState() {};
-  ~regExState() {};
+  //regExState() {};
+  //~regExState() {};
 
   void         addMatch(regExToken tok, regExState *to, bool verbose=false) {
 
@@ -160,7 +160,7 @@ public:
     assert(_lambda[0] == nullptr);
 
     if (verbose)
-      fprintf(stderr, "  addMatch()   %-3u match  -> %u\n", _id, to->_id);
+      fprintf(stderr, "  addMatch()   %-3lu match  -> %lu\n", _id, to->_id);
 
     _tok   = tok;
     _match = to;
@@ -180,7 +180,7 @@ public:
     else                             assert(0);
 
     if (verbose)
-      fprintf(stderr, "  addEpsilon() %-3u lambda -> %u\n", _id, to->_id);
+      fprintf(stderr, "  addEpsilon() %-3lu lambda -> %lu\n", _id, to->_id);
   }
 
   uint64      _id         = 0;
@@ -197,7 +197,7 @@ public:
 class regExExpr {
 public:
   regExExpr(regExState *b=nullptr, regExState *e=nullptr) : _bgn(b), _end(e) {};
-  ~regExExpr() {};
+  //~regExExpr() {};
 
   regExExpr     duplicate(regExState *rs, uint64 &rsLen, bool verbose=false);
 
@@ -206,17 +206,28 @@ public:
 };
 
 
+class regExMatch {
+public:
+  //regExMatch() {};
+  //~regExMatch() {};
+
+  regExState *_state;      //  Pointer to the state node that we matched.
+  uint64      _prevMatch;  //  Pointer to the previous regExMatch that led to here.
+  uint64      _stringIdx;  //  Pointer to the character in the text we matched.
+};
+
 
 class regEx {
 public:
-  regEx()  {
-  };
+  //regEx()  {
+  //};
   ~regEx() {
     delete [] tl;
     delete [] rs;
     delete [] capstor;
     delete [] bgnP;
     delete [] endP;
+    delete [] lenP;
     delete [] caps;
   };
 
@@ -275,17 +286,24 @@ public:
 
   uint64      numCaptures(void)         { return capsLen;   }
 
-  uint64      getCaptureBgn(uint64 cap) { return bgnP[cap]; }
-  uint64      getCaptureEnd(uint64 cap) { return endP[cap]; }
-  char const *getCapture   (uint64 cap) { return caps[cap]; }
+  bool        getCaptureValid(uint64 cap) { return bgnP[cap] < endP[cap]; }
+  uint64      getCaptureBgn  (uint64 cap) { return bgnP[cap]; }
+  uint64      getCaptureEnd  (uint64 cap) { return endP[cap]; }
+  char const *getCapture     (uint64 cap) { return caps[cap]; }
 
 private:
   regExExpr   concat   (regExState *rs, uint64 &rsLen, regExExpr a, regExExpr b);
   regExExpr   alternate(regExState *rs, uint64 &rsLen, regExExpr a, regExExpr b);
   regExExpr   closure  (regExState *rs, uint64 &rsLen, regExExpr a, uint64 min, uint64 max);
   regExExpr   symbol   (regExState *rs, uint64 &rsLen, regExToken tok);
+  regExExpr   epsilon  (regExState *rs, uint64 &rsLen, regExToken tok);
 
-  bool        followStates(regExState *in, regExState **sB, uint64 &sBlen);
+  bool        isAccepting(regExState *current);
+  void        findNodes(uint64      previous,
+                        regExState *current,
+                        uint64      currentPos,
+                        regExMatch *&match, uint64 &matchLen, uint64 &matchMax,
+                        uint64 *sB, uint64 &sbLen);
 
   bool        parse(char const *pattern);
   bool        convert(void);
@@ -311,11 +329,12 @@ private:
   uint64       capstorMax = 0;
   char        *capstor    = nullptr;
 
-  uint64       capsMax    = 0;
   uint64       capsLen    = 0;
+  uint64       capsMax    = 0;
   uint64      *bgnP       = nullptr;
   uint64      *endP       = nullptr;
-  char const **caps       = nullptr;
+  uint64      *lenP       = nullptr;
+  char       **caps       = nullptr;
 };
 
 

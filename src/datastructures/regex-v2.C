@@ -33,132 +33,59 @@ regExToken::display(char *str) {
 
   switch (_type) {
     case regExTokenType::rtGroupBegin:
-      app += sprintf(app, "group bgn  id:%2u cap:%03lu grp:%03lu%s%s", _id, _capIdent, _grpIdent, _cap ? " CAP" : "", _pfx ? " PFX" : "");
+      app += sprintf(app, "group bgn  id:%2lu cap:%03lu grp:%03lu%s%s", _id, _capIdent, _grpIdent, _cap ? " CAP" : "", _pfx ? " PFX" : "");
       break;
     case regExTokenType::rtGroupEnd:
-      app += sprintf(app, "group end  id:%2u cap:%03lu grp:%03lu", _id, _capIdent, _grpIdent);
+      app += sprintf(app, "group end  id:%2lu cap:%03lu grp:%03lu", _id, _capIdent, _grpIdent);
       break;
     case regExTokenType::rtAlternation:
-      app += sprintf(app, "alternat   id:%2u", _id);
+      app += sprintf(app, "alternat   id:%2lu", _id);
       break;
     case regExTokenType::rtClosure:
-      app += sprintf(app, "closure    id:%2u         min:%u max:%u", _id, _min, _max);
+      app += sprintf(app, "closure    id:%2lu         min:%lu max:%lu", _id, _min, _max);
       break;
     case regExTokenType::rtConcat:
-      app += sprintf(app, "concat     id:%2u", _id);
+      app += sprintf(app, "concat     id:%2lu", _id);
       break;
     case regExTokenType::rtLineStart:
-      app += sprintf(app, "line-start id:%2u", _id);
+      app += sprintf(app, "line-start id:%2lu", _id);
       break;
     case regExTokenType::rtLineEnd:
-      app += sprintf(app, "line-end   id:%2u", _id);
+      app += sprintf(app, "line-end   id:%2lu", _id);
       break;
     case regExTokenType::rtCharClass:
-      app += sprintf(app, "charact    id:%2u cap:%03lu ", _id, _capIdent);
+      app += sprintf(app, "charact    id:%2lu cap:%03lu [", _id, _capIdent);
 
-      if (_sym != 0) {
-        app += sprintf(app, "'%c'", _sym);
+      for (uint32 cc=0, ee=0; cc<256; cc=++ee) {   //  uint8 unsafe!
+        if (isMatch(cc) == false)                    //  Skip cc if not valid.
+          continue;
+
+        while ((ee < 256) && (isMatch(ee) == true))  //  Find last valid ee.
+          ee++;
+        ee--;
+
+        auto displ = [&](uint32 x) {  if (isVisible(x)) return sprintf(app, "%c",      x);
+                                      else              return sprintf(app, "\\x%02x", x);  };
+
+        if      (cc   == ee)  { app += displ(cc);                                          }
+        else if (cc+1 == ee)  { app += displ(cc);                      app += displ(ee);   }
+        else                  { app += displ(cc);  app += displ('-');  app += displ(ee);   }
       }
-      else {
-        app += sprintf(app, "[");
 
-        for (uint32 cc=0; cc<256; cc++) {   //  uint8 unsafe!
-          if (isMatch(cc) == false)
-            continue;
-
-          uint32 ee=cc + 1;  //  uint8 unsafe
-          while ((ee < 256) && (isMatch(ee) == true))
-            ee++;
-          ee--;
-
-          if (cc == ee) {
-            if (isVisible(cc))
-              app += sprintf(app, "%c", cc);
-            else
-              app += sprintf(app, "\\x%02x", cc);
-          }
-          else if (cc == ee-1) {
-            if (isVisible(cc))
-              app += sprintf(app, "%c", cc);
-            else
-              app += sprintf(app, "\\x%02x", cc);
-
-            if (isVisible(ee))
-              app += sprintf(app, "%c", ee);
-            else
-              app += sprintf(app, "\\x%02x", ee);
-          }
-          else {
-            if (isVisible(cc))
-              app += sprintf(app, "%c", cc);
-            else
-              app += sprintf(app, "\\x%02x", cc);
-
-            app += sprintf(app, "-");
-
-            if (isVisible(ee))
-              app += sprintf(app, "%c", ee);
-            else
-              app += sprintf(app, "\\x%02x", ee);
-          }
-
-          cc=ee;
-        }
-
-        app += sprintf(app, "]");
-      }
+      app += sprintf(app, "]");
+      break;
+    case regExTokenType::rtEpsilon:
+      app += sprintf(app, "epsilon    id:%2lu cap:%03lu ", _id, _capIdent);
       break;
     case regExTokenType::rtNone:
-      app += sprintf(app, "NONE       id:%2u", _id);
+      app += sprintf(app, "terminal   id:%2lu", _id);
       break;
     default:
-      app += sprintf(app, "DEFAULT    id:%2u", _id);
+      app += sprintf(app, "DEFAULT    id:%2lu", _id);
       break;
   }
 
   return out;
-}
-
-
-
-//  Decodes a closure range:
-//    #1 - {a,b}
-//    #2 - {a}
-//    #3 - {a,}
-//    #4 - {,b}
-//
-//  It's pretty tricky code.
-//    1)  Skip any open brace.  We'll either be on 'a' or a comma now.
-//    2)  If on 'a' (#1, #2, #3), decode it into _min.
-//        We'll be on the comma or closing brace now.
-//    3)  If on the closing brace (#2), set _max to _min.  We're done.
-//    4)  If on the comma (#1, #3, #4), skip over it.
-//    5)  If on 'b' (#1 and #4), decode it into _max.
-//        We'll be on the closing brace now.
-//        For case #3, _max will remain at uint64max.
-//    6)  Update string pointer and ensure we're at the closing brace.
-void
-regExToken::makeClosure(char const *str, uint64 ss, uint64 &nn) {
-  char const *dec = str + nn;
-
-  _type = regExTokenType::rtClosure;
-  _min  = 0;
-  _max  = uint64max;
-
-  //fprintf(stderr, "makeClosure()-- '%s'\n", str+nn);
-
-  if (dec[0] == '{')  dec++;
-  if (dec[0] != ',')  dec = strtonumber(dec, _min);
-  if (dec[0] == '}')  _max = _min;
-  if (dec[0] == ',')  dec++;
-  if (dec[0] != '}')  dec = strtonumber(dec, _max);
-  if (dec[0] != '}')  fprintf(stderr, "Failed to decode closure range '%s'\n", str + nn);
-
-  assert(dec[0] == '}');
-
-  //fprintf(stderr, "makeClosure()-- '%s' -> %lu %lu\n", str+nn, _min, _max);
-
-  nn = dec - str;
 }
 
 

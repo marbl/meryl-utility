@@ -242,19 +242,17 @@ regEx::symbol(regExState *rs, uint64 &rsLen, regExToken tok) {
 }
 
 
-//  Add state 'in' to th elist of states to explore if it
-//  is a non-empty state.  If it is an empty state, recurse
-//  through its lambda links.
-bool
-regEx::followStates(regExState *in, regExState **sB, uint64 &sBlen) {
-  bool  acc = in->_accepting;
+regExExpr
+regEx::epsilon(regExState *rs, uint64 &rsLen, regExToken tok) {
+  regExState  *bgn = &rs[rsLen++];
+  regExState  *end = &rs[rsLen++];
 
-  if (in->_lambda[0] != nullptr)  acc |= followStates(in->_lambda[0], sB, sBlen);
-  if (in->_lambda[1] != nullptr)  acc |= followStates(in->_lambda[1], sB, sBlen);
+  if (vBuild)
+    fprintf(stderr, "epsilon() %lu -> %lu for %s\n", bgn->_id, end->_id, tok.display());
 
-  if (in->_match     != nullptr)  sB[sBlen++] = in;
+  bgn->addEpsilon(end, vBuild);
 
-  return acc;
+  return regExExpr(bgn, end);
 }
 
 
@@ -304,12 +302,16 @@ regEx::build(void) {
 
       case regExTokenType::rtConcat:
         a = st.pop();
-        b = st.pop();
+        b = st.pop();  //  if this doesn't exist we need to add a lambda
         st.push(concat(rs, rsLen, b, a));
         break;
 
       case regExTokenType::rtCharClass:
         st.push(symbol(rs, rsLen, tl[tt]));
+        break;
+
+      case regExTokenType::rtEpsilon:
+        st.push(epsilon(rs, rsLen, tl[tt]));
         break;
 
       default:
@@ -320,21 +322,22 @@ regEx::build(void) {
   }
 
   if (vBuild)
-    fprintf(stderr, "stLen %u rsLen %u\n", st.depth(), rsLen);
+    fprintf(stderr, "stLen %lu rsLen %lu\n", st.depth(), rsLen);
 
   assert(st.depth() == 1);
   re = st.pop();
 
   re._end->_accepting = true;
 
-#if 0
+#if 1
   for (uint64 ii=0; ii<rsLen; ii++)
-    fprintf(stderr, "rs[%lu] - id:%lu match:%lu lambda:%lu:%lu\n",
+    fprintf(stderr, "rs[%02lu] - id %02lu acc %d match %-4s lambda %4s:%-4s\n",
             ii,
             rs[ii]._id,
-            rs[ii]._match     ? rs[ii]._match->_id     : -1,
-            rs[ii]._lambda[0] ? rs[ii]._lambda[0]->_id : -1,
-            rs[ii]._lambda[1] ? rs[ii]._lambda[1]->_id : -1);
+            rs[ii]._accepting,
+            rs[ii]._match     ? toDec(rs[ii]._match->_id)     : "none",
+            rs[ii]._lambda[0] ? toDec(rs[ii]._lambda[0]->_id) : "none",
+            rs[ii]._lambda[1] ? toDec(rs[ii]._lambda[1]->_id) : "none");
 #endif
 
   return true;

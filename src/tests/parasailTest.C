@@ -47,7 +47,7 @@ checkEncodeDecodeBase(void) {
   //fprintf(stderr, "T -> %2u -> %c\n", encode2bitBase('T'), decode2bitBase(2));
   assert(encode2bitBase('T') == 2);
   assert(decode2bitBase(2) == 'T');
-};
+}
 
 
 

@@ -28,17 +28,29 @@
 namespace merylutil::inline strings::inline v1 {
 
 //  Remove whitespace from the end of a line.
-void
-chomp(char *S);
-
-char *
-trimString(char *s, bool bgn=true, bool end=true);
+void   chomp(char *S);
+char  *trimString(char *s, bool bgn=true, bool end=true);
 
 //  Return true if string s is unallocated or empty.
 inline
 bool
 isEmptyString(char const *s) {
   return((s == nullptr) || (s[0] == 0));
+}
+
+//  Display a string, replacing binary control signals (LF, CR, FF, and all
+//  the non-printable stuff) with codes '<LF>', '<CR>', '<FF'>, '<xHH>'.
+//
+//  The first form uses an internal collection of 32 buffers.
+//  The second form returns a pointer to d.
+//
+char const *displayString(char const *s);
+char const *displayString(char const *s, char *&d, uint64 &dLen, uint64 &dMax);
+
+inline
+char const *displayLetter(char c) {
+  char s[2] = {c, 0};
+  return displayString(s);
 }
 
 }  //  merylutil::strings::v1

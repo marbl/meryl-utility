@@ -98,14 +98,14 @@ regExToken::matchCharacterToken(char const *str, uint64 &nn, bool allowCharacter
            (str[n1] == ':')) {
     if      (strncmp(str+nn, "[:alnum:]",   9) == 0)  { matchCharacterClass("[A-Za-z0-9]", zz);              nn +=  9; }
     else if (strncmp(str+nn, "[:alpha:]",   9) == 0)  { matchCharacterClass("[A-Za-z]", zz);                 nn +=  9; }
-    else if (strncmp(str+nn, "[:blank:]",   9) == 0)  { matchLetters(" \t");                                 nn +=  9; }
-    else if (strncmp(str+nn, "[:cntrl:]",   9) == 0)  { matchCharacterClass("[\x00-\x1F\x7F]", zz);          nn +=  9; }
+    else if (strncmp(str+nn, "[:blank:]",   9) == 0)  { matchLetters("\t ");                                 nn +=  9; }
+    else if (strncmp(str+nn, "[:cntrl:]",   9) == 0)  { matchCharacterClass("[\\x00-\\x1F\\x7F]", zz);       nn +=  9; }
     else if (strncmp(str+nn, "[:digit:]",   9) == 0)  { matchCharacterClass("[0-9]", zz);                    nn +=  9; }
-    else if (strncmp(str+nn, "[:graph:]",   9) == 0)  { matchCharacterClass("[\x21-\x7E]", zz);              nn +=  9; }
+    else if (strncmp(str+nn, "[:graph:]",   9) == 0)  { matchCharacterClass("[\\x21-\\x7E]", zz);            nn +=  9; }
     else if (strncmp(str+nn, "[:lower:]",   9) == 0)  { matchCharacterClass("[a-z]", zz);                    nn +=  9; }
-    else if (strncmp(str+nn, "[:print:]",   9) == 0)  { matchCharacterClass("[\x20-\x7E]", zz);              nn +=  9; }
+    else if (strncmp(str+nn, "[:print:]",   9) == 0)  { matchCharacterClass("[\\x20-\\x7E]", zz);            nn +=  9; }
     else if (strncmp(str+nn, "[:punct:]",   9) == 0)  { matchLetters("][!\"#$%&'()*+,./:;<=>?@\\^_`{|}~-");  nn +=  9; }
-    else if (strncmp(str+nn, "[:space:]",   9) == 0)  { matchLetters(" \t\r\n\v\f");                         nn +=  9; }
+    else if (strncmp(str+nn, "[:space:]",   9) == 0)  { matchLetters("\t\n\v\f\r ");                         nn +=  9; }
     else if (strncmp(str+nn, "[:upper:]",   9) == 0)  { matchCharacterClass("[A-Z]", zz);                    nn +=  9; }
     else if (strncmp(str+nn, "[:xdigit:]", 10) == 0)  { matchCharacterClass("[0-9A-Za-z]", zz);              nn += 10; }
     else
@@ -133,6 +133,8 @@ regExToken::matchCharacterToken(char const *str, uint64 &nn, bool allowCharacter
 //
 //  A single '^' at the start of the class will invert the sense.
 //
+//  But see https://perldoc.perl.org/perlrecharclass
+//
 void
 regExToken::matchCharacterClass(char const *str, uint64 &nn) {
   uint64 iv = 0;   //  If non-zero, invert the class at the end.
@@ -144,8 +146,11 @@ regExToken::matchCharacterClass(char const *str, uint64 &nn) {
   assert(str[nn] == '[');
   //fprintf(stderr, "matchCharacterClass()- nn=%lu '%s' (on ENTRY)\n", nn, str+nn);
 
-  if (str[++nn] == '^')   //  Skip over the opening '[' then test for the invert symbol;
-    iv = ++nn;            //  if found, set the flag and move past the invert symbol.
+  if (str[++nn] == '^')      //  Skip over the opening '[' then test for the invert symbol;
+    iv = ++nn;               //  if found, set the flag and move past the invert symbol.
+
+  if (str[nn] == ']')        //  If the first letter in the class is a ']', add it to the
+    matchLetter(str[nn++]);  //  the class and skip over it; do not just make an empty class.
 
   while ((str[nn] != 0) && (str[nn] != ']')) {
     //fprintf(stderr, "matchCharacterClass()- nn=%lu '%s' (in LOOP)\n", nn, str+nn);
@@ -155,7 +160,7 @@ regExToken::matchCharacterClass(char const *str, uint64 &nn) {
       continue;
 
     //  Decode the letter ('\xHH' or '\OOO' or 'C') at the current position and advance over it.
-    auto decode = [&]() -> uint8 {
+    auto decode = [](char const *str, uint64 &nn) -> uint8 {
       bool  ishex = (str[nn+0] == '\\') &&  (str[nn+1] == 'x')                        && isHexDigit(str[nn+2]) && isHexDigit(str[nn+3]);
       bool  isoct = (str[nn+0] == '\\') && ((str[nn+1] == '0') || (str[nn+1] == '1')) && isOctDigit(str[nn+2]) && isOctDigit(str[nn+3]);
 
@@ -164,14 +169,23 @@ regExToken::matchCharacterClass(char const *str, uint64 &nn) {
       else            { nn += 1;  return str[nn-1];                                                                                            }
     };
 
-    c1 = decode();                                //  Decode the first letter.
-    c2 = c1;                                      //  Make the range a single letter.
+    //  Handle single letters, then ranges.
+    c1 = decode(str, nn);                         //  Decode the first letter.
 
-    if ((str[nn] != 0) && (str[nn] == '-'))       //  Skip the dash (++nn), then
-      c2 = decode();                              //  decode 2nd letter, then move over it.
+    if (str[nn] != '-') {                         //  If this isn't the start of a
+      matchLetter(c1);                            //  range, add the letter and
+      continue;                                   //  skip the rest.
+    }
 
-    //fprintf(stderr, "matchCharacterClass()- range c1=0x%02x c2=0x%02x nn=%u ch=%c\n", c1, c2, nn, str[nn]);
+    if (str[nn+1] == ']') {                       //  [nn] == '-'.  If the next letter
+      matchLetter(c1);                            //  is ']' (to close the class), add
+      continue;                                   //  the dash and skip the rest.
+    } 
+
+    c2 = decode(str, ++nn);                       //  A range!  Skip the dash (++n),
+                                                  //  decode the letter, then move over it.
     matchRange(c1, c2);
+    //fprintf(stderr, "matchCharacterClass()- range c1=0x%02x c2=0x%02x nn=%lu ch=%c\n", c1, c2, nn, str[nn]);
   }
 
   assert(str[nn] != 0);   //  We failed if we're at the end of the string.
@@ -195,19 +209,21 @@ regExToken::matchCharacterClass(char const *str, uint64 &nn) {
 //
 void
 regExToken::makeGroupBegin(bool pfx, bool cap,
-                           uint64 &grpIdent,
-                           uint64 &capIdent) {
+                           uint64 &grpIdent,      //  Global next new group ident, always incremented
+                           uint64  capActiv,      //  Currently active capture group
+                           uint64 &capIdent) {    //  Global next new capture ident
   _type     = regExTokenType::rtGroupBegin;
 
   _pfx      =  pfx;
   _cap      =  cap;
-  _capIdent = (cap) ? ++capIdent : capIdent;
+  _capIdent = (cap) ? ++capIdent : capActiv;
   _grpIdent =         ++grpIdent;
 }
 
 void
 regExToken::makeGroupBegin(char const *str, uint64 ss, uint64 &nn,
                            uint64 &grpIdent,
+                           uint64  capActiv,
                            uint64 &capIdent) {
   bool    pfx = false;
   bool    cap = false;
@@ -233,7 +249,7 @@ regExToken::makeGroupBegin(char const *str, uint64 ss, uint64 &nn,
   if (err > 0)
     fprintf(stderr, "ERROR: expecting 'group', 'capture', 'prefix' in '%s'.\n", str+ss);
 
-  makeGroupBegin(pfx, cap, grpIdent, capIdent);
+  makeGroupBegin(pfx, cap, grpIdent, capActiv, capIdent);
 }
 
 
@@ -307,6 +323,7 @@ bool
 regEx::parse(char const *str) {
   uint64                        tokIdent = uint64max;
   uint64                        grpIdent = uint64max;
+  uint64                        capActiv = 0;
   uint64                        capIdent = uint64max;
   regExToken                    toka     = { ._id=++tokIdent };
 
@@ -325,7 +342,7 @@ regEx::parse(char const *str) {
 
   //  Make an initial capture group to get the entirety of the match.
 
-  toka.makeGroupBegin(false, true, grpIdent, capIdent);
+  toka.makeGroupBegin(false, true, grpIdent, capActiv, capIdent);
 
   tl[tlLen++] = toka;
 
@@ -343,7 +360,7 @@ regEx::parse(char const *str) {
     else if (str[ss] == '.')    toka.matchAllSymbols();
     else if (str[ss] == '[')    toka.matchCharacterClass(str, nn);
 
-    else if (str[ss] == '(')  toka.makeGroupBegin(str, ss, nn, grpIdent, capIdent);
+    else if (str[ss] == '(')  toka.makeGroupBegin(str, ss, nn, grpIdent, capActiv, capIdent);
     else if (str[ss] == ')')  toka.makeGroupEnd(groupStates.top().gid, groupStates.top().cid);
 #warning mismatched parens will crash the above
 
@@ -375,10 +392,18 @@ regEx::parse(char const *str) {
     //  and bump that id).  We always have a previous symbol, from the
     //  initial capture group.
     //
-    if (((tl[tlLen-1]._type == regExTokenType::rtGroupBegin) ||
-         (tl[tlLen-1]._type == regExTokenType::rtAlternation)) &&
-        (toka._type == regExTokenType::rtAlternation)) {
+    if ((toka._type == regExTokenType::rtAlternation) &&
+        ((tl[tlLen-1]._type == regExTokenType::rtGroupBegin) ||
+         (tl[tlLen-1]._type == regExTokenType::rtAlternation))) {
       tl[tlLen++] = { ._id=toka._id++, ._type=regExTokenType::rtEpsilon, ._capIdent=toka._capIdent, ._grpIdent=toka._grpIdent };
+    }
+
+    //  If we're a new closure, the last symbol must be a group end or match.
+    if ((toka._type == regExTokenType::rtClosure) &&
+        ((tl[tlLen-1]._type != regExTokenType::rtGroupEnd) &&
+         (tl[tlLen-1]._type != regExTokenType::rtCharClass))) {
+      fprintf(stderr, "Closure must follow only group end or matches.\n");
+      assert(0);
     }
 
     //  If we're in a prefix group, append a non-capture group begin before
@@ -403,8 +428,9 @@ regEx::parse(char const *str) {
 
     //  If this is a new group, remember group state.
 
-    if (toka._type == regExTokenType::rtGroupBegin)
+    if (toka._type == regExTokenType::rtGroupBegin) {
       groupStates.push(groupState{ .pfx=toka._pfx, .cap=toka._cap, .depth=0, .cid=toka._capIdent, .gid=toka._grpIdent });
+    }
 
     //  If this is a match operator, assign the match
     //  to the current capture group.
@@ -428,11 +454,27 @@ regEx::parse(char const *str) {
           tl[tlLen++] = { ._id=++tokIdent, ._type=regExTokenType::rtClosure,  ._min=0, ._max=1 };
         }
       }
+
+      //  Find the next active capture group
+      //capIdent = groupStates.top().cid;
+      //capIdent = gs.cid;
     }
 
     //  Append whatever token we made.
 
     tl[tlLen++] = toka;
+
+    if (vParse) {
+      fprintf(stderr, "tl[%03lu] -- %s\n", tlLen-1, toka.display());
+      for (uint32 xx=groupStates.depth(); xx--; )
+        fprintf(stderr, "        -- groupState[%02d] pfx:%d cap:%d depth:%lu cid:%lu gid:%lu\n", xx,
+                groupStates[xx].pfx,
+                groupStates[xx].cap,
+                groupStates[xx].depth,
+                groupStates[xx].cid,
+                groupStates[xx].gid);
+      fprintf(stderr, "\n");
+    }
 
 
     //  Append a concatentaion operator if there is a next symbol and:
@@ -468,6 +510,7 @@ regEx::parse(char const *str) {
 
   assert(groupStates.top().gid == 0);
   assert(groupStates.top().cid == 0);
+  assert(groupStates.depth()   == 1);
 
   //  Allocate space for resuts.  By construction, there is always at least
   //  one capture group - the one enclosing the whole match.

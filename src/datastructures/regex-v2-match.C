@@ -18,6 +18,7 @@
 
 #include "regex-v2.H"
 #include "arrays.H"
+#include "strings.H"
 
 //  Convert the input string to a list of tokens.
 //  Each token represents either a letter to match (or a character class)
@@ -115,7 +116,7 @@ regEx::match(char const *query) {
     char ch = query[pp];   //  Letter to process.
 
     if (vMatch)
-      fprintf(stderr, "\nADVANCE ch '%c' with %lu states to explore\n", ch, sAlen);
+      fprintf(stderr, "\nADVANCE ch '%s' with %lu states to explore\n", displayLetter(ch), sAlen);
 
     for (uint64 ii=0; ii<sAlen; ii++) {                //  Over all the nodes in the set
       regExState *S  = match[ sA[ii] ]._state;         //  to explore....
@@ -127,8 +128,8 @@ regEx::match(char const *query) {
       bool  m = T.isMatch(ch);                         //  Test if ch matches what this node is expecting.
 
       if (vMatch)
-        fprintf(stderr, "   [%02lu] -> '%c' -> [%02lu] %s %s\n",
-                S->_id, ch, S->_match->_id, m ? "PASS" : "fail", T.display());
+        fprintf(stderr, "   [%02lu] -> '%s' -> [%02lu] %s %s\n",
+                S->_id, displayLetter(ch), S->_match->_id, m ? "PASS" : "fail", T.display());
 
       if (m == false)                                  //  Nope, ch does NOT match what this node is expecting.
         continue;
@@ -138,7 +139,7 @@ regEx::match(char const *query) {
     }
 
     if (vMatch)
-      fprintf(stderr, "        ch '%c' with %lu states to explore next\n", ch, sBlen);
+      fprintf(stderr, "        ch '%s' with %lu states to explore next\n", displayLetter(ch), sBlen);
 
     if (sBlen == 0)                                    //  Either no matches out of here, or no more states left.
       break;                                           //  We're done.  Retain the last list of nodes.
@@ -149,13 +150,18 @@ regEx::match(char const *query) {
 
 
   //  Decide if the last set of states was accepting or not.
+
+  if (vMatch)
+    fprintf(stderr, "\nFinal states:\n");
+
   bool acc = false;
-  fprintf(stderr, "Final states:\n");
+
   for (uint64 ii=0; ii<sAlen; ii++) {
     regExState *S  = match[ sA[ii] ]._state;
     regExToken  T  = match[ sA[ii] ]._state->_tok;
 
-    fprintf(stderr, "   [%02lu] accept:%d %s\n", S->_id, isAccepting(S), T.display());
+    if (vMatch)
+      fprintf(stderr, "   [%02lu] accept:%d %s\n", S->_id, isAccepting(S), T.display());
 
     acc |= isAccepting(S);
   }
@@ -204,13 +210,20 @@ regEx::match(char const *query) {
 
   //  Iterate over the match path again and copy letters to outputs.
 
+  //   regexTest-v2 -v 'a+1+' 'az1'   ->    0 valid   0-  2 'az'
+#warning on failure we seem to copy the first failing letter to outputs
+
+  if (vMatch)
+    fprintf(stderr, "\nCopy strings to groups.\n");
+
   for (uint64 mi = sA[0]; mi != uint64max; mi = match[mi]._prevMatch) {
     regExState  *S = match[mi]._state;
     uint64       p = match[mi]._prevMatch;
     uint64      pp = match[mi]._stringIdx;
     char        ch = query[pp];
 
-    fprintf(stderr, "accept[%03lu] query[%03lu]='%c'  %s\n", mi, pp, ch, S->_tok.display());
+    if (vMatch)
+      fprintf(stderr, "  [%03lu] query[%03lu]='%s'  %s\n", mi, pp, displayLetter(ch), S->_tok.display());
 
     for (auto c : S->_tok._capGroups) {
       bgnP[c] = std::min(bgnP[c], pp);
@@ -218,12 +231,37 @@ regEx::match(char const *query) {
 
       caps[c][--lenP[c]] = ch;
 
-      fprintf(stderr, "            group:%lu '%c' %3lu-%3lu len %3lu\n", c, ch, bgnP[c], endP[c], lenP[c]);
+      if (vMatch)
+        fprintf(stderr, "        group[%03lu] -> %3lu-%3lu '%s'\n", c, bgnP[c], endP[c], displayString(caps[c] + lenP[c]));
     }
   }
 
-  for (uint32 c=0; c<capsLen; c++)
-    fprintf(stderr, "RESULTS:  %02u %02lu-%02lu '%s'\n", c, bgnP[c], endP[c], caps[c]);
+  //  Bubble groups with matches to the front of the list.
+
+  //for (uint64 ii=0; ii<capsLen; ii++)
+  //  fprintf(stderr, "before %02d - %016p %s\n", ii, caps[ii], caps[ii]);
+
+  for (uint64 ii=0, jj=1; ii<capsLen && jj<capsLen; ii++) {
+    if (caps[ii][0] != 0)                        //  Do nothing if ii has data, otherwise
+      continue;                                  //  swap ii with the first jj with data.
+
+    for (jj=ii+1; ((jj < capsLen) &&             //  Find first jj with data.
+                   (caps[jj][0] == 0)); jj++)    //
+      ;
+         
+    if (jj < capsLen) {                          //  If such a jj exists, swap
+      std::swap(bgnP[ii], bgnP[jj]);             //  into the empty ii slot.
+      std::swap(endP[ii], endP[jj]);
+      std::swap(lenP[ii], lenP[jj]);
+      std::swap(caps[ii], caps[jj]);
+    }
+  }
+
+  //for (uint64 ii=0; ii<capsLen; ii++)
+  //  fprintf(stderr, "after  %02d - %016p %s\n", ii, caps[ii], caps[ii]);
+
+  //for (uint32 c=0; c<capsLen; c++)
+  //  fprintf(stderr, "RESULTS:  %02u %02lu-%02lu '%s'\n", c, bgnP[c], endP[c], caps[c]);
 
   delete [] active;
   delete [] match;

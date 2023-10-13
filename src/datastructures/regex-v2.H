@@ -118,9 +118,9 @@ public:
   void    makeAlternation(void)               { _type = regExTokenType::rtAlternation;  };
   void    makeConcatenation(void)             { _type = regExTokenType::rtConcat;       };
 
-  void    makeGroupBegin(bool pfx, bool cap,                     uint64 &grpIdent, uint64 &capIdent);
-  void    makeGroupBegin(char const *str, uint64 ss, uint64 &nn, uint64 &grpIdent, uint64 &capIdent);
-  void    makeGroupEnd  (                                        uint64  grpIdent, uint64  capIdent);
+  void    makeGroupBegin(bool pfx, bool cap,                     uint64 &grpIdent, uint64 capActiv, uint64 &capIdent);
+  void    makeGroupBegin(char const *str, uint64 ss, uint64 &nn, uint64 &grpIdent, uint64 capActiv, uint64 &capIdent);
+  void    makeGroupEnd  (                                        uint64  grpIdent,                  uint64  capIdent);
 
   void    matchLineStart(void)                { _type = regExTokenType::rtLineStart; };
   void    matchLineEnd(void)                  { _type = regExTokenType::rtLineEnd;   };

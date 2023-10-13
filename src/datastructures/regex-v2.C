@@ -42,7 +42,7 @@ regExToken::display(char *str) {
       app += sprintf(app, "alternat   id:%2lu", _id);
       break;
     case regExTokenType::rtClosure:
-      app += sprintf(app, "closure    id:%2lu         min:%lu max:%lu", _id, _min, _max);
+      app += sprintf(app, "closure    id:%2lu {%s,%s}", _id, toDec(_min), (_max == uint64max) ? "inf" : toDec(_max));
       break;
     case regExTokenType::rtConcat:
       app += sprintf(app, "concat     id:%2lu", _id);
@@ -54,8 +54,19 @@ regExToken::display(char *str) {
       app += sprintf(app, "line-end   id:%2lu", _id);
       break;
     case regExTokenType::rtCharClass:
-      app += sprintf(app, "charact    id:%2lu cap:%03lu [", _id, _capIdent);
+      app += sprintf(app, "charact    id:%2lu", _id);
 
+      if (_capGroups.size() > 0) {
+        app += sprintf(app, " (");
+        for (auto c : _capGroups)
+          if (*(app-1) == '(')
+            app += sprintf(app, "%lu", c);
+          else
+            app += sprintf(app, " %lu", c);
+        app += sprintf(app, ")");
+      }
+
+      app += sprintf(app, " [");
       for (uint32 cc=0, ee=0; cc<256; cc=++ee) {   //  uint8 unsafe!
         if (isMatch(cc) == false)                    //  Skip cc if not valid.
           continue;
@@ -66,6 +77,8 @@ regExToken::display(char *str) {
 
         auto displ = [&](uint32 x) {  if (isVisible(x)) return sprintf(app, "%c",      x);
                                       else              return sprintf(app, "\\x%02x", x);  };
+
+        //fprintf(stderr, "DISPL cc=0x%02x ee=0x%02x\n", cc, ee);
 
         if      (cc   == ee)  { app += displ(cc);                                          }
         else if (cc+1 == ee)  { app += displ(cc);                      app += displ(ee);   }

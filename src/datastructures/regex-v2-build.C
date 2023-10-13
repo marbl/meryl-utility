@@ -139,10 +139,10 @@ regEx::closure(regExState *rs, uint64 &rsLen, regExExpr a, uint64 min, uint64 ma
   regExExpr   *mmmdups = nullptr;
 
   if (vBuild)
-    fprintf(stderr, "closure() %lu -> %lu..%lu -> %lu   (min %lu max %lu)\n",
+    fprintf(stderr, "closure() %lu -> %lu..%lu -> %lu {%s,%s}\n",
             bgn->_id,
             a._bgn->_id, a._end->_id,
-            end->_id, min, max);
+            end->_id, toDec(min), (max == uint64max) ? "inf" : toDec(max));
 
   if ((min == 0) && (max == uint64max)) {   //  Basic Kleene star, no minimum, no maximum.
     bgn->addEpsilon(end, vBuild);           //   - no matches, jump straight to the exi.
@@ -329,7 +329,7 @@ regEx::build(void) {
 
   re._end->_accepting = true;
 
-#if 1
+#if 0
   for (uint64 ii=0; ii<rsLen; ii++)
     fprintf(stderr, "rs[%02lu] - id %02lu acc %d match %-4s lambda %4s:%-4s\n",
             ii,

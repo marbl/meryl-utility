@@ -386,6 +386,11 @@ const char *scaledName  (uint64 n, uint32 div=1024);   //  scaling.
 //  width used is the minimum of this width and the number of bits in the
 //  type.  toDec() accepts the width, but doesn't use it.
 
+char toBinDigit(uint8 value);
+char toOctDigit(uint8 value);
+char toDecDigit(uint8 value);
+char toHexDigit(uint8 value);
+
 template<typename uintType> char       *toBin(uintType value, char *out, uint32 width=128);
 template<typename uintType> char       *toOct(uintType value, char *out, uint32 width=128);
 template<typename uintType> char       *toDec(uintType value, char *out, uint32 width=128);

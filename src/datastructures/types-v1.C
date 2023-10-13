@@ -585,6 +585,12 @@ char    *strAlloc  =   nullptr;
 char    *str[32]   = { nullptr };
 uint32   pos       =   0;
 
+char toBinDigit(uint8 value) { return alpha[value & 0x01]; }
+char toOctDigit(uint8 value) { return alpha[value & 0x07]; }
+char toDecDigit(uint8 value) { return alpha[value %   10]; }
+char toHexDigit(uint8 value) { return alpha[value & 0x0f]; }
+
+
 static
 char *                   //  Helper function to return the next available buffer.
 getNextString(void) {    //  This is the only part that needs to care about threads.

@@ -635,6 +635,11 @@ sweatShop::run(void *user, bool beVerbose) {
 
   //  Cleanup.
 
+  pthread_attr_destroy(&threadAttr);
+
+  for (uint32 i=0; i<_numberOfWorkers; i++)
+    delete [] _workerData[i].workerQueue;
+
   delete _loaderP;
   _loaderP = _workerP = _writerP = 0L;
 }

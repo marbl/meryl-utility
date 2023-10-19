@@ -43,13 +43,13 @@ main(int argc, char const **argv) {
     fprintf(stdout, "MATCH: '%s'\n", argv[arg]);
 
     if (re.match(argv[arg]))
-      fprintf(stdout, "  success!\n");
+      fprintf(stdout, "  success! %d\n", re.isAccepted());
     else
-      fprintf(stdout, "  failure\n");
+      fprintf(stdout, "  failure. %d\n", re.isAccepted());
 
     for (uint64 ii=0; ii<re.numCaptures(); ii++)
       fprintf(stdout, "  %2lu %s %3lu-%3lu '%s'\n", ii,
-              re.getCaptureValid(ii) ? "valid" : "inval", re.getCaptureBgn(ii), re.getCaptureEnd(ii), re.getCapture(ii));
+              re.isValid(ii) ? "valid" : "inval", re.getBgn(ii), re.getEnd(ii), re.get(ii));
   }
 
   return 0;

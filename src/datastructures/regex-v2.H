@@ -93,10 +93,12 @@ class regExToken {
 public:
   char const *display(char *str=nullptr);
 
-  void    setMatch(uint8 c)   {             (_syms[c>>6] |= (uint64one << (c & 0x3f)));  }
-  bool    isMatch(uint8 c)    { return 0 != (_syms[c>>6] &  (uint64one << (c & 0x3f)));  }
+  void  unsetMatch(uint8 c)   {             (_syms[c>>6] &= ~(uint64one << (c & 0x3f)));  }
+  void    setMatch(uint8 c)   {             (_syms[c>>6] |=  (uint64one << (c & 0x3f)));  }
+  bool    isMatch(uint8 c)    { return 0 != (_syms[c>>6] &   (uint64one << (c & 0x3f)));  }
 
 public:
+  void  unmatchLetter(uint8 c)                  {                               unsetMatch(c);              }
   void    matchLetter(uint8 c)                  {                                 setMatch(c);              }
   void    matchLetters(char const *s)           { for (uint16 ii=0; s[ii]; ii++)  setMatch(s[ii]);          }
   void    matchRange(uint8 a, uint8 b)          { for (uint16  c=a;  c<=b;  c++)  setMatch(c);              } 
@@ -284,12 +286,16 @@ public:
   }
   bool        match(char const *query);
 
-  uint64      numCaptures(void)         { return capsLen;   }
+  uint64      numCaptures(void)   { return capsLen;   }
 
-  bool        getCaptureValid(uint64 cap) { return bgnP[cap] < endP[cap]; }
-  uint64      getCaptureBgn  (uint64 cap) { return bgnP[cap]; }
-  uint64      getCaptureEnd  (uint64 cap) { return endP[cap]; }
-  char const *getCapture     (uint64 cap) { return caps[cap]; }
+  bool        isAccepted(void)    { return accepting; }
+
+  bool        isValid(uint64 cap) { return accepting && (bgnP[cap] < endP[cap]); }
+  uint64      getBgn (uint64 cap) { return bgnP[cap]; }
+  uint64      getEnd (uint64 cap) { return endP[cap]; }
+  char const *get    (uint64 cap) { return caps[cap]; }
+
+  char const *operator[]     (uint64 cap) { return caps[cap]; }
 
 private:
   regExExpr   concat   (regExState *rs, uint64 &rsLen, regExExpr a, regExExpr b);
@@ -329,12 +335,14 @@ private:
   uint64       capstorMax = 0;
   char        *capstor    = nullptr;
 
+  bool         accepting  = false;
+
   uint64       capsLen    = 0;
   uint64       capsMax    = 0;
-  uint64      *bgnP       = nullptr;
-  uint64      *endP       = nullptr;
-  uint64      *lenP       = nullptr;
-  char       **caps       = nullptr;
+  uint64      *bgnP       = nullptr;   // Begin position of any matches 
+  uint64      *endP       = nullptr;   // End position of matches
+  uint64      *lenP       = nullptr;   // Length of text in match, internal only!
+  char       **caps       = nullptr;   // Match string
 };
 
 

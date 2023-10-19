@@ -18,6 +18,7 @@
 
 #include "regex-v2.H"
 #include "arrays.H"
+#include "strings.H"
 
 //  Convert the input string to a list of tokens.
 //  Each token represents either a letter to match (or a character class)
@@ -141,6 +142,16 @@ regExToken::matchCharacterClass(char const *str, uint64 &nn) {
   uint8  c1 = 0;   //  The begin character in the range.
   uint8  c2 = 0;   //  The ending character in the range (possible the same as c1).
 
+  //  Decode the letter ('\xHH' or '\OOO' or 'C') at the current position and advance over it.
+  auto decode = [](char const *str, uint64 &nn) -> uint8 {
+    bool  ishex = (str[nn+0] == '\\') &&  (str[nn+1] == 'x')                        && isHexDigit(str[nn+2]) && isHexDigit(str[nn+3]);
+    bool  isoct = (str[nn+0] == '\\') && ((str[nn+1] == '0') || (str[nn+1] == '1')) && isOctDigit(str[nn+2]) && isOctDigit(str[nn+3]);
+
+    if      (ishex) { nn += 4;  return                                     asciiHexToInteger(str[nn-2]) << 4 | asciiHexToInteger(str[nn-1]); }
+    else if (isoct) { nn += 4;  return asciiOctToInteger(str[nn-3]) << 6 | asciiOctToInteger(str[nn-2]) << 3 | asciiOctToInteger(str[nn-1]); }
+    else            { nn += 1;  return str[nn-1];                                                                                            }
+  };
+
   _type = regExTokenType::rtCharClass;
 
   assert(str[nn] == '[');
@@ -155,19 +166,15 @@ regExToken::matchCharacterClass(char const *str, uint64 &nn) {
   while ((str[nn] != 0) && (str[nn] != ']')) {
     //fprintf(stderr, "matchCharacterClass()- nn=%lu '%s' (in LOOP)\n", nn, str+nn);
 
-    //  Handle character classes.
+    //  Handle character classes and escaped letters.
     if (matchCharacterToken(str, nn) == true)
       continue;
 
-    //  Decode the letter ('\xHH' or '\OOO' or 'C') at the current position and advance over it.
-    auto decode = [](char const *str, uint64 &nn) -> uint8 {
-      bool  ishex = (str[nn+0] == '\\') &&  (str[nn+1] == 'x')                        && isHexDigit(str[nn+2]) && isHexDigit(str[nn+3]);
-      bool  isoct = (str[nn+0] == '\\') && ((str[nn+1] == '0') || (str[nn+1] == '1')) && isOctDigit(str[nn+2]) && isOctDigit(str[nn+3]);
-
-      if      (ishex) { nn += 4;  return                                     asciiHexToInteger(str[nn-2]) << 4 | asciiHexToInteger(str[nn-1]); }
-      else if (isoct) { nn += 4;  return asciiOctToInteger(str[nn-3]) << 6 | asciiOctToInteger(str[nn-2]) << 3 | asciiOctToInteger(str[nn-1]); }
-      else            { nn += 1;  return str[nn-1];                                                                                            }
-    };
+    //  Handle inverted letters.
+    if (str[nn] == '~') {
+      unmatchLetter(decode(str, ++nn));
+      continue;
+    }
 
     //  Handle single letters, then ranges.
     c1 = decode(str, nn);                         //  Decode the first letter.
@@ -246,8 +253,10 @@ regExToken::makeGroupBegin(char const *str, uint64 ss, uint64 &nn,
     }
   }
 
-  if (err > 0)
-    fprintf(stderr, "ERROR: expecting 'group', 'capture', 'prefix' in '%s'.\n", str+ss);
+  if (err > 0) {
+    fprintf(stderr, "ERROR: expecting 'group', 'capture', 'prefix' in '%s'.\n", displayString(str+ss));
+    exit(1);
+  }
 
   makeGroupBegin(pfx, cap, grpIdent, capActiv, capIdent);
 }
@@ -334,6 +343,8 @@ regEx::parse(char const *str) {
   if (vParse) {
     fprintf(stderr, "\n");
     fprintf(stderr, "PARSING\n");
+    fprintf(stderr, "\n");
+    fprintf(stderr, "%s\n", displayString(str));
     fprintf(stderr, "\n");
   }
 

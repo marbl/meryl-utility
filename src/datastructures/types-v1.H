@@ -396,6 +396,11 @@ template<typename uintType> char       *toOct(uintType value, char *out, uint32 
 template<typename uintType> char       *toDec(uintType value, char *out, uint32 width=128);
 template<typename uintType> char       *toHex(uintType value, char *out, uint32 width=128);
 
+template<typename uintType> void        toBin(uintType value, char *&str, uint64 &strLen, uint64 &strMax, uint32 width=128);
+template<typename uintType> void        toOct(uintType value, char *&str, uint64 &strLen, uint64 &strMax, uint32 width=128);
+template<typename uintType> void        toDec(uintType value, char *&str, uint64 &strLen, uint64 &strMax, uint32 width=128);
+template<typename uintType> void        toHex(uintType value, char *&str, uint64 &strLen, uint64 &strMax, uint32 width=128);
+
 template<typename uintType> char const *toBin(uintType value, uint32 width=128);
 template<typename uintType> char const *toOct(uintType value, uint32 width=128);
 template<typename uintType> char const *toDec(uintType value, uint32 width=128);

@@ -637,6 +637,13 @@ toBin(uintType v, char *ret, uint32 w) {
 }
 
 template<typename uintType>
+void
+toBin(uintType v, char *&str, uint64 &strLen, uint64 &strMax, uint32 w) {
+  merylutil::increaseArray(str, strLen + 129, strMax, 1024);
+  strLen = toBin(v, str + strLen, w) - str;
+}
+
+template<typename uintType>
 char const *
 toBin(uintType v, uint32 w) {
   char *ret = getNextString();
@@ -649,6 +656,12 @@ template char       *toBin<uint64> (uint64  v, char *out, uint32 width);
 template char       *toBin<uint32> (uint32  v, char *out, uint32 width);
 template char       *toBin<uint16> (uint16  v, char *out, uint32 width);
 template char       *toBin<uint8>  (uint8   v, char *out, uint32 width);
+
+template void        toBin<uint128>(uint128 v, char *&str, uint64 &strLen, uint64 &strMax, uint32 width);
+template void        toBin<uint64> (uint64  v, char *&str, uint64 &strLen, uint64 &strMax, uint32 width);
+template void        toBin<uint32> (uint32  v, char *&str, uint64 &strLen, uint64 &strMax, uint32 width);
+template void        toBin<uint16> (uint16  v, char *&str, uint64 &strLen, uint64 &strMax, uint32 width);
+template void        toBin<uint8>  (uint8   v, char *&str, uint64 &strLen, uint64 &strMax, uint32 width);
 
 template char const *toBin<uint128>(uint128 v, uint32 width);
 template char const *toBin<uint64> (uint64  v, uint32 width);
@@ -679,6 +692,13 @@ toOct(uintType v, char *ret, uint32 w) {
 }
 
 template<typename uintType>
+void
+toOct(uintType v, char *&str, uint64 &strLen, uint64 &strMax, uint32 w) {
+  merylutil::increaseArray(str, strLen + 129, strMax, 1024);
+  strLen = toOct(v, str + strLen, w) - str;
+}
+
+template<typename uintType>
 char const *
 toOct(uintType v, uint32 w) {
   char *ret = getNextString();
@@ -691,6 +711,12 @@ template char       *toOct<uint64> (uint64  v, char *out, uint32 width);
 template char       *toOct<uint32> (uint32  v, char *out, uint32 width);
 template char       *toOct<uint16> (uint16  v, char *out, uint32 width);
 template char       *toOct<uint8>  (uint8   v, char *out, uint32 width);
+
+template void        toOct<uint128>(uint128 v, char *&str, uint64 &strLen, uint64 &strMax, uint32 width);
+template void        toOct<uint64> (uint64  v, char *&str, uint64 &strLen, uint64 &strMax, uint32 width);
+template void        toOct<uint32> (uint32  v, char *&str, uint64 &strLen, uint64 &strMax, uint32 width);
+template void        toOct<uint16> (uint16  v, char *&str, uint64 &strLen, uint64 &strMax, uint32 width);
+template void        toOct<uint8>  (uint8   v, char *&str, uint64 &strLen, uint64 &strMax, uint32 width);
 
 template char const *toOct<uint128>(uint128 v, uint32 width);
 template char const *toOct<uint64> (uint64  v, uint32 width);
@@ -732,6 +758,13 @@ toDec(uintType v, char *ret, uint32 w) {
 }
 
 template<typename uintType>
+void
+toDec(uintType v, char *&str, uint64 &strLen, uint64 &strMax, uint32 w) {
+  merylutil::increaseArray(str, strLen + 129, strMax, 1024);
+  strLen = toDec(v, str + strLen, w) - str;
+}
+
+template<typename uintType>
 char const *
 toDec(uintType v, uint32 w) {
   char *ret = getNextString();
@@ -749,6 +782,17 @@ template char       *toDec<uint16> (uint16  v, char *out, uint32 width);
 template char       *toDec< int16> ( int16  v, char *out, uint32 width);
 template char       *toDec<uint8>  (uint8   v, char *out, uint32 width);
 template char       *toDec< int8>  ( int8   v, char *out, uint32 width);
+
+template void        toDec<uint128>(uint128 v, char *&str, uint64 &strLen, uint64 &strMax, uint32 width);
+template void        toDec< int128>( int128 v, char *&str, uint64 &strLen, uint64 &strMax, uint32 width);
+template void        toDec<uint64> (uint64  v, char *&str, uint64 &strLen, uint64 &strMax, uint32 width);
+template void        toDec< int64> ( int64  v, char *&str, uint64 &strLen, uint64 &strMax, uint32 width);
+template void        toDec<uint32> (uint32  v, char *&str, uint64 &strLen, uint64 &strMax, uint32 width);
+template void        toDec< int32> ( int32  v, char *&str, uint64 &strLen, uint64 &strMax, uint32 width);
+template void        toDec<uint16> (uint16  v, char *&str, uint64 &strLen, uint64 &strMax, uint32 width);
+template void        toDec< int16> ( int16  v, char *&str, uint64 &strLen, uint64 &strMax, uint32 width);
+template void        toDec<uint8>  (uint8   v, char *&str, uint64 &strLen, uint64 &strMax, uint32 width);
+template void        toDec< int8>  ( int8   v, char *&str, uint64 &strLen, uint64 &strMax, uint32 width);
 
 template char const *toDec<uint128>(uint128 v, uint32 width);
 template char const *toDec< int128>( int128 v, uint32 width);
@@ -784,6 +828,13 @@ toHex(uintType v, char *ret, uint32 w) {
 }
 
 template<typename uintType>
+void
+toHex(uintType v, char *&str, uint64 &strLen, uint64 &strMax, uint32 w) {
+  merylutil::increaseArray(str, strLen + 129, strMax, 1024);
+  strLen = toHex(v, str + strLen, w) - str;
+}
+
+template<typename uintType>
 char const *
 toHex(uintType v, uint32 w) {
   char *ret = getNextString();
@@ -796,6 +847,12 @@ template char       *toHex<uint64> (uint64  v, char *out, uint32 width);
 template char       *toHex<uint32> (uint32  v, char *out, uint32 width);
 template char       *toHex<uint16> (uint16  v, char *out, uint32 width);
 template char       *toHex<uint8>  (uint8   v, char *out, uint32 width);
+
+template void        toHex<uint128>(uint128 v, char *&str, uint64 &strLen, uint64 &strMax, uint32 width);
+template void        toHex<uint64> (uint64  v, char *&str, uint64 &strLen, uint64 &strMax, uint32 width);
+template void        toHex<uint32> (uint32  v, char *&str, uint64 &strLen, uint64 &strMax, uint32 width);
+template void        toHex<uint16> (uint16  v, char *&str, uint64 &strLen, uint64 &strMax, uint32 width);
+template void        toHex<uint8>  (uint8   v, char *&str, uint64 &strLen, uint64 &strMax, uint32 width);
 
 template char const *toHex<uint128>(uint128 v, uint32 width=32);
 template char const *toHex<uint64> (uint64  v, uint32 width=16);

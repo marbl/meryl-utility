@@ -48,6 +48,11 @@ public:
   mtRandom(uint32 *init_key, uint32 key_length);
 
   void     mtSetSeed(uint32 s);
+  uint32   mtGetSeed(void)            { return _seed; }
+
+  uint64   mtGetIterations(void)      { return _iter; }
+  void     mtSkipAhead(uint64 iters)  { for (uint32 iter=0; iter < iters; iter++)  mtRandom32(); }
+  void     mtSkipUntil(uint64 iter)   { for (             ; _iter < iter;       )  mtRandom32(); }
 
   uint32   mtRandom32(void);
   uint64   mtRandom64(void)   { return((((uint64)mtRandom32()) << 32) | (uint64)mtRandom32()); }
@@ -74,9 +79,11 @@ public:
   double   mtRandomExponential(double lambda, double tau=1.0);
 
 private:
-  uint32  mt[MT_N];  //  State vector array
-  uint32  mti;       //  Ordinal of the first uninit'd element -- mti = N+1 -> elt N is uninit
-  uint32  mag01[2];  //  mag01[x] = x * MT_MATRIX_A  for x=0,1
+  uint32  _seed;      //  Copy of initial seed
+  uint64  _iter;      //  Number of iterations performed
+  uint32  _mt[MT_N];  //  State vector array
+  uint32  _mti;       //  Ordinal of the first uninit'd element -- mti = N+1 -> elt N is uninit
+  uint32  _mag01[2];  //  mag01[x] = x * MT_MATRIX_A  for x=0,1
 };
 
 }  //  merylutil::files::v1

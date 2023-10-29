@@ -82,17 +82,18 @@ mtRandom::mtRandom(uint32 s) {
 void
 mtRandom::mtSetSeed(uint32 s) {
 
-  mt[0] = s;
+  _seed  = s;
+  _mt[0] = s;
 
   // See Knuth TAOCP Vol2. 3rd Ed. P.106 for multiplier.  In the previous versions, MSBs of the seed
   // affect only MSBs of the array mt[].
   // 2002/01/09 modified by Makoto Matsumoto
 
-  for (mti=1; mti<MT_N; mti++)
-    mt[mti] = (1812433253UL * (mt[mti-1] ^ (mt[mti-1] >> 30)) + mti);
+  for (_mti=1; _mti<MT_N; _mti++)
+    _mt[_mti] = (1812433253UL * (_mt[_mti-1] ^ (_mt[_mti-1] >> 30)) + _mti);
 
-  mag01[0] = 0;
-  mag01[1] = MT_MATRIX_A;
+  _mag01[0] = 0;
+  _mag01[1] = MT_MATRIX_A;
 }
 
 
@@ -110,11 +111,11 @@ mtRandom::mtRandom(uint32 *init_key, uint32 key_length) {
   int   k   = (MT_N > key_length ? MT_N : key_length);
 
   for (; k; k--) {
-    mt[i] = (mt[i] ^ ((mt[i-1] ^ (mt[i-1] >> 30)) * 1664525UL)) + init_key[j] + j; /* non linear */
+    _mt[i] = (_mt[i] ^ ((_mt[i-1] ^ (_mt[i-1] >> 30)) * 1664525UL)) + init_key[j] + j; /* non linear */
     i++;
     j++;
     if (i >= MT_N) {
-      mt[0] = mt[MT_N-1];
+      _mt[0] = _mt[MT_N-1];
       i=1;
     }
     if (j >= key_length)
@@ -122,15 +123,15 @@ mtRandom::mtRandom(uint32 *init_key, uint32 key_length) {
   }
 
   for (k=MT_N-1; k; k--) {
-    mt[i] = (mt[i] ^ ((mt[i-1] ^ (mt[i-1] >> 30)) * 1566083941UL)) - i; /* non linear */
+    _mt[i] = (_mt[i] ^ ((_mt[i-1] ^ (_mt[i-1] >> 30)) * 1566083941UL)) - i; /* non linear */
     i++;
     if (i>=MT_N) {
-      mt[0] = mt[MT_N-1];
+      _mt[0] = _mt[MT_N-1];
       i=1;
     }
   }
 
-  mt[0] = 0x80000000UL; /* MSB is 1; assuring non-zero initial array */
+  _mt[0] = 0x80000000UL; /* MSB is 1; assuring non-zero initial array */
 }
 
 
@@ -141,30 +142,32 @@ mtRandom::mtRandom32(void) {
 
   //  generate MT_N words at one time
   //
-  if (mti >= MT_N) {
+  if (_mti >= MT_N) {
     int kk;
 
     for (kk=0; kk < MT_N - MT_M; kk++) {
-      y = (mt[kk] & MT_UPPER_MASK) | (mt[kk+1] & MT_LOWER_MASK);
-      mt[kk] = mt[kk + MT_M] ^ (y >> 1) ^ mag01[y & 0x00000001UL];
+      y = (_mt[kk] & MT_UPPER_MASK) | (_mt[kk+1] & MT_LOWER_MASK);
+      _mt[kk] = _mt[kk + MT_M] ^ (y >> 1) ^ _mag01[y & 0x00000001UL];
     }
     for (; kk < MT_N-1; kk++) {
-      y = (mt[kk] & MT_UPPER_MASK) | (mt[kk + 1] & MT_LOWER_MASK);
-      mt[kk] = mt[kk + (MT_M - MT_N)] ^ (y >> 1) ^ mag01[y & 0x00000001UL];
+      y = (_mt[kk] & MT_UPPER_MASK) | (_mt[kk + 1] & MT_LOWER_MASK);
+      _mt[kk] = _mt[kk + (MT_M - MT_N)] ^ (y >> 1) ^ _mag01[y & 0x00000001UL];
     }
-    y = (mt[MT_N-1] & MT_UPPER_MASK) | (mt[0] & MT_LOWER_MASK);
-    mt[MT_N-1] = mt[MT_M-1] ^ (y >> 1) ^ mag01[y & 0x00000001UL];
+    y = (_mt[MT_N-1] & MT_UPPER_MASK) | (_mt[0] & MT_LOWER_MASK);
+    _mt[MT_N-1] = _mt[MT_M-1] ^ (y >> 1) ^ _mag01[y & 0x00000001UL];
 
-    mti = 0;
+    _mti = 0;
   }
 
-  y = mt[mti++];
+  y = _mt[_mti++];
 
   /* Tempering */
   y ^= (y >> 11);
   y ^= (y << 7)  & 0x9d2c5680UL;
   y ^= (y << 15) & 0xefc60000UL;
   y ^= (y >> 18);
+
+  _iter++;
 
   return(y);
 }

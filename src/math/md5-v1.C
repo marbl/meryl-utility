@@ -333,17 +333,17 @@ md5sum::~md5sum() {
 char const *
 md5sum::toString(void) {
   return(dascii);
-};
+}
 
 void
 md5sum::toString(char *str) {
   memcpy(str, dascii, 32);
-};
+}
 
 void
 md5sum::addBlock(uint8 *b, uint64 bLen) {
   MD5Update((MD5_CTX *)context, b, bLen);
-};
+}
 
 void
 md5sum::finalize(void) {

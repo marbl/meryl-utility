@@ -92,7 +92,22 @@ inline uint128   saveMiddleBits(uint128 v, uint32 l, uint32 r)  { return(clearRi
 
 }  //  namespace merylutil::bits::v1
 
+////////////////////////////////////////
+//
+//  Rotate words
+//
+namespace merylutil::inline bits::inline v1 {
 
+inline uint32   rotateBitsLeft (uint32  v, uint32 l)   { return (v << l) | (v >> (32  - l)); }
+inline uint32   rotateBitsRight(uint32  v, uint32 r)   { return (v >> r) | (v << (32  - r)); }
+
+inline uint64   rotateBitsLeft (uint64  v, uint32 l)   { return (v << l) | (v >> (64  - l)); }
+inline uint64   rotateBitsRight(uint64  v, uint32 r)   { return (v >> r) | (v << (64  - r)); }
+
+inline uint128  rotateBitsLeft (uint128 v, uint32 l)   { return (v << l) | (v >> (128 - l)); }
+inline uint128  rotateBitsRight(uint128 v, uint32 r)   { return (v >> r) | (v << (128 - r)); }
+
+}
 
 ////////////////////////////////////////
 //

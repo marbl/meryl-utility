@@ -37,16 +37,18 @@ public:
   stack()   {               }
   ~stack()  { delete [] _S; }
 
-  uint64  depth(void)     { return _Stop;      }
-  bool    empty(void)     { return _Stop == 0; }
+  uint64    depth(void)     { return _Stop;      }
+  bool      empty(void)     { return _Stop == 0; }
 
-  T       pop(void);
-  T      &top(void);
+  stack<T> &clear(void)     { _Stop = 0;  return *this; }
 
-  T      &operator[](uint64 i);
+  T         pop(void);
+  T        &top(void);
 
-  T       push(T const item);
-  void    exchange(void);
+  T        &operator[](uint64 i);
+
+  T         push(T const item);
+  stack<T> &exchange(void);
 
 
 private:
@@ -94,12 +96,13 @@ stack<T>::push(T const item) {
 
 
 template <typename T>
-void
+stack<T> &
 stack<T>::exchange(void) {
   if (_Stop < 2)
     fprintf(stderr, "ERROR: stack::exchange() doesn't have enough elements to exchange.\n");
   assert(_Stop >= 2);
   std::swap(_S[_Stop-2], _S[_Stop-1]);
+  return *this;
 }
 
 

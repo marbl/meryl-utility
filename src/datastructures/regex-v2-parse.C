@@ -205,14 +205,7 @@ regExToken::matchCharacterClass(char const *str, uint64 &nn) {
 
 
 
-
-//  Decodes a group begin "({group}", "({capture}", "({prefix}" (and abbreviations)
-//  ({group,prefix}
-//  ({capture,prefix}
-//  {{capture}
-//  {{c}
-//
-//  ((:group:)
+//  Makes a group begin with specified features.
 //
 void
 regExToken::makeGroupBegin(bool pfx, bool cap,
@@ -227,6 +220,10 @@ regExToken::makeGroupBegin(bool pfx, bool cap,
   _grpIdent =         ++grpIdent;
 }
 
+
+//  Makes a group begin, decoding features "({group}", "({capture}",
+//  "({prefix}" (and abbreviations).
+//
 void
 regExToken::makeGroupBegin(char const *str, uint64 ss, uint64 &nn,
                            uint64 &grpIdent,
@@ -336,8 +333,10 @@ regEx::parse(char const *str) {
   uint64                        capIdent = uint64max;
   regExToken                    toka     = { ._id=++tokIdent };
 
-  merylutil::stack<groupState>  groupStates;   //  Stack of group information
-  merylutil::stack<groupState>  prefxStates;   //  Stack of group information
+  merylutil::stack<groupState>  groupStates;     //  Stack of group information
+  merylutil::stack<groupState>  prefxStates;     //  Stack of group information
+
+  uint32                        groupIndex = 0;  //  Index into current active capGroups
 
 
   if (vParse) {
@@ -359,6 +358,14 @@ regEx::parse(char const *str) {
 
   groupStates.push(groupState{ .pfx=toka._pfx, .cap=toka._cap, .depth=0, .cid=toka._capIdent, .gid=toka._grpIdent });
 
+  {
+    linearset<uint32> grp(groupStates.depth());
+
+    for (uint32 ii=0; ii<groupStates.depth(); ii++)
+      grp.insert(groupStates[ii].cid);
+
+    groupIndex = _cgs.insert(grp);
+  }
 
 
                             
@@ -441,14 +448,24 @@ regEx::parse(char const *str) {
 
     if (toka._type == regExTokenType::rtGroupBegin) {
       groupStates.push(groupState{ .pfx=toka._pfx, .cap=toka._cap, .depth=0, .cid=toka._capIdent, .gid=toka._grpIdent });
+
+      linearset<uint32> grp(groupStates.depth());
+
+      for (uint32 ii=0; ii<groupStates.depth(); ii++)
+        grp.insert(groupStates[ii].cid);
+
+      groupIndex = _cgs.insert(grp);
     }
 
     //  If this is a match operator, assign the match
     //  to the current capture group.
 
     if (toka._type == regExTokenType::rtCharClass) {
-      for (uint32 ii=0; ii<groupStates.depth(); ii++)
-        toka._capGroups.insert(groupStates[ii].cid);
+      toka._capGrpIdx =      groupIndex;
+      toka._capGrp    = _cgs[groupIndex];
+
+      //for (uint32 ii=0; ii<groupStates.depth(); ii++)
+      //  toka._capGroups.insert(groupStates[ii].cid);
     }
 
     //  If we've just seen a group-end symbol, pop off the group-info for this group.
@@ -464,6 +481,15 @@ regEx::parse(char const *str) {
           tl[tlLen++] = { ._id=++tokIdent, ._type=regExTokenType::rtGroupEnd, ._grpIdent=ps.gid };
           tl[tlLen++] = { ._id=++tokIdent, ._type=regExTokenType::rtClosure,  ._min=0, ._max=1 };
         }
+      }
+
+      {
+        linearset<uint32> grp(groupStates.depth());
+
+        for (uint32 ii=0; ii<groupStates.depth(); ii++)
+          grp.insert(groupStates[ii].cid);
+
+        groupIndex = _cgs.insert(grp);
       }
 
       //  Find the next active capture group

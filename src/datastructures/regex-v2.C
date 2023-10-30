@@ -56,13 +56,13 @@ regExToken::display(char *str) {
     case regExTokenType::rtCharClass:
       app += sprintf(app, "charact    id:%2lu", _id);
 
-      if (_capGroups.size() > 0) {
+      if (_capGrp != nullptr) {
         app += sprintf(app, " (");
-        for (auto c : _capGroups)
+        for (uint32 ii=0; ii<_capGrp->size(); ii++)
           if (*(app-1) == '(')
-            app += sprintf(app, "%lu", c);
+            app += sprintf(app, "%u", _capGrp->get(ii));
           else
-            app += sprintf(app, " %lu", c);
+            app += sprintf(app, " %u", _capGrp->get(ii));
         app += sprintf(app, ")");
       }
 

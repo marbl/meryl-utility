@@ -40,37 +40,48 @@ namespace merylutil::inline regex::inline v2 {
 //
 void
 regEx::findNodes(uint64      previous,
-                 regExState *current,
+                 uint64      sid,
                  uint64      currentPos,
-                 regExMatch *&match, uint64 &matchLen, uint64 &matchMax,
-                 uint64 *sB, uint64 &sBlen) {
+                 regExMatch *&mM, uint64 &mMlen, uint64 &mMmax,
+                 uint64     *&sN, uint64 &sNlen, uint64 &sNmax) {
 
-  if (current == nullptr) {
-  }
-  else if ((current->_match) ||               //  Save 'current' for exploration if it
-           (current->_accepting)) {           //  has a match node OR is accepting.
-    match[matchLen]._state     = current;     //    Link to state to explore.
-    match[matchLen]._prevMatch = previous;    //    Link to state we came from.
-    match[matchLen]._stringIdx = currentPos;  //    Position in string we're exploring.
+  if (sid == uint64max)
+    return;
 
-    sB[sBlen++] = matchLen++;
+  regExState *current = &rs[sid];
 
-    assert(current->_lambda[0] == nullptr);
-    assert(current->_lambda[1] == nullptr);
+  if ((current->_mid != uint64max) ||       //  Save 'current' for exploration if it
+      (current->_accepting)) {              //  has a match node OR is accepting.
+    increaseArray(mM, mMlen, mMmax, 1024);
+    increaseArray(sN, sNlen, sNmax, 1024);
+
+    mM[mMlen]._sid       = sid;             //    Link to state to explore.
+    mM[mMlen]._prevMatch = previous;        //    Link to state we came from.
+    mM[mMlen]._stringIdx = currentPos;      //    Position in string we're exploring.
+
+    sN[sNlen++] = mMlen++;
+
+    assert(current->_lid[0] == uint64max);
+    assert(current->_lid[1] == uint64max);
   }
   else {
-    findNodes(previous, current->_lambda[0], currentPos, match, matchLen, matchMax, sB, sBlen);
-    findNodes(previous, current->_lambda[1], currentPos, match, matchLen, matchMax, sB, sBlen);
+    findNodes(previous, current->_lid[0], currentPos, mM, mMlen, mMmax, sN, sNlen, sNmax);
+    findNodes(previous, current->_lid[1], currentPos, mM, mMlen, mMmax, sN, sNlen, sNmax);
   }
 }
 
 
 //  Return true if we can get to an accepting state following lambda edges.
 bool
-regEx::isAccepting(regExState *current) {
-  if (current == nullptr)
-    return false;
-  return current->_accepting || isAccepting(current->_lambda[0]) || isAccepting(current->_lambda[1]);
+regEx::isAccepting(uint64 sid) {
+  bool acc = false;
+
+  if (sid != uint64max)
+    acc = (rs[sid]._accepting ||
+           isAccepting(rs[sid]._lid[0]) ||
+           isAccepting(rs[sid]._lid[1]));
+
+  return acc;
 }
 
 
@@ -95,57 +106,55 @@ regEx::match(char const *query) {
     fprintf(stderr, "\n");
   }
 
-  uint64       matchLen = 0;
-  uint64       matchMax = 1024;
-  regExMatch  *match    = new regExMatch [matchMax];
+  regExMatch  *mM = nullptr;          uint64 mMlen = 0; uint64  mMmax = 0;
 
-  uint64       aClen = 0;
-  uint64      *aC    = new uint64 [matchMax];
+  uint64      *aC = new uint64 [16];  uint64 aCmax = 16;  uint64 aClen = 0;   //  List of accepting states
+  uint64      *sO = new uint64 [16];  uint64 sOmax = 16;  uint64 sOlen = 0;   //  Old states to iterate over
+  uint64      *sN = new uint64 [16];  uint64 sNmax = 16;  uint64 sNlen = 0;   //  New states discoered
 
-  uint64      *sA = new uint64 [rsLen + rsLen];      //  Bulk storage of state indices
-  uint64      *sO = sA + 0;      uint64 sOlen = 0;   //  Old states to iterate over
-  uint64      *sN = sA + rsLen;  uint64 sNlen = 0;   //  New states discoered
-
-  //  Find the initial set of nodes to explore by following links out of re._bgn.
-  findNodes(uint64max, re._bgn, 0, match, matchLen, matchMax, sN, sNlen);
+  //  Find the initial set of nodes to explore by following links out of re._bid.
+  findNodes(uint64max, re._bid, 0, mM, mMlen, mMmax, sN, sNlen, sNmax);
 
   uint64 pp    = 0;
   uint64 ppMax = strlen(query) + 1;
 
   do {
-    char ch = query[pp++];                               //  Copy ch to match, move to next for next round.
+    char ch = query[pp++];                                  //  Copy ch to match, move to next for next round.
 
-    std::swap(sN,    sO);                                //  Swap state lists so we iterate over the states
-    std::swap(sNlen, sOlen);  sNlen = 0;                 //  we discovered last iteration (sN) now (sO).
+    std::swap(sN,    sO);                                   //  Swap state lists so we iterate over the states
+    std::swap(sNlen, sOlen);  sNlen = 0;                    //  we discovered last iteration (sN) now (sO).
+    std::swap(sNmax, sOmax);
 
     if (vMatch)
       fprintf(stderr, "\nADVANCE ch '%s' with %lu states to explore\n", displayLetter(ch), sOlen);
 
-    for (uint64 ii=0; ii<sOlen; ii++) {                  //  Over all the nodes in the set
-      regExState *S  = match[ sO[ii] ]._state;           //  to explore....
-      regExToken  T  = match[ sO[ii] ]._state->_tok;
+    for (uint64 ii=0; ii<sOlen; ii++) {                     //  Over all the nodes in the set to explore...
+      regExState *S   = mM[ sO[ii] ].state(rs);
+      regExToken  T   = mM[ sO[ii] ].state(rs)->_tok;
 
-      if (S->_match == nullptr)                          //  Skip nodes with no match state; these
-        continue;                                        //  are (hopefully) accepting states!
+      if (S->_mid == uint64max)                             //  Skip nodes with no match state; these
+        continue;                                           //  are (hopefully) accepting states!
 
-      bool  m = T.isMatch(ch);                           //  Test if ch matches what this node is expecting.
+      bool  m = T.isMatch(ch);                              //  Test if ch matches what this node is expecting.
 
       if (vMatch)
         fprintf(stderr, "   [%02lu] -> '%s' -> [%02lu] %s %s\n",
-                S->_id, displayLetter(ch), S->_match->_id, m ? "PASS" : "fail", T.display());
+                S->_id, displayLetter(ch), S->_mid, m ? "PASS" : "fail", T.display());
 
-      if (m)                                             //  If ch does match, follow edges out of the
-        findNodes(sO[ii], S->_match, pp,                 //  match edge to find more nodes to explore.
-                  match, matchLen, matchMax, sN, sNlen); //  NB: pp is already at the next letter.
+      if (m)                                                //  If ch does match, follow edges out of the
+        findNodes(sO[ii], S->_mid, pp,                      //  match edge to find more nodes to explore.
+                  mM, mMlen, mMmax,                         //  NB: pp is already at the next letter.
+                  sN, sNlen, sNmax);
     }
 
-    for (uint64 ii=0, reset=1; ii<sNlen; ii++) {         //  Rebuild accepting state list if there
-      if (match[ sN[ii] ]._state->_accepting == true) {  //  are accepting states in the next round.
-        if (reset)                                       //  
-          aClen = reset = 0;                             //  Over each state, if it is an accepting
-        aC[ aClen++ ] = sN[ii];                          //  state, reset the accepting list if
-      }                                                  //  this is the first accepting state,
-    }                                                    //  then append the accepting state.
+    for (uint64 ii=0, reset=1; ii<sNlen; ii++) {            //  Rebuild accepting state list if there
+      if (mM[ sN[ii] ].state(rs)->_accepting == true) {     //  are accepting states in the next round.
+        if (reset)                                          //  
+          aClen = reset = 0;                                //  Over each state, if it is an accepting
+        increaseArray(aC, aClen, aCmax, 16);                //  state, reset the accepting list if
+        aC[ aClen++ ] = sN[ii];                             //  this is the first accepting state,
+      }                                                     //  then append the accepting state.
+    }                                                       //
 
     if (vMatch)
       fprintf(stderr, "        ch '%s' with %lu states to explore next; aClen %lu\n", displayLetter(ch), sNlen, aClen);
@@ -159,20 +168,20 @@ regEx::match(char const *query) {
 
     fprintf(stderr, "\nFinal state report:\n");
     fprintf(stderr, "  New states:\n");
-    for (uint64 ii=0; (ii<sNlen) && (S = match[ sN[ii] ]._state); ii++)
-      fprintf(stderr, "    [%02lu] accept:%d %s\n", S->_id, isAccepting(S), S->_tok.display());
+    for (uint64 ii=0; (ii<sNlen) && (S = mM[ sN[ii] ].state(rs)); ii++)
+      fprintf(stderr, "    [%02lu] accept:%d %s\n", S->_id, isAccepting(S->_id), S->_tok.display());
     if (sNlen == 0)
       fprintf(stderr, "    none\n");
 
     fprintf(stderr, "  Old states:\n");
-    for (uint64 ii=0; (ii<sOlen) && (S = match[ sO[ii] ]._state); ii++)
-      fprintf(stderr, "    [%02lu] accept:%d %s\n", S->_id, isAccepting(S), S->_tok.display());
+    for (uint64 ii=0; (ii<sOlen) && (S = mM[ sO[ii] ].state(rs)); ii++)
+      fprintf(stderr, "    [%02lu] accept:%d %s\n", S->_id, isAccepting(S->_id), S->_tok.display());
     if (sOlen == 0)
       fprintf(stderr, "    none\n");
 
     fprintf(stderr, "  Accepting states:\n");
-    for (uint64 ii=0; (ii<aClen) && (S = match[ aC[ii] ]._state); ii++)
-      fprintf(stderr, "    [%02lu] accept:%d %s\n", S->_id, isAccepting(S), S->_tok.display());
+    for (uint64 ii=0; (ii<aClen) && (S = mM[ aC[ii] ].state(rs)); ii++)
+      fprintf(stderr, "    [%02lu] accept:%d %s\n", S->_id, isAccepting(S->_id), S->_tok.display());
     if (aClen == 0)
       fprintf(stderr, "    none\n");
 
@@ -201,16 +210,34 @@ regEx::match(char const *query) {
   if (accepting == false)    //  Bail; makes the logic below easier.
     goto exitmatch;          //
 
+#if 0
+  //  What makes multiple accepting solutions different?
+  {
+    for (uint32 ii=0; ii<aClen; ii++) {
+      char fn[1024];
+      sprintf(fn, "path%03u", ii);
+      FILE *out = fopen(fn, "w");
+      for (uint64 mi = aC[ii]; mi != uint64max; mi = mM[mi]._prevMatch) {
+        fprintf(out, "mi: %6lu sid: %6lu %s\n", mi, mM[mi].state(rs)->_id, mM[mi].state(rs)->_tok.display());
+      }
+      fclose(out);
+    }
+  }
+#endif
+
   //  Iterate over the match path to compute the actual length of each
   //  capture, then allocate space for results.
 
   capstorLen = capsLen;
 
-  for (uint64 mi = aC[0]; mi != uint64max; mi = match[mi]._prevMatch) {
-    for (auto c : match[mi]._state->_tok._capGroups)
-      lenP[c] += 1;
+  for (uint64 mi = aC[0]; mi != uint64max; mi = mM[mi]._prevMatch) {
+    auto *cg = mM[mi].state(rs)->_tok._capGrp;
 
-    capstorLen += match[mi]._state->_tok._capGroups.size();
+    if (cg) {  //  lambda nodes have no groups
+      for (uint32 ii=0; ii<cg->size(); ii++)
+        lenP[ cg->get(ii) ]++;
+      capstorLen += cg->size();
+    }
   }
 
   resizeArray(capstor, 0, capstorMax, capstorLen, _raAct::doNothing);
@@ -232,23 +259,28 @@ regEx::match(char const *query) {
   if (vMatch)
     fprintf(stderr, "\nCopy strings to groups.\n");
 
-  for (uint64 mi = aC[0]; mi != uint64max; mi = match[mi]._prevMatch) {
-    regExState  *S = match[mi]._state;
-    uint64       p = match[mi]._prevMatch;
-    uint64      pp = match[mi]._stringIdx;
+  for (uint64 mi = aC[0]; mi != uint64max; mi = mM[mi]._prevMatch) {
+    regExState  *S = mM[mi].state(rs);
+    auto       *cg = mM[mi].state(rs)->_tok._capGrp;
+    uint64       p = mM[mi]._prevMatch;
+    uint64      pp = mM[mi]._stringIdx;
     char        ch = query[pp];
 
     if (vMatch)
       fprintf(stderr, "  [%03lu] query[%03lu]='%s'  %s\n", mi, pp, displayLetter(ch), S->_tok.display());
 
-    for (auto c : S->_tok._capGroups) {
-      bgnP[c] = std::min(bgnP[c], pp);
-      endP[c] = std::max(endP[c], pp+1);
+    if (cg) {
+      for (uint32 ii=0; ii<cg->size(); ii++) {
+        uint32 c = cg->get(ii);
 
-      caps[c][--lenP[c]] = ch;
+        bgnP[c] = std::min(bgnP[c], pp);
+        endP[c] = std::max(endP[c], pp+1);
 
-      if (vMatch)
-        fprintf(stderr, "        group[%03lu] -> %3lu-%3lu '%s'\n", c, bgnP[c], endP[c], displayString(caps[c] + lenP[c]));
+        caps[c][--lenP[c]] = ch;
+
+        if (vMatch)
+          fprintf(stderr, "        group[%03u] -> %3lu-%3lu '%s'\n", c, bgnP[c], endP[c], displayString(caps[c] + lenP[c]));
+      }
     }
   }
 
@@ -273,9 +305,10 @@ regEx::match(char const *query) {
   //  Cleanup and return.
 
  exitmatch:
+  delete [] sN;
+  delete [] sO;
   delete [] aC;
-  delete [] sA;
-  delete [] match;
+  delete [] mM;
 
   return accepting;
 }

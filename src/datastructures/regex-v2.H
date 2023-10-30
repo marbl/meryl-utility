@@ -70,6 +70,7 @@
 //
 
 #include "types.H"
+#include "arrays.H"
 
 namespace merylutil::inline regex::inline v2 {
 
@@ -128,95 +129,62 @@ public:
   void    matchLineEnd(void)                  { _type = regExTokenType::rtLineEnd;   };
 
 public:
-  uint64           _id        = 0;
-  regExTokenType   _type      = regExTokenType::rtNone;
+  uint64             _id        = 0;
+  regExTokenType     _type      = regExTokenType::rtNone;
 
-  uint64           _syms[4]   = { 0, 0, 0, 0 };
+  uint64             _syms[4]   = { 0, 0, 0, 0 };
 
-  bool             _pfx       = false;
-  bool             _cap       = false;
-  uint64           _capIdent  = 0;        //  ID of the capture group this token belongs to.
-  uint64           _grpIdent  = 0;        //  If a group begin/end, the id of that group - independent from capIdent!
+  bool               _pfx       = false;
+  bool               _cap       = false;
+  uint64             _capIdent  = 0;        //  ID of the capture group this token belongs to.
+  uint64             _grpIdent  = 0;        //  If a group begin/end, the id of that group - independent from capIdent!
 
-  std::set<uint64> _capGroups = std::set<uint64>();
+  //std::set<uint64> _capGroups = std::set<uint64>();
+  //  replace this with an index to a list of sets
 
-  uint64           _min       = 0;
-  uint64           _max       = uint64max;
+  uint32             _capGrpIdx = uint32max;
+  linearset<uint32> *_capGrp    = nullptr;
+
+  uint64             _min       = 0;
+  uint64             _max       = uint64max;
 };
 
 
 
 class regExState {
 public:
-  //regExState() {};
-  //~regExState() {};
-
-  void         addMatch(regExToken tok, regExState *to, bool verbose=false) {
-
-    if (_match)
-      fprintf(stderr, "ERROR: can't add second match rule to state id=%lu.\n", _id);
-    if (_lambda[0])
-      fprintf(stderr, "ERROR: can't add match rule to state id=%lu; has lambda rules.\n", _id);
-
-    assert(_match == nullptr);
-    assert(_lambda[0] == nullptr);
-
-    if (verbose)
-      fprintf(stderr, "  addMatch()   %-3lu match  -> %lu\n", _id, to->_id);
-
-    _tok   = tok;
-    _match = to;
-  }
-  void         addEpsilon(regExState *to, bool verbose=false) {
-
-    if (_match)
-      fprintf(stderr, "ERROR: can't add epsilon to state id=%lu; has existing _match rule.\n", _id);
-    if (_lambda[1])
-      fprintf(stderr, "ERROR: can't add third epsilon rule to state id=%lu.\n", _id);
-
-    assert(_match     == nullptr);
-    assert(_lambda[1] == nullptr);
-
-    if      (_lambda[0] == nullptr)  _lambda[0] = to;
-    else if (_lambda[1] == nullptr)  _lambda[1] = to;
-    else                             assert(0);
-
-    if (verbose)
-      fprintf(stderr, "  addEpsilon() %-3lu lambda -> %lu\n", _id, to->_id);
-  }
+  void         addMatch(uint64 tid, regExToken tok, bool verbose=false);
+  void         addEpsilon(uint64 tid, bool verbose=false);
 
   uint64      _id         = 0;
   bool        _accepting  = false;
 
   regExToken  _tok;
 
-  regExState  *_match     =   nullptr;
-  regExState  *_lambda[2] = { nullptr, nullptr };
+  uint64      _mid    =   uint64max;               //  State for tok match.
+  uint64      _lid[2] = { uint64max, uint64max };  //  States for lambda transitions.
 };
-
 
 
 class regExExpr {
 public:
-  regExExpr(regExState *b=nullptr, regExState *e=nullptr) : _bgn(b), _end(e) {};
-  //~regExExpr() {};
+  regExState *bgn(regExState *rs) { return rs + _bid; }
+  regExState *end(regExState *rs) { return rs + _eid; }
 
-  regExExpr     duplicate(regExState *rs, uint64 &rsLen, bool verbose=false);
-
-  regExState  *_bgn;
-  regExState  *_end;
+  uint64  _bid = uint64max;
+  uint64  _eid = uint64max;
 };
 
 
 class regExMatch {
 public:
-  //regExMatch() {};
-  //~regExMatch() {};
+  regExState *state(regExState *rs) { return rs + _sid; }
 
-  regExState *_state;      //  Pointer to the state node that we matched.
-  uint64      _prevMatch;  //  Pointer to the previous regExMatch that led to here.
-  uint64      _stringIdx;  //  Pointer to the character in the text we matched.
+  uint64  _sid       = uint64max;  //  Pointer to the state node that we matched.
+  uint64  _prevMatch = uint64max;  //  Pointer to the previous regExMatch that led to here.
+  uint64  _stringIdx = uint64max;  //  Pointer to the character in the text we matched.
 };
+
 
 
 class regEx {
@@ -231,6 +199,7 @@ public:
     delete [] endP;
     delete [] lenP;
     delete [] caps;
+    fprintf(stderr, "Deleted.\n");
   };
 
 public:
@@ -298,18 +267,18 @@ public:
   char const *operator[]     (uint64 cap) { return caps[cap]; }
 
 private:
-  regExExpr   concat   (regExState *rs, uint64 &rsLen, regExExpr a, regExExpr b);
-  regExExpr   alternate(regExState *rs, uint64 &rsLen, regExExpr a, regExExpr b);
-  regExExpr   closure  (regExState *rs, uint64 &rsLen, regExExpr a, uint64 min, uint64 max);
-  regExExpr   symbol   (regExState *rs, uint64 &rsLen, regExToken tok);
-  regExExpr   epsilon  (regExState *rs, uint64 &rsLen, regExToken tok);
+  regExExpr   concat   (regExState *&rs, uint64 &rsLen, uint64 &rsMax, regExExpr a, regExExpr b);
+  regExExpr   alternate(regExState *&rs, uint64 &rsLen, uint64 &rsMax, regExExpr a, regExExpr b);
+  regExExpr   closure  (regExState *&rs, uint64 &rsLen, uint64 &rsMax, regExExpr a, uint64 min, uint64 max);
+  regExExpr   symbol   (regExState *&rs, uint64 &rsLen, uint64 &rsMax, regExToken tok);
+  regExExpr   epsilon  (regExState *&rs, uint64 &rsLen, uint64 &rsMax, regExToken tok);
 
-  bool        isAccepting(regExState *current);
+  bool        isAccepting(uint64 sid);
   void        findNodes(uint64      previous,
-                        regExState *current,
+                        uint64      sid,
                         uint64      currentPos,
-                        regExMatch *&match, uint64 &matchLen, uint64 &matchMax,
-                        uint64 *sB, uint64 &sbLen);
+                        regExMatch *&mM, uint64 &mMlen, uint64 &mMmax,
+                        uint64     *&sB, uint64 &sBlen, uint64 &sBmax);
 
   bool        parse(char const *pattern);
   bool        convert(void);
@@ -336,6 +305,8 @@ private:
   char        *capstor    = nullptr;
 
   bool         accepting  = false;
+
+  linearsets<uint32>   _cgs;
 
   uint64       capsLen    = 0;
   uint64       capsMax    = 0;

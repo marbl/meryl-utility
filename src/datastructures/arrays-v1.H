@@ -346,6 +346,21 @@ resizeArray(T1*& array1, T2*& array2, T3*& array3, T4*& array4, uint64 arrayLen,
   setArraySize(array4, arrayLen, arrayMax, newMax, op);
 }
 
+
+
+////////////////////////////////////////
+//
+//  Append an element to an array.
+//
+template<typename T, typename L>
+L
+appendToArray(T elt, T*& array, L &arrayLen, L &arrayMax, uint64 moreSpace=512, _raAct op=_raAct::copyData) {
+  increaseArray(array, arrayLen, arrayMax, moreSpace, op);
+  array[arrayLen++] = elt;
+  return arrayLen - 1;
+}
+
+
 }  //  merylutil::arrays::v1
 
 #endif  //  MERYLUTIL_DS_ARRAYS_V1_H

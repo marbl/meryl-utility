@@ -33,6 +33,8 @@ SOURCES      := \
                 datastructures/regex-v2-match.C \
                 datastructures/regex-v2-parse.C \
                 \
+                datastructures/sets-v1.C \
+                \
                 datastructures/splitToWords-v1.C \
                 datastructures/stringList-v1.C \
                 datastructures/types-v1.C \

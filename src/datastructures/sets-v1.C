@@ -1,4 +1,3 @@
-
 /******************************************************************************
  *
  *  This file is part of meryl-utility, a collection of miscellaneous code
@@ -17,11 +16,28 @@
  *  contains full conditions and disclaimers.
  */
 
-#ifndef MERYLUTIL_ARRAYS_H
-#define MERYLUTIL_ARRAYS_H
+#include "sets-v1.H"
 
-#include "datastructures/arrays-v1.H"
-#include "datastructures/stacks-v1.H"
-#include "datastructures/sets-v1.H"
+namespace merylutil::inline sets::inline v1 {
 
-#endif  //  MERYLUTIL_ARRAYS_H
+
+int
+nothing(int x) {
+  fprintf(stderr, "x");
+}
+
+//
+//  Want datastructure that allows:
+//   - storage of a list of 'set of integers'
+//   - addition of a new 'set of integers'
+//   - deletion would be nice but not required
+//   - return index of existing 'set of integers' given a query set
+//     or doesn't-exist
+//   - simple implementation, no trees
+//
+//   - iteration over integers in the set
+//
+
+
+
+}  //    merylutil::sets::v1

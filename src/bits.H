@@ -23,6 +23,8 @@
 #include "bits/fibonacci-v1.H"
 #include "bits/bits-v1.H"
 
+#include "bits/murmur-v1.H"
+
 #include "bits/hexDump-v1.H"
 
 #include "bits/bitArray-v1.H"

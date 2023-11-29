@@ -105,7 +105,7 @@ private:
 inline
 void
 wordArray::setLock(void) {
-  while (_lock.test_and_set(std::memory_order_relaxed) == true)
+  while (_lock.test_and_set(std::memory_order_acquire) == true)
     ;
 }
 
@@ -113,7 +113,7 @@ wordArray::setLock(void) {
 inline
 void
 wordArray::relLock(void) {
-  _lock.clear();
+  _lock.clear(std::memory_order_release);
 }
 
 
@@ -122,13 +122,13 @@ void
 wordArray::setLock(uint64 seg, uint64 lockW1, uint64 lockW2) {
 
   if (lockW1 == lockW2) {
-    while (_segLocks[seg][lockW1].test_and_set(std::memory_order_relaxed) == true)
+    while (_segLocks[seg][lockW1].test_and_set(std::memory_order_acquire) == true)
       ;
   }
   else {
-    while (_segLocks[seg][lockW1].test_and_set(std::memory_order_relaxed) == true)
+    while (_segLocks[seg][lockW1].test_and_set(std::memory_order_acquire) == true)
       ;
-    while (_segLocks[seg][lockW2].test_and_set(std::memory_order_relaxed) == true)
+    while (_segLocks[seg][lockW2].test_and_set(std::memory_order_acquire) == true)
       ;
   }
 }
@@ -139,11 +139,11 @@ void
 wordArray::relLock(uint64 seg, uint64 lockW1, uint64 lockW2) {
 
   if (lockW1 == lockW2) {
-    _segLocks[seg][lockW1].clear();
+    _segLocks[seg][lockW1].clear(std::memory_order_release);
   }
   else {
-    _segLocks[seg][lockW2].clear();
-    _segLocks[seg][lockW1].clear();
+    _segLocks[seg][lockW2].clear(std::memory_order_release);
+    _segLocks[seg][lockW1].clear(std::memory_order_release);
   }
 }
 

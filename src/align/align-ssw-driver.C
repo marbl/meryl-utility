@@ -95,16 +95,25 @@ sswLib::setGapScores(int8 open, int8 extend) {
 
 
 
-#ifndef SSW_H
+#if 0
 
 bool
 sswLib::align(char const *seqA_, uint32 seqlenA_, int32 bgnA_, int32 endA_,
               char const *seqB_, uint32 seqlenB_, int32 bgnB_, int32 endB_, bool verbose_) {
+
+  _maxA++;
+  _lenA++;
+  _offA++;
+  _maxB++;
+  _lenB++;
+  _offB++;
+  _cigarMax++;
+
   fprintf(stderr, "sswLib::align()--  SSW not available on this architecture.\n");
   assert(0);
 }
 
-#else
+#endif
 
 bool
 sswLib::align(char const *seqA_, uint32 seqlenA_, int32 bgnA_, int32 endA_,
@@ -167,6 +176,15 @@ sswLib::align(char const *seqA_, uint32 seqlenA_, int32 bgnA_, int32 endA_,
   //  A gap of length 1 is cost gapOpen.
   //  A gap of length 2 is cost gapOpen + gapExtend.
 
+#ifndef SSW_H
+
+  _cigarMax = 1;  //  To suppress warning: private field '_cigarMax' is not used [-Wunused-private-field]
+
+  fprintf(stderr, "sswLib::align()--  SSW not available on this architecture.\n");
+  assert(0);
+
+#else
+
   s_profile  *profile = ssw_init(_intA, _lenA,
                                  _scoreMatrix,   //  Score matrix as an array
                                  5,              //  Dimension of matrix
@@ -220,6 +238,8 @@ sswLib::align(char const *seqA_, uint32 seqlenA_, int32 bgnA_, int32 endA_,
   init_destroy(profile);
   align_destroy(result);
 
+#endif  //  SSW_H
+
   //  Analyze the results.  We cleared these variables at the start.
 
   analyzeAlignment();
@@ -238,7 +258,6 @@ sswLib::align(char const *seqA_, uint32 seqlenA_, int32 bgnA_, int32 endA_,
   return(true);
 }
 
-#endif  //  SSW_H
 
 
 //  Draw the alignment, truncating long match regions to at most 2 *

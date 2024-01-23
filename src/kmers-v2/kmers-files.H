@@ -138,7 +138,7 @@ public:
     }
 
     if (_blockPrefix != prefix)
-      fprintf(stderr, "set prefix 0x%s from [0x%s %8lu %8lu] to [%8lu %8lu]\n",
+      fprintf(stderr, "set prefix 0x%s from [0x%s " F_U64 " " F_U64 "] to [" F_U64 " " F_U64 "]\n",
               toHex(prefix),
               toHex(_blockPrefix), _blockPosition, _numKmers,
               merylutil::ftell(F), _numKmers + nKmers);

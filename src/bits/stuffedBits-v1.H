@@ -258,7 +258,7 @@ stuffedBits::moveToNextBlock(uint64 wordLen) {
   //  words do not span blocks.
 
   if (_dataPos != _blocks[_dataBlk]._len)
-    fprintf(stderr, "stuffedBits()--  ERROR: _dataPos=%lu != _blocks[%u]._len=%lu\n",
+    fprintf(stderr, "stuffedBits()--  ERROR: _dataPos=" F_U64 " != _blocks[%u]._len=" F_U64 "\n",
             _dataPos, _dataBlk, _blocks[_dataBlk]._len);
   assert(_dataPos == _blocks[_dataBlk]._len);
 

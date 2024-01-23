@@ -26,20 +26,17 @@
 
 //https://android.googlesource.com/platform/ndk/+/ndk-release-r21/sources/android/cpufeatures/cpu-features.c
 #ifdef __aarch64__
-#warning aarch64
 //#include <uapi/asm/hwcap.h>
 #endif
 
 //https://developer.arm.com/documentation/ddi0406/c/System-Level-Architecture/The-CPUID-Identification-Scheme/The-CPUID-registers/Organization-of-the-CPUID-registers?lang=en
 
 #ifdef __arm__
-#warning arm
 //#include <asm/hwcap.h>
 //#include <uapi/asm/hwcap.h>
 #endif
 
 #ifdef __mips__
-#warning mips
 #endif
 
 #include "cpuIdent-v1.H"
@@ -270,6 +267,8 @@ merylutil::system::v1::cpuIdent::decodeAMDLegacyCacheTopology(void) {
   if (false == isLeafValid(0x06))  return false;
 
 #ifdef __x86_64__
+  uint32  assocTable[16] = {0, 1, 2, 0, 4, 0, 8, 0, 16, 0, 32, 48, 64, 96, 128, uint32max};
+
   __cpuid_count(0x80000005, 0, eax, ebx, ecx, edx);
 
   uint32  cL1DataLineSize      =  (ecx >>  0) & 0x00ff;
@@ -289,7 +288,7 @@ merylutil::system::v1::cpuIdent::decodeAMDLegacyCacheTopology(void) {
   uint32  cL2Associativity =  (ecx >> 12) & 0x000f;
   uint32  cL2SizeKB        =  (ecx >> 16) & 0xffff;
 
-  cL2Associativity = (uint32 [16]){0, 1, 2, 0, 4, 0, 8, 0, 16, 0, 32, 48, 64, 96, 128, uint32max}[cL2Associativity];
+  cL2Associativity = assocTable[cL2Associativity];
 
   uint32  cL3LineSize      =  (edx >>  0) & 0x00ff;
   uint32  cL3LinePerTag    =  (edx >>  8) & 0x000f;
@@ -298,7 +297,7 @@ merylutil::system::v1::cpuIdent::decodeAMDLegacyCacheTopology(void) {
 
   assert(cL3Associativity != 9);  //  New method required!
 
-  cL3Associativity = (uint32 [16]){0, 1, 2, 0, 4, 0, 8, 0, 16, 0, 32, 48, 64, 96, 128, uint32max}[cL3Associativity];
+  cL3Associativity = assocTable[cL3Associativity];
 
   fprintf(stderr, "AMDold L1 Data     %5uKB %3u B/line %d-way\n", cL1DataSizeKB, cL1DataLineSize, cL1DataAssociativity);
   fprintf(stderr, "AMDold L1 Instr    %5uKB %3u B/line %d-way\n", cL1InstSizeKB, cL1InstLineSize, cL1InstAssociativity);

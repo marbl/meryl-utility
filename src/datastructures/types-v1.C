@@ -726,9 +726,9 @@ template char const *toOct<uint8>  (uint8   v, uint32 width);
 
 
 
-template<typename uintType>
+template<typename intType>
 char *
-toDec(uintType v, char *ret, uint32 w) {
+toDec(intType v, char *ret, uint32 w) {
   uint32   p = 1;
   uint32   e = 0;
 
@@ -738,7 +738,7 @@ toDec(uintType v, char *ret, uint32 w) {
     v = -v;
   }
 
-  for (uintType t=v/10; t > 0; t /= 10)   //  Count how long the output string will
+  for (intType t=v/10; t > 0; t /= 10)    //  Count how long the output string will
     p++;                                  //  be; we build backwards, right-to-left.
 
   ret[p]   =  0;                          //  Terminate the string, and remember the
@@ -746,7 +746,7 @@ toDec(uintType v, char *ret, uint32 w) {
 
   ret[--p] = alpha[ v % 10 ];             //  Convert the last digit; this handles v=0 too.
 
-  for (uintType t=v/10; t > 0; t /= 10)   //  Convert the next low order digit to
+  for (intType t=v/10; t > 0; t /= 10)    //  Convert the next low order digit to
     ret[--p] = alpha[ t % 10 ];           //  an ASCII letter, repeat.
 
   if (ret[0] == '-')                      //  If a negative number, the last
@@ -757,16 +757,16 @@ toDec(uintType v, char *ret, uint32 w) {
   return(ret + e);
 }
 
-template<typename uintType>
+template<typename intType>
 void
-toDec(uintType v, char *&str, uint64 &strLen, uint64 &strMax, uint32 w) {
+toDec(intType v, char *&str, uint64 &strLen, uint64 &strMax, uint32 w) {
   merylutil::increaseArray(str, strLen + 129, strMax, 1024);
   strLen = toDec(v, str + strLen, w) - str;
 }
 
-template<typename uintType>
+template<typename intType>
 char const *
-toDec(uintType v, uint32 w) {
+toDec(intType v, uint32 w) {
   char *ret = getNextString();
   toDec(v, ret, w);
   return(ret);

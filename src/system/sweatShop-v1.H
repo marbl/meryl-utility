@@ -23,7 +23,6 @@
 #include "types.H"
 
 #include <pthread.h>
-#include <semaphore.h>
 
 class sweatShopWorker;
 class sweatShopState;

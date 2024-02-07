@@ -22,7 +22,7 @@
 
 #include "types.H"
 
-#include <signal.h>
+#include <csignal>
 
 
 

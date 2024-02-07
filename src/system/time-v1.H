@@ -22,9 +22,7 @@
 
 #include "types.H"
 
-#include <sys/types.h>
 #include <sys/stat.h>  //  for UTIME_OMIT
-#include <sys/time.h>
 
 namespace merylutil::inline system::inline v1 {
 

@@ -45,22 +45,21 @@
 #define UNUSED(x) UNUSED_ ## x
 #endif
 
-#include <stdio.h>
-#include <stdlib.h>
-#include <stdarg.h>
-#include <stdint.h>
-#include <inttypes.h>
-#include <limits.h>
+#include <cstdio>
+#include <cstdlib>
+#include <cstdarg>
+#include <cstdint>
+#include <cinttypes>
+#include <climits>
 #include <unistd.h>
-#include <string.h>
-#include <strings.h>
-#include <ctype.h>
+#include <cstring>
+#include <cctype>
 
-#include <float.h>
-#include <math.h>
+#include <cfloat>
+#include <cmath>
 
-#include <assert.h>
-#include <errno.h>
+#include <cassert>
+#include <cerrno>
 
 #include <omp.h>
 

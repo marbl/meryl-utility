@@ -1,17 +1,13 @@
 #ifndef KSW2_H_
 #define KSW2_H_
 
-#include <stdint.h>
+#include <cstdint>
+#include <cstdlib>
 
-#ifdef HAVE_KALLOC
-#include "kalloc.h"
-#else
-#include <stdlib.h>
 #define kmalloc(km, size) malloc((size))
 #define kcalloc(km, count, size) calloc((count), (size))
 #define krealloc(km, ptr, size) realloc((ptr), (size))
 #define kfree(km, ptr) free((ptr))
-#endif
 
 namespace merylutil::inline align::inline ksw2::inline v1 {
 

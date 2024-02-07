@@ -17,11 +17,11 @@
  *  contains full conditions and disclaimers.
  */
 
-#include <sched.h>  //  pthread scheduling stuff
-
 #include "system.H"
 #include "sweatShop-v1.H"
 
+#include <pthread.h>
+#include <sched.h>  //  pthread scheduling stuff
 
 
 class sweatShopWorker {

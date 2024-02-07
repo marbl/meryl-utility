@@ -32,9 +32,9 @@
 #ifndef SSW_H
 #define SSW_H
 
-#include <stdio.h>
-#include <stdint.h>
-#include <string.h>
+#include <cstdio>
+#include <cstdint>
+#include <cstring>
 
 namespace merylutil::inline align::inline ssw::inline v1 {
 

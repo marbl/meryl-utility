@@ -452,27 +452,27 @@ edlibAlignmentToStrings(EdlibAlignResult const &result,
     assert(tgtPos <= tgtLength);
 
     if (result.alignment[aa] == EDLIB_EDOP_MATCH) {
-      qryAln[aa] = tolower(qry[qryPos]);
-      tgtAln[aa] = tolower(tgt[tgtPos]);
+      qryAln[aa] = std::tolower(qry[qryPos]);
+      tgtAln[aa] = std::tolower(tgt[tgtPos]);
       qryPos++;
       tgtPos++;
     }
 
     else if (result.alignment[aa] == EDLIB_EDOP_MISMATCH) {
-      qryAln[aa] = toupper(qry[qryPos]);
-      tgtAln[aa] = toupper(tgt[tgtPos]);
+      qryAln[aa] = std::toupper(qry[qryPos]);
+      tgtAln[aa] = std::toupper(tgt[tgtPos]);
       qryPos++;
       tgtPos++;
     }
 
     else if (result.alignment[aa] == EDLIB_EDOP_INSERT) {   //  Insert in target
       tgtAln[aa] = '-';
-      qryAln[aa] = toupper(qry[qryPos]);
+      qryAln[aa] = std::toupper(qry[qryPos]);
       qryPos++;
     }
 
     else if (result.alignment[aa] == EDLIB_EDOP_DELETE) {   // Insert in query
-      tgtAln[aa] = toupper(tgt[tgtPos]);
+      tgtAln[aa] = std::toupper(tgt[tgtPos]);
       qryAln[aa] = '-';
       tgtPos++;
     }

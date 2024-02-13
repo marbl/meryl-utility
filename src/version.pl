@@ -24,25 +24,45 @@ use Cwd qw(getcwd);
 
 my $cwd = getcwd();
 
-#  This script expects a module name on the command line, e.g.,
-#  'version-update.pl canu'.  This name is used is the non-git based version
-#  string.
+#  Update version.H with module and version info.
 #
-#  On release change $label to 'release', update $major and $minor.  Make the
-#  release, then change label back to 'snapshot'.  This will result in the
-#  released code having a version string of "$modName 1.9".
+#  Expects four parameters on the command line:
+#    module-name version-label version-number path-to-version.H
+#
+#      module-name:       name of the module, e.g., 'verkko' or 'canu'.
+#      version-label:     type of release this is:
+#                           'snapshot' - query git to discover the version number
+#                           'release'  - use the next arg as the version number
+#      version-number:    the version string to report, e.g., v2.0.1
+#                           MUST be of form 'vMAJOR.MINOR.PATCH'
+#      path-to-version.H: path to file 'version.H'; 
+#
+#  The script will create output file 'path-to-version.H' and write
+#  configuration information suitable for inclusion in both C source code and
+#  Makefiles.
 
 my $modName  = shift @ARGV;
 my $MODNAME  = $modName;       $MODNAME =~ tr/a-z-/A-Z_/;
 
+my $label    = shift @ARGV;   #  Expects snapshot or release
+my $version  = shift @ARGV;   #  Expects vM.N.P
+my $major    = "0";
+my $minor    = "0";
+
+if ($version =~ m!^v(\d+)\.(\d+\.?\d*)$!) {
+    $major = $1;
+    $minor = $2;
+}
+
 my $verFile  = shift @ARGV;
 
-my $label    = "snapshot";      #  If not 'release' print this in the version output.
-my $major    = "0";             #  Bump before release.
-my $minor    = "0";             #  Bump before release.
+if (($modName eq "") || ($modName eq undef) || ($verFile eq undef)) {
+    die "usage: $0 module-name version-label version-number version-file.H\n";
+}
 
-my $branch   = "master";
-my $version  = "v$major.$minor";
+#
+#  If in a git repo, we can get the actual values.
+#
 
 my @submodules;
 
@@ -53,14 +73,6 @@ my $revCount = 0;
 my $dirty    = undef;
 my $dirtya   = undef;
 my $dirtyc   = undef;
-
-#  Required module name on the command line.
-
-if (($modName eq "") || ($modName eq undef) || ($verFile eq undef)) {
-    die "usage: $0 module-name version-file.H\n";
-}
-
-#  If in a git repo, we can get the actual values.
 
 if (-d "../.git") {
     $label = "snapshot";
@@ -122,26 +134,38 @@ if (-d "../.git") {
         $dirty = "sync'd with github";
     }
 
+    #  Figure out which branch we're on.
 
-    #  But if we're on a branch, replace the version with the name of the branch.
-    open(F, "git rev-parse --abbrev-ref HEAD |");
+    my $branch = "master";
+
+    open(F, "git branch --contains |");   #  Show branches that contain the tip commit.
     while (<F>) {
-        chomp;
-        $branch  = $_;
+        next  if (m/detached\sat/);       #  Skip 'detached' states.
+
+        s/^\*{0,1}\s+//;                  #  Remove any '*' annotation
+        s/\s+$//;                         #  and all spaces.
+
+        $branch = $_;                     #  Pick the first branch
+        last;                             #  mentioned.
+    }
+    close(F);
+
+    #  If a release branch, save major and minor version numbers.
+
+    if ($branch =~ m/v(\d+)\.(\d+)/) {
+        $major = $1;
+        $minor = $2;
     }
 
-    if ($branch ne "master") {
-        if ($branch =~ m/v(\d+)\.(\d+)/) {
-            $major = $1;
-            $minor = $2;
-        }
+    #  If on an actual branch, remember the branch name.
 
+    if ($branch ne "master") {
         $label   = "branch";
         $version = $branch;
     }
 
+    #  Get information on any submodules present.
 
-    #  Get information on any submodules here.
     open(F, "git submodule status |");
     while (<F>) {
         if (m/^(.*)\s+(.*)\s+\((.*)\)$/) {
@@ -151,8 +175,9 @@ if (-d "../.git") {
     close(F);
 }
 
-
+#
 #  If not in a git repo, we might be able to figure things out based on the directory name.
+#
 
 elsif ($cwd =~ m/$modName-(.{40})\/src/) {
     $label   = "snapshot";

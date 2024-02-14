@@ -1,5 +1,5 @@
-MODULE       :=    meryl-utility
-VERSION      := snapshot v0.0
+MODULE       := meryl-utility
+VERSION      := snapshot v1.0
 VERSION_H    := version.H
 
 TARGET       := libmeryl-utility.a

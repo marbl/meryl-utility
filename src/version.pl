@@ -74,7 +74,7 @@ my $dirty    = undef;
 my $dirtya   = undef;
 my $dirtyc   = undef;
 
-if (-d "../.git") {
+if (system("git rev-parse --is-inside-work-tree > /dev/null 2>&1") == 0) {
     $label = "snapshot";
 
     #  Count the number of changes since the last release.
@@ -173,20 +173,6 @@ if (-d "../.git") {
         }
     }
     close(F);
-}
-
-#
-#  If not in a git repo, we might be able to figure things out based on the directory name.
-#
-
-elsif ($cwd =~ m/$modName-(.{40})\/src/) {
-    $label   = "snapshot";
-    $hash1   = $1;
-    $hash2   = $1;
-}
-
-elsif ($cwd =~ m/$modName-master\/src/) {
-    $label   = "master-snapshot";
 }
 
 #

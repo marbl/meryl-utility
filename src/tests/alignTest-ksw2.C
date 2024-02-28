@@ -80,13 +80,13 @@ main(int argc, char **argv) {
     }
 
     if      (strcmp(argv[arg], "-A") == 0) {
-      fileA = new dnaSeqFile(argv[++arg]);
+      fileA = openSequenceFile(argv[++arg]);
       fileA->loadSequence(dseqA);
       seqA = dseqA.bases();
     }
 
     else if (strcmp(argv[arg], "-B") == 0) {
-      fileB = new dnaSeqFile(argv[++arg]);
+      fileB = openSequenceFile(argv[++arg]);
       fileB->loadSequence(dseqB);
       seqB = dseqB.bases();
     }

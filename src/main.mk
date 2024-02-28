@@ -88,7 +88,8 @@ SOURCES      := \
                 system/time-v1.C \
                 \
                 sequence/dnaSeq-v1.C \
-                sequence/dnaSeqFile-v1.C \
+                sequence/bufSeqFile-v1.C \
+                sequence/htsSeqFile-v1.C \
                 sequence/sequence-v1.C
 
 SOURCES      += htslib/hts/bcf_sr_sort.c \

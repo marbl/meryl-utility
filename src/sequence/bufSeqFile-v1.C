@@ -22,86 +22,13 @@
 #include "arrays.H"
 #include "strings.H"
 
-namespace merylutil::inline sequence::inline v1 {
-
-
-dnaSeqFile::dnaSeqFile(char const *filename, bool indexed) {
-  _filename = duplicateString(filename);
-
-  reopen(indexed);
-}
-
-dnaSeqFile::~dnaSeqFile() {
-  delete [] _filename;
-  delete    _file;
-  delete    _buffer;
-  delete [] _index;
-}
-
-
-
-//  Open, or reopen, an input file.
 //
-void
-dnaSeqFile::reopen(bool indexed) {
-
-  //  If a _file exists already, reopen it, otherwise, make a new one.
-  if (_file)
-    _file->reopen();
-  else
-    _file = new compressedFileReader(_filename);
-
-  //  Since the file object is always new, we need to make a new read buffer.
-  //  gzip inputs seem to be (on FreeBSD) returning only 64k blocks
-  //  regardless of the size of our buffer; but uncompressed inputs will
-  //  benefit slightly from a bit larger buffer.
-  delete _buffer;
-
-  _buffer = new readBuffer(_file->file(), 128 * 1024);
-
-  //  If we have an index already or one is requested, (re)generate it.
-
-  if ((_index != nullptr) || (indexed == true))
-    generateIndex();
-}
-
-
-
-bool
-dnaSeqFile::findSequence(uint64 i) {
-
-  if (_indexLen == 0)   return(false);
-  if (_indexLen <= i)   return(false);
-
-  _buffer->seek(_index[i]._fileOffset);
-
-  _seqIdx = i;
-
-  return(true);
-}
-
-
-
-uint64
-dnaSeqFile::sequenceLength(uint64 i) {
-
-  if (_indexLen == 0)   return(UINT64_MAX);
-  if (_indexLen <= i)   return(UINT64_MAX);
-
-  return(_index[i]._sequenceLength);
-}
-
-
-
-
-////////////////////////////////////////
-//  dnaSeqFile indexing
+//  Utility function for finding index files.
 //
-
 const uint64 dnaSeqVersion01 = 0x3130716553616e64;   //  dnaSeq01
 const uint64 dnaSeqVersion02 = 0x3230716553616e64;   //  dnaSeq02 - not used yet
 
-
+static
 char const *
 makeIndexName(char const *prefix) {
   char const *suffix = ".dnaSeqIndex";
@@ -112,14 +39,94 @@ makeIndexName(char const *prefix) {
   memcpy(iname,        prefix, plen + 1);   //  +1 for the NUL byte.
   memcpy(iname + plen, suffix, slen + 1);
 
-  return(iname);
+  return iname;
 }
 
 
-//  Load an index.  Returns true if one was loaded.
+
+namespace merylutil::inline sequence::inline v1 {
+
+//
+//  File management.
+//
+
 bool
-dnaSeqFile::loadIndex(void) {
-  char const  *indexName = makeIndexName(_filename);
+bufSeqFile::open(char const *fn, bool indexed) {
+  dnaSeqFile::filename(fn);
+
+  _file       = new compressedFileReader(filename());
+  _buffer     = new readBuffer(_file->file(), 128 * 1024);
+  _indexable  = false;
+  _reopenable = false;
+  _compressed = false;
+
+  while (isWhiteSpace(_buffer->peek()))    //  Skip initial blank
+    _buffer->read();                       //  characters.
+
+  if ((_buffer->peek() != '>') &&          //  Close file if
+      (_buffer->peek() != '@'))            //  not FASTA/Q.
+    return close(); 
+
+  //  Decide FASTQ or SAM, heuristically.
+
+  if (_buffer->peek() == '@') {
+    _buffer->skipAhead('\n');              //  Skip rest of first line,
+    _buffer->skipWhitespace();             //  and any stray whitespace.
+
+    if (_buffer->peek() == '@')            //  If second line is another '@',
+      return close();                      //  we're definitely in a SAM header.
+
+    while (_buffer->peek() != '\n')        //  Check for tabs in second line; if
+      if (_buffer->read() == '\t')         //  found, we're _likely_ a SAM.
+        return close();
+
+    _buffer->skipWhitespace();             //  Skip any stray whitespace.
+
+    if (_buffer->peek() == '+')            //  If third line is a '+', we're probably
+      _buffer->seek(0);                    //  FASTQ; go back to the start of the file.
+    else                                   //
+      return close();                      //  Otherwise, give up and declare it SAM.
+  }
+
+  //fprintf(stderr, "Opened FAST%c file '%s'.\n",
+  //        (_buffer->peek() == '>') ? 'A' : 'Q', filename());
+
+  _indexable    = _file->isSeekable();
+  _reopenable   = _file->isReopenable();
+  _compressed   = _file->isCompressed();
+
+  loadIndex(indexed);
+
+  return true;
+}
+
+
+bool
+bufSeqFile::close(void) {
+  if (_file) {
+    delete _file;    _file   = nullptr;
+    delete _buffer;  _buffer = nullptr;
+    unloadIndex();
+  }
+  return false;
+}
+
+
+bool
+bufSeqFile::reopen(void) {
+  close();
+  if (_reopenable == false)
+    return false;
+  return open(filename());
+}
+
+//
+//  Index loading/saving/creation
+//
+
+bool
+bufSeqFile::loadIndex(bool create) {
+  char const  *indexName = makeIndexName(filename());
   FILE        *indexFile = nullptr;
 
   if (fileExists(indexName) == true) {
@@ -128,25 +135,25 @@ dnaSeqFile::loadIndex(void) {
     uint64  size;
     uint64  date;
 
-    loadFromFile(magic,     "dnaSeqFile::magic",    indexFile);
-    loadFromFile(size,      "dnaSeqFile::size",     indexFile);
-    loadFromFile(date,      "dnaSeqFile::date",     indexFile);
-    loadFromFile(_indexLen, "dnaSeqFile::indexLen", indexFile);
+    loadFromFile(magic,     "bufSeqFile::magic",    indexFile);
+    loadFromFile(size,      "bufSeqFile::size",     indexFile);
+    loadFromFile(date,      "bufSeqFile::date",     indexFile);
+    loadFromFile(_indexLen, "bufSeqFile::indexLen", indexFile);
 
     if (magic != dnaSeqVersion01) {
       fprintf(stderr, "ERROR: file '%s' isn't a dnaSeqIndex; manually remove this file.\n", indexName);
       exit(1);
     }
 
-    if ((size == merylutil::sizeOfFile(_filename)) &&
-        (date == merylutil::timeOfFile(_filename))) {
+    if ((size == merylutil::sizeOfFile(filename())) &&
+        (date == merylutil::timeOfFile(filename()))) {
       _indexMax = _indexLen;
-      _index    = new dnaSeqIndexEntry [_indexMax];
+      _index    = new dsfIdxEnt [_indexMax];
 
-      loadFromFile(_index, "dnaSeqFile::index", _indexLen, indexFile);
+      loadFromFile(_index, "bufSeqFile::index", _indexLen, indexFile);
     }
     else {
-      fprintf(stderr, "WARNING: file '%s' disagrees with index; recreating index.\n", _filename);
+      fprintf(stderr, "WARNING: file '%s' disagrees with index; recreating index.\n", filename());
 
       _index    = nullptr;
       _indexLen = 0;
@@ -158,49 +165,37 @@ dnaSeqFile::loadIndex(void) {
 
   delete [] indexName;
 
-  return(_index != nullptr);   //  Return true if we have an index.
+  if ((_index == nullptr) && (create == true)) {
+    createIndex();
+    loadIndex(false);
+  }
+
+  _numSeqs = _indexLen;
+
+  return _numSeqs > 0;    //  Return true if we have an index.
 }
 
 
-
 void
-dnaSeqFile::saveIndex(void) {
-  char const *indexName = makeIndexName(_filename);
-  FILE       *indexFile = merylutil::openOutputFile(indexName);
-
-  uint64  magic = dnaSeqVersion01;
-  uint64  size  = merylutil::sizeOfFile(_filename);
-  uint64  date  = merylutil::timeOfFile(_filename);
-
-  writeToFile(magic,     "dnaSeqFile::magic",    indexFile);
-  writeToFile(size,      "dnaSeqFile::size",     indexFile);
-  writeToFile(date,      "dnaSeqFile::date",     indexFile);
-  writeToFile(_indexLen, "dnaSeqFile::indexLen", indexFile);
-  writeToFile(_index,    "dnaSeqFile::index",    _indexLen, indexFile);
-
-  merylutil::closeFile(indexFile, indexName);
-
-  delete [] indexName;
+bufSeqFile::unloadIndex(void) {
+  delete [] _index;
+  _indexLen = 0;
+  _indexMax = 0;
+  _index    = nullptr;
 }
 
 
-
 void
-dnaSeqFile::generateIndex(void) {
+bufSeqFile::createIndex(void) {
   dnaSeq     seq;
 
   //  Fail if an index is requested for a compressed file.
 
   if (_file->isCompressed() == true)
-    fprintf(stderr, "ERROR: cannot index compressed input '%s'.\n", _filename), exit(1);
+    fprintf(stderr, "ERROR: cannot index compressed input '%s'.\n", filename()), exit(1);
 
   if (_file->isNormal() == false)
     fprintf(stderr, "ERROR: cannot index pipe input.\n"), exit(1);
-
-  //  If we can load an index, do it and return.
-
-  if (loadIndex() == true)
-    return;
 
   //  Rewind the buffer to make sure we're at the start of the file.
 
@@ -211,7 +206,7 @@ dnaSeqFile::generateIndex(void) {
 
   _indexLen = 0;
   _indexMax = 1048576;
-  _index    = new dnaSeqIndexEntry [_indexMax];
+  _index    = new dsfIdxEnt [_indexMax];
 
   _index[0]._fileOffset     = _buffer->tell();
   _index[0]._sequenceLength = 0;
@@ -221,7 +216,7 @@ dnaSeqFile::generateIndex(void) {
   //    make space for more sequences
   //    save the position of the next sequence
 
-  while (loadSequence(seq) == true) {
+  while (dnaSeqFile::loadSequence(seq) == true) {
     if (seq.wasError()) {
       fprintf(stderr, "WARNING: error reading sequence at/before '%s'\n", seq.ident());
     }
@@ -242,25 +237,56 @@ dnaSeqFile::generateIndex(void) {
 
   //  Save whatever index we made.
 
-  saveIndex();
+  char const *indexName = makeIndexName(filename());
+  FILE       *indexFile = merylutil::openOutputFile(indexName);
+
+  uint64  magic = dnaSeqVersion01;
+  uint64  size  = merylutil::sizeOfFile(filename());
+  uint64  date  = merylutil::timeOfFile(filename());
+
+  writeToFile(magic,     "bufSeqFile::magic",    indexFile);
+  writeToFile(size,      "bufSeqFile::size",     indexFile);
+  writeToFile(date,      "bufSeqFile::date",     indexFile);
+  writeToFile(_indexLen, "bufSeqFile::indexLen", indexFile);
+  writeToFile(_index,    "bufSeqFile::index",    _indexLen, indexFile);
+
+  merylutil::closeFile(indexFile, indexName);
+
+  delete [] indexName;
 }
 
 
 
 void
-dnaSeqFile::removeIndex(void) {
-
-  delete [] _index;
-
-  _indexLen = 0;
-  _indexMax = 0;
-  _index    = nullptr;
+bufSeqFile::destroyIndex(void) {
+  merylutil::unlink(makeIndexName(filename()));
 }
 
+//
+//  Sequence accessors
+//
 
+bool                                    //  Position file at start of sequence 'i' and
+bufSeqFile::findSequence(uint64 i) {    //  remember the index next to be loaded.
+  if (_indexLen == 0)
+    return false;                       //  No index or index i not in this file.
+  _buffer->seek(_index[_seqIdx = i]._fileOffset);
+  return true;
+}
+
+uint64
+bufSeqFile::sequenceLength(uint64 i) {
+  if (_indexLen <= i)
+    return uint64max;                   //  No index or index i not in this file.
+  return _index[i]._sequenceLength;
+}
+
+//
+//
+//
 
 bool
-dnaSeqFile::loadFASTA(char  *&name, uint32 &nameMax,
+bufSeqFile::loadFASTA(char  *&name, uint32 &nameMax,
                       char  *&seq,
                       uint8 *&qlt,  uint64 &seqMax, uint64 &seqLen, uint64 &qltLen) {
   uint64  nameLen = 0;
@@ -274,7 +300,7 @@ dnaSeqFile::loadFASTA(char  *&name, uint32 &nameMax,
   //  Fail rather ungracefully if we aren't at a sequence start.
 
   if (ch != '>')
-    return(false);
+    return false;
 
   //  Read the header line into the name string.  We cannot skip whitespace
   //  here, but we do allow DOS to insert a \r before any \n.
@@ -326,13 +352,13 @@ dnaSeqFile::loadFASTA(char  *&name, uint32 &nameMax,
 
   _seqIdx++;
 
-  return(true);
+  return true;
 }
 
 
 
 bool
-dnaSeqFile::loadFASTQ(char  *&name, uint32 &nameMax,
+bufSeqFile::loadFASTQ(char  *&name, uint32 &nameMax,
                       char  *&seq,
                       uint8 *&qlt,  uint64 &seqMax, uint64 &seqLen, uint64 &qltLen) {
   uint32  nameLen = 0;
@@ -346,7 +372,7 @@ dnaSeqFile::loadFASTQ(char  *&name, uint32 &nameMax,
   //  Fail rather ungracefully if we aren't at a sequence start.
 
   if (ch != '@')
-    return(false);
+    return false;
 
   //  Read the header line into the name string.  We cannot skip whitespace
   //  here, but we do allow DOS to insert a \r before any \n.
@@ -393,7 +419,7 @@ dnaSeqFile::loadFASTQ(char  *&name, uint32 &nameMax,
     ch = _buffer->read();
 
   if (ch != '+')
-    return(false);
+    return false;
 
   for (ch=_buffer->read(); (ch != '\n') && (ch != 0); ch=_buffer->read()) {
     ;
@@ -429,13 +455,13 @@ dnaSeqFile::loadFASTQ(char  *&name, uint32 &nameMax,
 
   _seqIdx++;
 
-  return(true);
+  return true;
 }
 
 
 
 bool
-dnaSeqFile::loadSequence(char  *&name, uint32 &nameMax,
+bufSeqFile::loadSequence(char  *&name, uint32 &nameMax,
                          char  *&seq,
                          uint8 *&qlt,  uint64 &seqMax, uint64 &seqLen, uint32 &error) {
   uint64 qltLen = 0;
@@ -464,7 +490,7 @@ dnaSeqFile::loadSequence(char  *&name, uint32 &nameMax,
 
   //  Skip any whitespace at the start of the file, or before the next FASTQ
   //  sequence (the FASTA reader will automagically skip whitespace at the
-  //  end of the sequence).
+  //  end of the sequence).  (minor duplication in the constructor)
 
   while (isWhiteSpace(_buffer->peek()))
     _buffer->read();
@@ -475,7 +501,7 @@ dnaSeqFile::loadSequence(char  *&name, uint32 &nameMax,
   if ((_buffer->peek() != '>') &&
       (_buffer->peek() != '@') &&
       (_buffer->peek() !=  0)) {
-    //fprintf(stderr, "dnaSeqFile::loadSequence()-- sequence sync lost at position %lu, attempting to find the next sequence.\n", _buffer->tell());
+    //fprintf(stderr, "bufSeqFile::loadSequence()-- sequence sync lost at position %lu, attempting to find the next sequence.\n", _buffer->tell());
     error |= 0x02;
   }
 
@@ -503,7 +529,7 @@ dnaSeqFile::loadSequence(char  *&name, uint32 &nameMax,
     _isFASTA = false;
     _isFASTQ = false;
 
-    return(false);
+    return false;
   }
 
   //  If we failed to load a sequence, report an error message and zero out
@@ -512,9 +538,9 @@ dnaSeqFile::loadSequence(char  *&name, uint32 &nameMax,
 
   if (loadSuccess == false) {
     //if (name[0] == 0)
-    //  fprintf(stderr, "dnaSeqFile::loadSequence()-- failed to read sequence correctly at position %lu.\n", _buffer->tell());
+    //  fprintf(stderr, "bufSeqFile::loadSequence()-- failed to read sequence correctly at position %lu.\n", _buffer->tell());
     //else
-    //  fprintf(stderr, "dnaSeqFile::loadSequence()-- failed to read sequence '%s' correctly at position %lu.\n", name, _buffer->tell());
+    //  fprintf(stderr, "bufSeqFile::loadSequence()-- failed to read sequence '%s' correctly at position %lu.\n", name, _buffer->tell());
 
     error |= 0x01;
 
@@ -523,36 +549,21 @@ dnaSeqFile::loadSequence(char  *&name, uint32 &nameMax,
     seqLen  = 0;
   }
 
-  return(true);
+  return true;
 }
 
 
 
 bool
-dnaSeqFile::loadSequence(dnaSeq &seq) {
-  bool result = loadSequence(seq._name, seq._nameMax,
-                             seq._seq,
-                             seq._qlt,  seq._seqMax, seq._seqLen, seq._error);
-
-  if (result)
-    seq.findNameAndFlags();
-
-  return(result);
-}
-
-
-
-bool
-dnaSeqFile::loadBases(char    *seq,
+bufSeqFile::loadBases(char    *seq,
                       uint64   maxLength,
                       uint64  &seqLength,
                       bool    &endOfSequence) {
 
-  seqLength     = 0;
-  endOfSequence = false;
+  //  If at the end, we're done.
 
   if (_buffer->eof() == true)
-    return(false);
+    return false;
 
   //  If this is a new file, skip the first name line.
 
@@ -571,7 +582,7 @@ dnaSeqFile::loadBases(char    *seq,
   //  If now at EOF, that's it.
 
   if  (_buffer->eof() == true)
-    return(false);
+    return false;
 
   //  Otherwise, we must be in the middle of sequence, so load
   //  until we're not in sequence or out of space.
@@ -584,7 +595,7 @@ dnaSeqFile::loadBases(char    *seq,
     if (_buffer->peek() == '>') {
       _buffer->skipAhead('\n', true);      //  Skip the name line.
       endOfSequence = true;
-      return(true);
+      return true;
     }
 
     if (_buffer->peek() == '+') {
@@ -592,7 +603,7 @@ dnaSeqFile::loadBases(char    *seq,
       _buffer->skipAhead('\n', true);      //  Skip the QV line.
       _buffer->skipAhead('\n', true);      //  Skip the @ line for the next sequence.
       endOfSequence = true;
-      return(true);
+      return true;
     }
 
     //  Read some bases.
@@ -600,7 +611,7 @@ dnaSeqFile::loadBases(char    *seq,
     seqLength += _buffer->copyUntil('\n', seq + seqLength, maxLength - seqLength);
 
     if (seqLength == maxLength)
-      return(true);
+      return true;
 
     //  We're at a newline (or end of file), either way, suck in the next letter
     //  (or nothing) and keep going.
@@ -613,7 +624,9 @@ dnaSeqFile::loadBases(char    *seq,
 
   endOfSequence = (seqLength > 0);
 
-  return(endOfSequence);
+  return seqLength > 0;
 }
+
+
 
 }  //  namespace merylutil::sequence::v1

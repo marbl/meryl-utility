@@ -188,21 +188,25 @@ main(int argc, char **argv) {
     }
 
     else if (strcmp(argv[arg], "-A") == 0) {
-      dnaSeqFile  fileA(argv[++arg]);
+      dnaSeqFile  *fileA = openSequenceFile(argv[++arg]);
 
-      fileA.loadSequence(dseqA);
+      fileA->loadSequence(dseqA);
 
       seqA = dseqA.bases();
       lenA = strlen(seqA);
+
+      delete fileA;
     }
 
     else if (strcmp(argv[arg], "-B") == 0) {
-      dnaSeqFile  fileB(argv[++arg]);
+      dnaSeqFile *fileB = openSequenceFile(argv[++arg]);
 
-      fileB.loadSequence(dseqB);
+      fileB->loadSequence(dseqB);
 
       seqB = dseqB.bases();
       lenB = strlen(seqB);
+
+      delete fileB;
     }
 
     else if (strcmp(argv[arg], "-C") == 0) {

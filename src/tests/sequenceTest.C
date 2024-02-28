@@ -36,30 +36,32 @@ testLoadSeq(void) {
   fprintf(O, "ACGT\n");
   merylutil::closeFile(O);
 
-  dnaSeqFile  F("sequenceTest.data.fasta");
+  dnaSeqFile *F = openSequenceFile("sequenceTest.data.fasta");
   dnaSeq      S;
 
-  F.loadSequence(S);
+  F->loadSequence(S);
   assert(strcmp(S.ident(), "name")      == 0);
   assert(strcmp(S.flags(), "")          == 0);
   assert(strcmp(S.bases(), "ACGT")      == 0);
 
-  F.loadSequence(S);
+  F->loadSequence(S);
   assert(strcmp(S.ident(), "name")      == 0);
   assert(strcmp(S.flags(), "")          == 0);
   assert(strcmp(S.bases(), "ACGT")      == 0);
 
-  F.loadSequence(S);
+  F->loadSequence(S);
   assert(strcmp(S.ident(), "name")      == 0);
   assert(strcmp(S.flags(), "flags")     == 0);
   assert(strcmp(S.bases(), "ACGT")      == 0);
 
-  F.loadSequence(S);
+  F->loadSequence(S);
   assert(strcmp(S.ident(), "name")      == 0);
   assert(strcmp(S.flags(), "f l a g s") == 0);
   assert(strcmp(S.bases(), "ACGT")      == 0);
 
   merylutil::unlink("sequenceTest.data.fasta");
+
+  delete F;
 
   fprintf(stderr, "Success!\n");
 

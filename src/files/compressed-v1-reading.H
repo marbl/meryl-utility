@@ -33,14 +33,18 @@ public:
   void  reopen(int32 threads=0);
   void  close(void);
 
-  FILE *operator*(void)     {  return(_file);              }
-  FILE *file(void)          {  return(_file);              }
+  FILE *operator*(void)     {  return _file;  }
+  FILE *file(void)          {  return _file;  }
 
-  char *filename(void)      {  return(_filename);          }
+  char *filename(void)      {  return _filename;  }
 
-  bool  isCompressed(void)  {  return(_pipe == true);      }
-  bool  isNormal(void)      {  return((_pipe == false) &&
-                                      (_stdi == false));   }
+  bool  isCompressed(void)  {  return (_pipe == true);                       }
+  bool  isNormal(void)      {  return (_pipe == false) && (_stdi == false);  }
+
+  //  Seekable if it is not stdin and not a pipe.
+  //  Reopenable if it is not stdin.
+  bool  isSeekable(void)    {  return (_stdi == false) && (_pipe == false);   }
+  bool  isReopenable(void)  {  return (_stdi == false);                       }
 
   //  Return the file line-by-line.
   //    while (F->readLine())

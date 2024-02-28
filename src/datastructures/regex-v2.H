@@ -199,7 +199,6 @@ public:
     delete [] endP;
     delete [] lenP;
     delete [] caps;
-    fprintf(stderr, "Deleted.\n");
   };
 
 public:

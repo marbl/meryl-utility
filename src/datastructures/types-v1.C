@@ -414,13 +414,31 @@ char const *
 decodeRange(char const *range, numberType &bgn, numberType &end) {
   char const    *ap = range;
 
+  //  We CANNOT unambiguously support empty start ranges unless
+  //  unsigned integers are assumed.
+  //    -123  -> negative 123?
+  //    -123  -> range 0-123?
+  //
+  //if ((*ap == '-') ||              //  If this is a range but missing
+  //    (*ap == '/')) {              //  the first number, set to min,
+  //  bgn = std::numeric_limits<numberType>::min();
+  //  if (*++ap != 0)                //  grab the second number and return.
+  //    ap = strtonumber(ap+1, end);
+  //  else
+  //    end = std::numeric_limits<numberType>::max();
+  //}
+
   ap = strtonumber(ap, bgn);       //  Grab the first number.
 
   end = bgn;                       //  Set the second to that.
 
-  if ((*ap == '-') ||              //  If this is a range,
-      (*ap == '/'))                //  or a one-of-many selection,
-    ap = strtonumber(ap+1, end);   //  grab the second number
+  if ((*ap == '-') ||              //  If this is a range, or a
+      (*ap == '/')) {              //  one-of-many selection, grab
+    if (*++ap != 0)                //  the second number or set to
+      ap = strtonumber(ap+1, end); //  max if there isn't one.
+    else
+      end = std::numeric_limits<numberType>::max();
+  }
 
   if (*ap == ',')                  //  If the next letter continues
     return(ap + 1);                //  move past that and return.

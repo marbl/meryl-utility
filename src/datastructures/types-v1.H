@@ -303,7 +303,9 @@ int inline isnumber(char c) = delete;
 
 //  Convert an ascii binary, octal, decimal or hexadecimal letter to an
 //  integer.  No type checking is performed; you've already called
-//  isHexNumber() et al, right?
+//  isHexNumber() et al, right?  Inputs not in the type return undefined
+//  values -- asciiBinToInteger('2'), asciiOctToInteger('9'),
+//  asciiHexToInteger('g') are undefined.
 //
 //  The pieces of asciiHexToInteger() are as follows:
 //    (d & 0xf)        //  Decodes '0'-'9' as 0-9, 'a' - 'f' as 1-6

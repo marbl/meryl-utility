@@ -79,6 +79,9 @@ public:
     return(readIFFchunk(name, object, sizeof(OBJ)));
   }
 
+  char          skipWhitespace(void);
+  char          skipVisible(void);
+
   void          skipAhead(char stop, bool after=false);
   uint64        copyUntil(char stop, char *dest, uint64 destLen);
 
@@ -181,6 +184,48 @@ readBuffer::readuntil(char stop) {
 
   return(ch);
 }
+
+
+//  Advances the file position to the next non-whitespace character
+//  and returns it (or 0 if no next).
+inline
+char
+readBuffer::skipWhitespace(void) {
+  while (_eof == false) {
+    for (_buffer[_bufferLen] = 'a';           //  Insert a fake stop at the end of the buffer,
+         isWhiteSpace(_buffer[_bufferPos]);   //  then skip all whitespace letters.
+         _bufferPos++, _filePos++)
+      ;
+
+    if (_bufferPos < _bufferLen)              //  If we stopped before the fake, return
+      return _buffer[_bufferPos];             //  the letter we stopped at.
+
+    fillBuffer();                             //  Fill the buffer again and repeat.
+  }
+
+  return 0;
+}
+
+//  Advances the file position to the next whitespace character
+//  and returns it (or 0 if no next).
+inline
+char
+readBuffer::skipVisible(void) {
+  while (_eof == false) {
+    for (_buffer[_bufferLen] = ' ';           //  Insert a fake stop at the end of the buffer,
+        !isWhiteSpace(_buffer[_bufferPos]);   //  then skip all whitespace letters.
+         _bufferPos++, _filePos++)
+      ;
+
+    if (_bufferPos < _bufferLen)              //  If we stopped before the fake, return
+      return _buffer[_bufferPos];             //  the letter we stopped at.
+
+    fillBuffer();                             //  Fill the buffer again and repeat.
+  }
+
+  return 0;
+}
+
 
 //  Advances the file position to the next 'stop' character and returns
 //  'stop', or 0 if eof.

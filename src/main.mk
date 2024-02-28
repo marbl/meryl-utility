@@ -77,6 +77,7 @@ SOURCES      := \
                 math/mt19937ar-v1.C \
                 math/sampledDistribution-v1.C \
                 \
+                system/ansi-escape-v1.C \
                 system/cpuIdent-v1.C \
                 system/logging-v1.C \
                 system/runtime-v1.C \

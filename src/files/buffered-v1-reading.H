@@ -21,285 +21,301 @@
 #define MERYLUTIL_FILES_BUFFERED_V1_READING_H
 
 #include "types.H"
+#include "strings.H"  //  debug
 
 //
-//  If bMax is zero, then a 32 KB buffer is used.
+//  Reads a file using a small-ish buffer.
+//  Allows 'free' seeks within the buffer.
+//  Provides useful function for copying data out and skipping over data.
 //
+//
+//    [ descriptions largely correct but function names incorrect ]
+//
+//
+//  skip(charclass, sense, next)
+//   - advances buffer position while current letter is in the
+//     supplied character class (sense=true) or until the letter is in
+//     the character class (sense=false; alternative explanation is to advance
+//     while the letter is not in the class).
+//   - if next is true, will then continue skipping while the sense is
+//     inverted.
+//
+//  skipUntil(stop, next=false)
+//   - advances buffer position while the current letter is not a 'stop'
+//     letter.  does nothing if current letter is a 'stop' letter.
+//   - returns letter of resulting buffer position, or NUL if EOF.
+//   - if 'next', will further advance buffer position to the next
+//     non-'stop' letter.
+//
+//     skipUntil(isWhitSspace)
+//      - moves to the next whitespace
+//     skipUntil(isWhiteSpace, true)
+//      - moves to the next whitespace, then to the next non-whitespace
+//      - is effectively (assuming no non-printable bytes):
+//          skipUntil(isWhiteSpace)
+//          skipUntil(isVisible)
+//
+//  skipLine()
+//   - advances to the end of the line and over any line termination.
+//   - line termination is one instance of
+//       \n   - on POSIX systems
+//       \r\n - on DOS systems (also most other early OSs)
+//       \r   - on 1980s systems (also Lisp Machine)
+//       \n\r - on nothing (makes no sense; the original use of \r\n was so
+//                          that during the very slow return of the print
+//                          head to the origin (\r) the paper could be
+//                          advanced to the next line (\n).  \n\r is thus
+//                          slower by one character transmission time).
+//   - is NOT equivalent to skipUntil(isWhiteSpace, true) (above) as
+//     that will skip any amount of whitespace at the end.
+//
+//  skipVisible()    - alias for skip(isVisible)
+//  skipWhitespace() - alias for skip(isWhiteSpace)
+//
+//  The read variants are the same, except they copy the skipped letters
+//  into the output buffer, however, readUntil(A, true) does not copy the
+//  letters during the 'next' phase.
+//
+
+
+//  State of buffer is somewhat inconsistent;
+//  should functions leave _bPos == _bLen (and so they must call fillBuffer first)
+//  or should they ensure the buffer is valid (call at the end)?
+
 
 namespace merylutil::inline files::inline v1 {
 
 class readBuffer {
-public:
-  readBuffer(const char *pfx, char sep, const char *sfx, uint64 bMax = 32 * 1024) { initialize(pfx, sep, sfx, bMax); }
-  readBuffer(const char *filename,                       uint64 bMax = 32 * 1024) { initialize(filename, '.', nullptr, bMax); }
-  readBuffer(FILE *F,                                    uint64 bMax = 32 * 1024);
-  ~readBuffer();
-
 private:
   void          initialize(const char *pfx, char sep, const char *sfx, uint64 bMax);
 
 public:
-  bool          eof(void) { return(_eof); }   //  True if next read will hit EOF.
+  readBuffer(const char *pfx, char sep, const char *sfx, uint64 bMax = 32 * 1024) { initialize(pfx, sep, sfx, bMax); }
+  readBuffer(const char *filename,                       uint64 bMax = 32 * 1024) { initialize(filename, '.', nullptr, bMax); }
+  readBuffer(FILE *F,                                    uint64 bMax = 32 * 1024);
+  ~readBuffer() {
+    delete [] _b;
+    if (_owned == true)
+      ::close(_f);
+  };
 
-  char          peek(void);
+public:
+  const char   *filename(void) { return(_fn); }
 
-  char          read(void);
-  char          readuntil(char stop);
-  uint64        read(void *buf, uint64 len);
-  uint64        read(void *buf, uint64 maxlen, char stop);
+public:
+  void          seek(uint64 pos, uint64 extra=0);
+  uint64        tell(void)   { return(_fPos); }
 
+  bool          eof(void)    { return(_eof); }             //  True if next read will hit EOF.
+
+  //
+  //  Character support.
+  //
+
+public:
+  char          peek(void) {                               //  Return the current letter.
+    return (_eof == false) ? _b[_bPos] : 0;
+  }
+  char          next(void) {                               //  Return current then maybe move to next.
+    char ch = (_eof == false) ? _b[_bPos] : 0;
+    advance();
+    return ch;
+  }
+
+  uint64        read(void *buf, uint64 len);               //  Copy 'len' letters into 'buf'.
+
+  //
+  //  Word support.
+  //
+
+  template<typename FN>
+  char           skip(FN charclass, bool sense=true, bool next=false);
+
+  char           skipLine(void);
+  char           skipVisible(void)     { return skip(isVisible);    };
+  char           skipWhitespace(void)  { return skip(isWhiteSpace); };
+
+  template<typename N, typename FN>
+  char           copy(char *s, N &sLen, N &sMax, FN charclass, bool sense=true, bool next=false);
+
+#if 0
+  template<typename N, typename FN>
+  void           copyUntil(char *s, N &sLen, N &sMax, FN charclass, bool next=false);
+  template<typename N>
+  void           copyLine(char *s, N &sLen, N &sMax);
+#endif
+
+  template<typename N>
+  void           copyVisible(char *s, N &sLen, N &sMax)     { copy(s, sLen, sMax, isVisible);   };
+
+  //
+  //  IFF support.
+  //
+
+public:
   bool          peekIFFchunk(char *name, uint32 &dataLen);
-
-
-  //  Read a generic chunk into re-allocatable memory.
-  void          readIFFchunk(char   *name,
+  void          readIFFchunk(char   *name,                 //  Read a generic chunk into re-allocatable memory.
                              uint8 *&data,
                              uint32 &dataLen,
                              uint32 &dataMax);
-
-  //  Read a specific chunk into a pre-allocated buffer.
-  bool          readIFFchunk(char const *name,
+  bool          readIFFchunk(char const *name,             //  Read a specific chunk into a pre-allocated buffer.
                              void       *data,
                              uint32      dataLen);
 
-  //  Read a specific chunk into an array, an object (via reference) or an
-  //  object (via pointer).
   template<typename OBJ>
-  bool          readIFFarray(char const *name, OBJ *array, uint32 nObjects) {
-    return(readIFFchunk(name, array, sizeof(OBJ) * nObjects));
+  bool          readIFFarray(char const *name, OBJ *array, uint32 nObjects) {  //  Read specific chunk
+    return(readIFFchunk(name, array, sizeof(OBJ) * nObjects));                 //  into an array.
   }
 
   template<typename OBJ>
-  bool          readIFFobject(char const *name, OBJ &object) {
-    return(readIFFchunk(name, &object, sizeof(OBJ)));
+  bool          readIFFobject(char const *name, OBJ &object) {                 //  Read specific chunk
+    return(readIFFchunk(name, &object, sizeof(OBJ)));                          //  into object via reference.
   }
 
   template<typename OBJ>
-  bool          readIFFobject(char const *name, OBJ *object) {
-    return(readIFFchunk(name, object, sizeof(OBJ)));
+  bool          readIFFobject(char const *name, OBJ *object) {                 //  Read specific chunk
+    return(readIFFchunk(name, object, sizeof(OBJ)));                           //  into object via pointer.
   }
 
-  char          skipWhitespace(void);
-  char          skipVisible(void);
-
-  void          skipAhead(char stop, bool after=false);
-  uint64        copyUntil(char stop, char *dest, uint64 destLen);
-
-  void          seek(uint64 pos, uint64 extra=0);
-  uint64        tell(void) { return(_filePos); }
-
-  const char   *filename(void) { return(_filename); }
 
 private:
-  void          fillBuffer(void);
-  void          init(int fileptr, const char *filename, uint64 bufferMax);
+  void          fillBufferImpl(void);            //  Fill the buffer if it is completely empty.
 
-  char         _filename[FILENAME_MAX+1] = {0};  //  Filename, if known.
+  void          fillBuffer(void) {               //  Fill the buffer if it is completely empty.
+    if ((_eof == false) &&                       //  The usual case is 'not empty' and we inline
+        (_bPos == _bLen))                        //  that test only calling a function if
+      fillBufferImpl();                          //  absolutely necessary.
+  }
 
-  int          _file      = 0;                   //  Handle for file.
-  uint64       _filePos   = 0;                   //  Position we're at in the file.
+  void          advance(void) {                  //  Advance position.
+    if (_eof == false) {
+      _bPos++;
+      _fPos++;
+      fillBuffer();
+    }
+  }
 
-  bool         _owned     = false;     //  True if we opened the file.
-  bool         _stdin     = false;     //  True if reading from stdin.
-  bool         _eof       = false;     //  True if we hit EOF.
+  template<typename FN>
+  void          advanceif(FN charclass) {        //  Advance position only if current letter is in charclass.
+    if (_eof == false) {
+      if (charclass(_b[_bPos]) == false)
+        return;
+      advance();
+    }
+  }
 
-  bool         _ignoreCR  = true;      //  Ignore blasted DOS CR letters in read() and readuntil().
 
-  uint64       _bufferBgn  = 0;        //  File position where this buffer is from.
+private:
+  char         _fn[FILENAME_MAX+1] = {0};        //  Actual or symbolic name of opened file.
 
-  uint64       _bufferPos  = 0;        //  Position in the buffer we're at.
-  uint64       _bufferLen  = 0;        //  Length of the valid data in the buffer.
-  uint64       _bufferMax  = 0;        //  Size of _buffer allocation.
-  uint8       *_buffer     = nullptr;  //  Data!
+  int          _f      = -1;                     //  Handle for file.
+  uint64       _fPos   = 0;                      //  Position we're at in the file.
+
+  bool         _owned  = false;                  //  True if we opened the file.
+  bool         _stdin  = false;                  //  True if reading from stdin.
+  bool         _eof    = false;                  //  True if we hit EOF.
+
+  uint64       _bBgn  = 0;                       //  File position where this buffer is from.
+
+  uint64       _bPos  = 0;                       //  Position in the buffer we're at.
+  uint64       _bLen  = 0;                       //  Length of the valid data in the buffer.
+  uint64       _bMax  = 0;                       //  Size of _b allocation.
+  uint8       *_b     = nullptr;                 //  Data!
 };
 
 
-//  Returns the next letter in the buffer, but DOES NOT advance past
-//  it.  Might have some wierd interaction with EOF -- if you peek()
-//  and the next thing is eof , the _eof flag might get set.
-//
-inline
+
+
+
+template<typename FN>
 char
-readBuffer::peek(void) {
+readBuffer::skip(FN cc, bool sense, bool next) {
 
-  if ((_eof == false) && (_bufferPos >= _bufferLen))
-    fillBuffer();
-
-  if (_eof)
-    return(0);
-
-  return(_buffer[_bufferPos]);
-}
-
-
-//  Returns the next letter in the buffer and advances file position by one.
-//  Returns 0 on EOF.
-//
-inline
-char
-readBuffer::read(void) {
-
- readAgain:
-  if ((_eof == false) && (_bufferPos >= _bufferLen))
-    fillBuffer();
-
-  if (_eof)
-    return(0);
-
-  _bufferPos++;
-  _filePos++;
-
-  if ((_ignoreCR) && (_buffer[_bufferPos-1] == '\r'))
-    goto readAgain;
-
-  return(_buffer[_bufferPos-1]);
-}
-
-//  Like read(), but does not advance file position if
-//  the 'stop' character is encountered.
-//  Returns 'stop' on EOF.
-//
-inline
-char
-readBuffer::readuntil(char stop) {
-  char  ch;
-
- readuntilAgain:
-  if ((_eof == false) && (_bufferPos >= _bufferLen))
-    fillBuffer();
-
-  if (_eof)
-    return(0);
-
-  ch = _buffer[_bufferPos];
-
-  if (ch == stop)
-    return(stop);
-
-  _bufferPos++;
-  _filePos++;
-
-  if ((_ignoreCR) && (ch == '\r'))
-    goto readuntilAgain;
-
-  return(ch);
-}
-
-
-//  Advances the file position to the next non-whitespace character
-//  and returns it (or 0 if no next).
-inline
-char
-readBuffer::skipWhitespace(void) {
   while (_eof == false) {
-    for (_buffer[_bufferLen] = 'a';           //  Insert a fake stop at the end of the buffer,
-         isWhiteSpace(_buffer[_bufferPos]);   //  then skip all whitespace letters.
-         _bufferPos++, _filePos++)
-      ;
+    while ((_bPos < _bLen) &&          //  While stuff in the input buffer, and
+           (cc(_b[_bPos]) == sense))   //  letter is in the class (sense==true)
+      _bPos++, _fPos++;                //  skip it.
 
-    if (_bufferPos < _bufferLen)              //  If we stopped before the fake, return
-      return _buffer[_bufferPos];             //  the letter we stopped at.
-
-    fillBuffer();                             //  Fill the buffer again and repeat.
+    if (_bPos == _bLen)                //  Get more data if we hit the end
+      fillBuffer();                    //  of the buffer,
+    else                               //  or stop if we found a stop letter.
+      break;
   }
 
-  return 0;
-}
+  if (_eof == true)    return 0;
+  if (next == false)   return _b[_bPos];
 
-//  Advances the file position to the next whitespace character
-//  and returns it (or 0 if no next).
-inline
-char
-readBuffer::skipVisible(void) {
-  while (_eof == false) {
-    for (_buffer[_bufferLen] = ' ';           //  Insert a fake stop at the end of the buffer,
-        !isWhiteSpace(_buffer[_bufferPos]);   //  then skip all whitespace letters.
-         _bufferPos++, _filePos++)
-      ;
+  while (_eof == false) {              //  Skip again, but this opposite to
+    while ((_bPos < _bLen) &&          //  what we did above.
+           (cc(_b[_bPos]) != sense))
+      _bPos++, _fPos++;
 
-    if (_bufferPos < _bufferLen)              //  If we stopped before the fake, return
-      return _buffer[_bufferPos];             //  the letter we stopped at.
-
-    fillBuffer();                             //  Fill the buffer again and repeat.
-  }
-
-  return 0;
-}
-
-
-//  Advances the file position to the next 'stop' character and returns
-//  'stop', or 0 if eof.
-//
-//  The file is left on the 'stop' character if after == false,
-//  otherwise, the file is positioned after the 'stop' character.
-//
-inline
-void
-readBuffer::skipAhead(char stop, bool after) {
-
-  while (_eof == false) {
-
-    //  Insert a fake stop at the end of the buffer.
-    _buffer[_bufferLen] = stop;
-
-    //  Scan the buffer for the next real or fake stop.
-    while (_buffer[_bufferPos] != stop) {
-      _bufferPos++;
-      _filePos++;
-    }
-
-    //  If we hit the fake stop, fill the buffer again and continue.
-    if (_bufferPos == _bufferLen) {
+    if (_bPos == _bLen)
       fillBuffer();
-      continue;
-    }
-
-    //  Otherwise, we've found a real stop.  Skip it if desired.
-    if (after) {
-      _bufferPos++;
-      _filePos++;
-    }
-
-    //  Fill the buffer again, if needed.
-    if (_bufferPos == _bufferLen)
-      fillBuffer();
-
-    return;
+    else
+      break;
   }
+
+  return (_eof == true) ? 0 : _b[_bPos];
 }
 
-//  Advances the file position to the next 'stop' character, copying
-//  the characters into a user buffer.
-//
-//  The file is left on the 'stop' character.
-//
-//  Returns the number of letters copied.
-//
-inline
-uint64
-readBuffer::copyUntil(char stop, char *dest, uint64 destLen) {
-  uint64  copied = 0;
+
+
+template<typename N, typename FN>
+char
+readBuffer::copy(char *s, N &sLen, N &sMax, FN cc, bool sense, bool next) {
+
+  s[sLen] = 0;
 
   while (_eof == false) {
-    while ((_buffer[_bufferPos] != stop) &&
-           (_bufferPos < _bufferLen) &&
-           (copied < destLen)) {
-      dest[copied] = _buffer[_bufferPos];
-
-      copied++;
-      _bufferPos++;
-      _filePos++;
+    while ((sLen < sMax) &&            //  While space in the output, and
+           (_bPos < _bLen) &&          //  stuff in the input buffer, and
+           (cc(_b[_bPos]) == sense)) { //  letter is in the class (sense==true)
+      s[sLen] = _b[_bPos];             //  copy to output.
+      sLen++, _bPos++, _fPos++;        //
     }
 
-    if (_bufferPos < _bufferLen)
-      return(copied);
-
-    fillBuffer();
+    if (_bPos == _bLen)                //  Get more data if we hit the end
+      fillBuffer();                    //  of the buffer,
+    else                               //  or stop if we found a stop letter.
+      break;
   }
 
-  return(copied);
+  if (_eof == true)    return 0;
+  if (next == false)   return _b[_bPos];
+
+  while (_eof == false) {              //  Skip again, but this opposite to
+    while ((_bPos < _bLen) &&          //  what we did above.
+           (cc(_b[_bPos]) != sense))
+      _bPos++, _fPos++;
+
+    if (_bPos == _bLen)
+      fillBuffer();
+    else
+      break;
+  }
+
+  return (_eof == true) ? 0 : _b[_bPos];
 }
 
+
+
+inline
+char
+readBuffer::skipLine(void) {
+  skip(isEndOfLine, false, false);       //  Skip non-EOL letter.
+
+  if      (_eof == true)                 //  If at EOF now,
+    ;                                    //    do nothing.
+  else if (isCR(_b[_bPos]))              //  If a CR,
+    advance(), advanceif(isLF);          //    skip it and any single next LF.
+  else if (isLF(_b[_bPos]))              //  If a LF,
+    advance();                           //    skip it.
+  else                                   //  Otherwise,
+    assert(0);                           //    busted, expecting CR or LF!
+
+  return (_eof == true) ? 0 : _b[_bPos];
+}
 
 }  //  merylutil::files::v1
 

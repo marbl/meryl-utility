@@ -60,8 +60,9 @@ bufSeqFile::open(char const *fn, bool indexed) {
   _reopenable = false;
   _compressed = false;
 
-  while (isWhiteSpace(_buffer->peek()))    //  Skip initial blank
-    _buffer->read();                       //  characters.
+  _buffer->skipWhitespace();
+  //while (isWhiteSpace(_buffer->peek()))    //  Skip initial blank
+  //  _buffer->read();                       //  characters.
 
   if ((_buffer->peek() != '>') &&          //  Close file if
       (_buffer->peek() != '@'))            //  not FASTA/Q.
@@ -70,14 +71,14 @@ bufSeqFile::open(char const *fn, bool indexed) {
   //  Decide FASTQ or SAM, heuristically.
 
   if (_buffer->peek() == '@') {
-    _buffer->skipAhead('\n');              //  Skip rest of first line,
+    _buffer->skipLine();                   //  Skip rest of first line,
     _buffer->skipWhitespace();             //  and any stray whitespace.
 
     if (_buffer->peek() == '@')            //  If second line is another '@',
       return close();                      //  we're definitely in a SAM header.
 
     while (_buffer->peek() != '\n')        //  Check for tabs in second line; if
-      if (_buffer->read() == '\t')         //  found, we're _likely_ a SAM.
+      if (_buffer->next() == '\t')         //  found, we're _likely_ a SAM.
         return close();
 
     _buffer->skipWhitespace();             //  Skip any stray whitespace.
@@ -290,12 +291,12 @@ bufSeqFile::loadFASTA(char  *&name, uint32 &nameMax,
                       char  *&seq,
                       uint8 *&qlt,  uint64 &seqMax, uint64 &seqLen, uint64 &qltLen) {
   uint64  nameLen = 0;
-  char    ch      = _buffer->read();
+  char    ch      = _buffer->next();
 
   //  Skip any whitespace.
 
   while (isWhiteSpace(ch))
-    ch = _buffer->read();
+    ch = _buffer->next();
 
   //  Fail rather ungracefully if we aren't at a sequence start.
 
@@ -305,7 +306,7 @@ bufSeqFile::loadFASTA(char  *&name, uint32 &nameMax,
   //  Read the header line into the name string.  We cannot skip whitespace
   //  here, but we do allow DOS to insert a \r before any \n.
 
-  for (ch=_buffer->read(); (ch != '\n') && (ch != 0); ch=_buffer->read()) {
+  for (ch=_buffer->next(); (ch != '\n') && (ch != 0); ch=_buffer->next()) {
     if (ch == '\r')
       continue;
     if (nameLen+1 >= nameMax)
@@ -331,7 +332,7 @@ bufSeqFile::loadFASTA(char  *&name, uint32 &nameMax,
                               (ch !=  0)); ch = _buffer->peek()) {
     assert(_buffer->eof() == false);
 
-    ch = _buffer->read();
+    ch = _buffer->next();
 
     if (isWhiteSpace(ch))
       continue;
@@ -362,12 +363,12 @@ bufSeqFile::loadFASTQ(char  *&name, uint32 &nameMax,
                       char  *&seq,
                       uint8 *&qlt,  uint64 &seqMax, uint64 &seqLen, uint64 &qltLen) {
   uint32  nameLen = 0;
-  char    ch      = _buffer->read();
+  char    ch      = _buffer->next();
 
   //  Skip any whitespace.
 
   while (isWhiteSpace(ch))
-    ch = _buffer->read();
+    ch = _buffer->next();
 
   //  Fail rather ungracefully if we aren't at a sequence start.
 
@@ -377,7 +378,7 @@ bufSeqFile::loadFASTQ(char  *&name, uint32 &nameMax,
   //  Read the header line into the name string.  We cannot skip whitespace
   //  here, but we do allow DOS to insert a \r before any \n.
 
-  for (ch=_buffer->read(); (ch != '\n') && (ch != 0); ch=_buffer->read()) {
+  for (ch=_buffer->next(); (ch != '\n') && (ch != 0); ch=_buffer->next()) {
     if (ch == '\r')
       continue;
     if (nameLen+1 >= nameMax)
@@ -396,7 +397,7 @@ bufSeqFile::loadFASTQ(char  *&name, uint32 &nameMax,
   //  the whole line.
 
   while (isWhiteSpace(ch))
-    ch = _buffer->read();
+    ch = _buffer->next();
 
   //  Read sequence.  Pesky DOS files end with \r\n, and it suffices
   //  to stop on the \n and ignore all the rest.
@@ -404,7 +405,7 @@ bufSeqFile::loadFASTQ(char  *&name, uint32 &nameMax,
   seqLen = 0;
   qltLen = 0;
 
-  for (; (ch != '\n') && (ch != 0); ch=_buffer->read()) {
+  for (; (ch != '\n') && (ch != 0); ch=_buffer->next()) {
     if (isWhiteSpace(ch))
       continue;
     if (seqLen+1 >= seqMax)
@@ -416,21 +417,21 @@ bufSeqFile::loadFASTQ(char  *&name, uint32 &nameMax,
   //  suck in the quality line.  And then skip more whitespace.
 
   while (isWhiteSpace(ch))
-    ch = _buffer->read();
+    ch = _buffer->next();
 
   if (ch != '+')
     return false;
 
-  for (ch=_buffer->read(); (ch != '\n') && (ch != 0); ch=_buffer->read()) {
+  for (ch=_buffer->next(); (ch != '\n') && (ch != 0); ch=_buffer->next()) {
     ;
   }
 
   while (isWhiteSpace(ch))
-    ch = _buffer->read();
+    ch = _buffer->next();
 
   //  Read qualities and convert to integers.
 
-  for (; (ch != '\n') && (ch != 0); ch=_buffer->read()) {
+  for (; (ch != '\n') && (ch != 0); ch=_buffer->next()) {
     if (isWhiteSpace(ch))
       continue;
     if (qltLen+1 >= seqMax)
@@ -444,7 +445,7 @@ bufSeqFile::loadFASTQ(char  *&name, uint32 &nameMax,
   //  either a '>' or a '@'.
 
   while (isWhiteSpace(_buffer->peek()))
-    _buffer->read();
+    _buffer->next();
 
   seq[seqLen] = 0;
   qlt[qltLen] = 0;
@@ -493,7 +494,7 @@ bufSeqFile::loadSequence(char  *&name, uint32 &nameMax,
   //  end of the sequence).  (minor duplication in the constructor)
 
   while (isWhiteSpace(_buffer->peek()))
-    _buffer->read();
+    _buffer->next();
 
   //  If we're not at a sequence start, scan ahead to find the next one.
   //  Not bulletproof; FASTQ qv's can match this.
@@ -510,7 +511,7 @@ bufSeqFile::loadSequence(char  *&name, uint32 &nameMax,
   while ((_buffer->peek() != '>') &&
          (_buffer->peek() != '@') &&
          (_buffer->peek() !=  0)) {
-    _buffer->read();
+    _buffer->next();
   }
 
   //  Peek at the file to decide what type of sequence we need to read.
@@ -560,71 +561,43 @@ bufSeqFile::loadBases(char    *seq,
                       uint64  &seqLength,
                       bool    &endOfSequence) {
 
-  //  If at the end, we're done.
+  endOfSequence = true;                  //  Assume we'll read the whole sequence.
 
-  if (_buffer->eof() == true)
+  _buffer->skipWhitespace();             //  Advance to the first real character.
+
+  if (_buffer->eof() == true)            //  If at EOF, not much to do.
     return false;
 
-  //  If this is a new file, skip the first name line.
-
-  if (_buffer->tell() == 0) {
-    while (_buffer->peek() == '\n')    //  Skip whitespace before the first name line.
-      _buffer->read();
-
-    _buffer->skipAhead('\n', true);
+  if (_buffer->peek() == '+') {          //  If unlucky enough to be at a QV line:
+    _buffer->skipLine();                 //    Skip the + line.
+    _buffer->skipLine();                 //    Skip the QV line.
   }
 
-  //  Skip whitespace.
-
-  while (_buffer->peek() == '\n')
-    _buffer->read();
-
-  //  If now at EOF, that's it.
-
-  if  (_buffer->eof() == true)
-    return false;
-
-  //  Otherwise, we must be in the middle of sequence, so load
-  //  until we're not in sequence or out of space.
+  if ((_buffer->peek() == '>') ||        //  Usually, we're at a FASTA or
+      (_buffer->peek() == '@')) {        //  FASTQ name line:
+    _buffer->skipLine();                 //    Skip the name line.
+  }
 
   while (_buffer->eof() == false) {
+    _buffer->skipWhitespace();
+    _buffer->copyVisible(seq, seqLength, maxLength);
+    _buffer->skipWhitespace();
 
-    //  If we're at the start of a new sequence, skip over any QV's and
-    //  the next name line, set endOfSequence and return.
+    assert(seqLength <= maxLength);
 
-    if (_buffer->peek() == '>') {
-      _buffer->skipAhead('\n', true);      //  Skip the name line.
-      endOfSequence = true;
+    if ((_buffer->peek() == '>') ||      //  If at the next sequence,
+        (_buffer->peek() == '@'))        //  stop reading and return success.
       return true;
+
+    if (seqLength == maxLength) {        //  But if out of space, note that
+      endOfSequence = false;             //  we're in the middle of a sequence,
+      return true;                       //  and return success.
     }
 
-    if (_buffer->peek() == '+') {
-      _buffer->skipAhead('\n', true);      //  Skip the + line.
-      _buffer->skipAhead('\n', true);      //  Skip the QV line.
-      _buffer->skipAhead('\n', true);      //  Skip the @ line for the next sequence.
-      endOfSequence = true;
-      return true;
-    }
-
-    //  Read some bases.
-
-    seqLength += _buffer->copyUntil('\n', seq + seqLength, maxLength - seqLength);
-
-    if (seqLength == maxLength)
-      return true;
-
-    //  We're at a newline (or end of file), either way, suck in the next letter
-    //  (or nothing) and keep going.
-
-    _buffer->read();
+    _buffer->next();
   }
 
-  //  We hit EOF.  If there are bases loaded, then we're at the end of
-  //  a sequence, and should return that we loaded bases.
-
-  endOfSequence = (seqLength > 0);
-
-  return seqLength > 0;
+  return seqLength > 0;                  //  EOF.  Return true if bases exist.
 }
 
 

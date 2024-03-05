@@ -25,186 +25,133 @@
 namespace merylutil::inline files::inline v1 {
 
 
+//  Open a readBuffer from stdin, '{pfx}' or '{pfx}{sep}{sfx}'.
+
 void
 readBuffer::initialize(const char *pfx, char sep, const char *sfx, uint64 bMax) {
 
-  //  Figure out what filename to read from.
-  //    pfx == nullptr                    -> stdin
-  //    pfx == '-'     and sfx == nullptr -> stdin
-  //    pfx != nullptr and sfx == nullptr -> {pfx}
-  //    pfx != nullptr and sfx != nullptr -> {pfx}{sep}{sfx}
-  //
-  //  A sep of 0 should probably also result in just {pfx}, but it is currently allowed.
-
-  if ((pfx == nullptr) ||
-      ((pfx[0] == '-') && (pfx[1] == 0) && (sfx == nullptr))) {
-    strcpy(_filename, "(stdin)");
+  if ((pfx == nullptr) ||                                          //  Read from stdin if no pfx supplied
+      ((pfx[0] == '-') && (pfx[1] == 0))) {                        //  or if pfx is '-'.
+    strcpy(_fn, "(stdin)");
     _stdin = true;
   }
-  else if ((pfx != nullptr) && (sfx == nullptr)) {
-    strncpy(_filename, pfx, FILENAME_MAX);
+  else if ((pfx != nullptr) && (sfx == nullptr)) {                 //  Read from file '{pfx}' if there
+    strncpy(_fn, pfx, FILENAME_MAX);                               //  is no suffix supplied.
     _owned = true;
   }
-  else if ((pfx != nullptr) && (sfx != nullptr)) {
-    snprintf(_filename, FILENAME_MAX, "%s%c%s", pfx, sep, sfx);
+  else if ((pfx != nullptr) && (sep != 0) && (sfx != nullptr)) {   //  Read from file {pfx}{sep}{sfx}
+    snprintf(_fn, FILENAME_MAX, "%s%c%s", pfx, sep, sfx);          //  if both those are supplied.
     _owned = true;
   }
   else {
-    fprintf(stderr, "Invalid readBuffer filename pfx='%s' sep='%d' sfx='%s'\n", pfx, sep, sfx);
+    fprintf(stderr, "readBuffer()-- Invalid filename pfx='%s' sep='%d' sfx='%s'\n", pfx, sep, sfx);
     exit(1);
   }
 
-  //  Allocate a buffer.
+  _bMax   = (bMax == 0) ? 32 * 1024 : bMax;                        //  Allocate a buffer.
+  _b      = new uint8 [_bMax + 1];
 
-  _bufferMax   = (bMax == 0) ? 32 * 1024 : bMax;
-  _buffer      = new uint8 [_bufferMax + 1];
-
-  //  Open the file, failing if it's actually the terminal.
-
-  errno = 0;
-  _file = (_stdin) ? fileno(stdin) : open(_filename, O_RDONLY | O_LARGEFILE);
-  if (_file == -1)
+  errno = 0;                                                       //  Open the file, failing if
+  _f = (_stdin) ? fileno(stdin)                                    //  it is the console.
+                   : ::open(_fn, O_RDONLY | O_LARGEFILE);
+  if (_f == -1)
     fprintf(stderr, "readBuffer()-- couldn't open file '%s': %s\n",
-            _filename, strerror(errno)), exit(1);
+            _fn, strerror(errno)), exit(1);
 
-  if (isatty(_file)) {
-    fprintf(stderr, "readBuffer()-- cannot use the terminal for input; provide a filename or input from a pipe.\n");
-    exit(1);
-  }
-
-  //  Fill the buffer.
-
+  if (isatty(_f))
+    fprintf(stderr, "readBuffer()-- refuse to use the terminal for input; provide a filename or input from a pipe.\n"), exit(1);
+  
   fillBuffer();
 }
 
 
 
-readBuffer::readBuffer(FILE *file, uint64 bufferMax) {
+readBuffer::readBuffer(FILE *file, uint64 bMax) {
 
-  strcpy(_filename, "(hidden file)");
+  strcpy(_fn, "(hidden file)");
 
-  //  Allocate a buffer.
+  _bMax   = (bMax == 0) ? 32 * 1024 : bMax;                       //  Allocate a buffer.
+  _b      = new uint8 [_bMax + 1];
 
-  _bufferMax   = (bufferMax == 0) ? 32 * 1024 : bufferMax;
-  _buffer      = new uint8 [_bufferMax + 1];
+  _f        = fileno(file);                                       //  Get the file handle.  It never fails.
 
-  //  Open the file.  It never fails.
-
-  _file        = fileno(file);
-
-  //  Rewind the file (allowing failure if it's a pipe or stdin).
-
-  errno = 0;
-  if ((lseek(_file, 0, SEEK_SET) == -1) && (errno != ESPIPE))
+  errno = 0;                                                      //  Rewind the file, allowing failure
+  if ((::lseek(_f, 0, SEEK_SET) == -1) && (errno != ESPIPE))      //  if it's stdin or a pipe.
     fprintf(stderr, "readBuffer()-- '%s' couldn't seek to position 0: %s\n",
-            _filename, strerror(errno)), exit(1);
-
-  //  Fill the buffer.
+            _fn, strerror(errno)), exit(1);
 
   fillBuffer();
-}
-
-
-
-readBuffer::~readBuffer() {
-
-  delete [] _buffer;
-
-  if (_owned == true)   //  Close the file if we opened it.
-    close(_file);
 }
 
 
 
 void
-readBuffer::fillBuffer(void) {
+readBuffer::fillBufferImpl(void) {
 
-  //  If there is still stuff in the buffer, no need to fill.
+  assert(_bBgn + _bLen == _fPos); //  End of buffer should be exactly file position.
 
-  if (_bufferPos < _bufferLen)
-    return;
+  if (_bPos < _bLen) {            //  If still have stuff, save it.
+    uint64 bl = _bLen - _bPos;
 
-  _bufferBgn += _bufferLen;
+    memmove(_b, _b + _bPos, bl);
 
-  _bufferPos  = 0;
-  _bufferLen  = 0;
+    _bBgn += _bPos;               //    Set begin of this buffer to the end of the last.
+    _bPos  = 0;                   //    Position in the buffer is zero.
+    _bLen  = bl;                  //    Length of the valid data is also zero.
+  }
+  else {                          //  Empty or exhausted buffer:
+    _bBgn += _bLen;               //    Set begin of this buffer to the end of the last.
+    _bPos  = 0;                   //    Position in the buffer is zero.
+    _bLen  = 0;                   //    Length of the valid data is also zero.
+  }
 
-  assert(_filePos == _bufferBgn);
+ again:  //  See read() below
+  ssize_t  r = ::read(_f, _b + _bPos, _bMax - _bLen);
 
- again:
-  errno = 0;
-  _bufferLen = (uint64)::read(_file, _buffer, _bufferMax);
-
-  if (errno == EAGAIN)
-    goto again;
-
-  if (errno)
-    fprintf(stderr, "readBuffer::fillBuffer()-- only read " F_U64 " bytes, couldn't read " F_U64 " bytes from '%s': %s\n",
-            _bufferLen, _bufferMax, _filename, strerror(errno)), exit(1);
-
-  if (_bufferLen == 0)
+  if (r < 0) {                    //  Fail if an error, unless that error
+    if (errno == EAGAIN)          //  is because no data was ready to be
+      goto again;                 //  returned.
+    else
+      fprintf(stderr, "readBuffer::fillBuffer()-- couldn't read " F_U64 " bytes from '%s': %s\n",
+              _bMax, _fn, strerror(errno)), exit(1);
+  }
+  else if (r == 0) {              //  EOF if no data returned.
     _eof = true;
+    assert(_bPos == _bLen);
+  }
+  else {                          //  Otherwise, we got data.
+    _eof = false;                 //  (and therefore, not eof)
+    _bLen += (uint64)r;
+    assert(_bPos < _bLen);
+    assert(_bLen > 0);
+  }
+
+  assert(_bBgn + _bLen == _fPos); //  End of buffer should be exactly file position.
 }
 
 
-
+//  TEST:  What happens if seek to last position in buffer,
+//  when that is the end of file?
 void
 readBuffer::seek(uint64 pos, uint64 extra) {
 
-  //  If not really a seek, and the buffer still has enough stuff in it, just return.
-
-  if ((pos == _filePos) && (_filePos + extra < _bufferBgn + _bufferLen))
-    return;
-
-  //  If stdin, we can't seek.
-
-  if (_stdin == true) {
-    fprintf(stderr, "readBuffer()-- seek() not available for file 'stdin'.\n");
-    exit(1);
+  if ((_bBgn <= pos) &&                   //  New position is in the
+      (pos + extra <= _bBgn + _bLen)) {   //  existing buffer; no need
+    _fPos = pos;                          //  to read from disk.
+    _bPos = pos - _bBgn;
   }
-
-  //  If the position is in the buffer, just move there and
-  //  potentially skip any actual file access.
-
-  else if ((pos < _filePos) &&
-           (_bufferBgn  <= pos) &&
-           (pos + extra <  _bufferBgn + _bufferLen)) {
-    if (pos < _filePos) {
-      //fprintf(stderr, "readBuffer::seek()-- jump back to position %lu from position %lu (buffer at %lu)\n",
-      //        pos, _filePos, _bufferPos);
-      _bufferPos -= (_filePos - pos);
-      _filePos   -= (_filePos - pos);
-    } else {
-      //fprintf(stderr, "readBuffer::seek()-- jump ahead to position %lu from position %lu (buffer at %lu)\n",
-      //        pos, _filePos, _bufferPos);
-      _bufferPos += (pos - _filePos);
-      _filePos   += (pos - _filePos);
-    }
-  }
-
-  //  Nope, we need to grab a new block of data.
-
-  else {
-    //fprintf(stderr, "readBuffer::seek()-- jump directly to position %lu from position %lu (buffer at %lu)\n",
-    //        pos, _filePos, _bufferPos);
-
-    errno = 0;
-    lseek(_file, pos, SEEK_SET);
-    if (errno)
+  else {                                  //  Need more data!
+    if (::lseek(_f, pos, SEEK_SET) == -1)
       fprintf(stderr, "readBuffer()-- '%s' couldn't seek to position " F_U64 ": %s\n",
-              _filename, pos, strerror(errno)), exit(1);
+              _fn, pos, strerror(errno)), exit(1);
 
-    _filePos   = pos;
-
-    _bufferBgn = pos;
-    _bufferLen = 0;
-
-    _bufferPos = 0;
+    _fPos = pos;                          //  Set internal positions,
+    _bBgn = pos;                          //  to 'pos', empty our buffer
+    _bPos = 0;                            //  and reload it from the
+    _bLen = 0;                            //  current file position.
 
     fillBuffer();
   }
-
-  _eof = (_bufferPos >= _bufferLen);
 }
 
 
@@ -216,11 +163,11 @@ readBuffer::read(void *buf, uint64 len) {
   //  Easy case; the next len bytes are already in the buffer; just
   //  copy and move the position.
 
-  if (_bufferPos + len <= _bufferLen) {
-    memcpy(bufchar, _buffer + _bufferPos, len);
+  if (_bPos + len <= _bLen) {
+    memcpy(bufchar, _b + _bPos, len);
 
-    _filePos   += len;
-    _bufferPos += len;
+    _fPos += len;
+    _bPos += len;
 
     fillBuffer();
 
@@ -228,34 +175,35 @@ readBuffer::read(void *buf, uint64 len) {
   }
 
   //  Existing buffer not big enough.  Copy what's there, then finish
-  //  with a read.
+  //  with a direct read from disk and then refill the buffer.
 
-  uint64   bCopied = 0;   //  Number of bytes copied into the buffer
-  uint64   bAct    = 0;   //  Number of bytes actually read from disk
+  uint64   bCopied = 0;     //  Number of bytes copied into the buffer
+  uint64   bAct    = 0;     //  Number of bytes actually read from disk
 
-  bCopied     = _bufferLen - _bufferPos;
+  bCopied     = _bLen - _bPos;
 
-  memcpy(bufchar, _buffer + _bufferPos, bCopied);
+  memcpy(bufchar, _b + _bPos, bCopied);
 
-  while (bCopied < len) {
-    errno = 0;
-    bAct = (uint64)::read(_file, bufchar + bCopied, len - bCopied);
-    if (errno)
-      fprintf(stderr, "readBuffer()-- couldn't read " F_U64 " bytes from '%s': n%s\n",
-              len, _filename, strerror(errno)), exit(1);
+  while (bCopied < len) {  //  See fillBuffer() above.
+    ssize_t  r = ::read(_f, bufchar + bCopied, len - bCopied);
 
-    if (bAct == 0)    //  If we hit EOF, return a short read.
-      len = 0;
-
-    bCopied += bAct;
+    if (r < 0) {
+      if (errno == EAGAIN)
+        continue;
+      else
+        fprintf(stderr, "readBuffer::fillBuffer()-- couldn't read " F_U64 " bytes from '%s': %s\n",
+                len, _fn, strerror(errno)), exit(1);
+    }
+    else if (r == 0)        //  EOF if no data left.  Return whatever we
+      len = 0;              //  read by declaring the desired length to be zero.
+    else                    //  Otherwise, we got data.
+      bCopied += (uint64)r;
   }
 
-  _filePos   += bCopied;    //  Advance the actual file position to however much we just read.
-
-  _bufferBgn  = _filePos;   //  And set the buffer begin to that too.
-  _bufferLen  = 0;          //  Set the buffer as empty, so we fill it again.
-
-  _bufferPos  = 0;
+  _fPos += bCopied;         //  Advance the actual file position to however much we just read.
+  _bBgn  = _fPos;           //  And set the buffer begin to that too.
+  _bPos  = 0;
+  _bLen  = 0;               //  Set the buffer as empty, so we fill it again.
 
   fillBuffer();
 
@@ -264,32 +212,6 @@ readBuffer::read(void *buf, uint64 len) {
 
 
 
-uint64
-readBuffer::read(void *buf, uint64 maxlen, char stop) {
-  char  *bufchar = (char *)buf;
-  uint64 c = 0;
-
-  //  We will copy up to 'maxlen'-1 bytes into 'buf', or stop at the first occurrence of 'stop'.
-  //  This will reserve space at the end of any string for a zero-terminating byte.
-  maxlen--;
-
-  while ((_eof == false) && (c < maxlen)) {
-    bufchar[c++] = _buffer[_bufferPos];
-
-    _filePos++;
-    _bufferPos++;
-
-    if (_bufferPos >= _bufferLen)
-      fillBuffer();
-
-    if (bufchar[c-1] == stop)
-      break;
-  }
-
-  bufchar[c] = 0;
-
-  return(c);
-}
 
 
 
@@ -299,13 +221,13 @@ readBuffer::peekIFFchunk(char name[4], uint32 &dataLen) {
   //  Seek to the current position, making sure there are at least
   //  8 bytes still in the buffer.
 
-  seek(_filePos, 8);
+  seek(_fPos, 8);
 
   //  If there's space for a valid IFF header, return the name and length.
 
-  if (_bufferPos + 8 < _bufferLen) {
-    memcpy( name,    _buffer + _bufferPos,     sizeof(char) * 4);
-    memcpy(&dataLen, _buffer + _bufferPos + 4, sizeof(uint32));
+  if (_bPos + 8 < _bLen) {
+    memcpy( name,    _b + _bPos,     sizeof(char) * 4);
+    memcpy(&dataLen, _b + _bPos + 4, sizeof(uint32));
 
     return(true);
   }

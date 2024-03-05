@@ -206,6 +206,7 @@ SUBMAKEFILES += tests/alignTest-ssw.mk \
                 tests/magicNumber.mk \
                 tests/parasailTest.mk \
                 tests/testVectorSupport.mk \
+                tests/readBufferTest.mk \
                 tests/readLines.mk \
                 tests/regexTest-v1.mk \
                 tests/regexTest-v2.mk \

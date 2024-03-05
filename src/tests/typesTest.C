@@ -55,10 +55,12 @@ char const *max8  =  "127";
 
 using merylutil::ansiCode;
 
+template<typename R>
 void
-test_asciiXXXtoInt(uint8 (*XXXtoInt)(char d), bool (*isXXXdigit)(char d), char const *name, char const *type) {
+test_asciiXXXtoInt(R (*XXXtoInt)(char d), bool (*isXXXdigit)(char d), char const *name, char const *type=nullptr) {
   fprintf(stdout, "|--Full %s table.\n", name);
-  fprintf(stdout, "|  (undefined for non-%s inputs)\n", type);
+  if (type)
+    fprintf(stdout, "|  (undefined for non-%s inputs)\n", type);
   fprintf(stdout, "|\n");
   fprintf(stdout, "|     ");
   for (uint32 jj=0; jj<16; jj++) {
@@ -258,17 +260,67 @@ test_strto(bool verbose) {
 }
 
 
-#if 0
-template<typename integerType>
+
 void
-test_decodeRange(void) {
+test_isASCII(void) {
+  assert(isNUL  ('\0') == true);
+  assert(isBEL  ('\a') == true);
+  assert(isBS   ('\b') == true);
+  assert(isTab  ('\t') == true);
+  assert(isLF   ('\n') == true);
+  assert(isVT   ('\v') == true);
+  assert(isFF   ('\f') == true);
+  assert(isCR   ('\r') == true);
+  assert(isSpace( ' ') == true);
+
+  assert(isEndOfLine('\n') == true);
+  assert(isEndOfLine('\r') == true);
+
+  assert(isWhiteSpace( ' ') == true);
+  assert(isWhiteSpace('\t') == true);
+  assert(isWhiteSpace('\n') == true);
+  assert(isWhiteSpace('\r') == true);
+  assert(isWhiteSpace('\f') == true);
+  assert(isWhiteSpace('\v') == true);
+}
+
+
+
+//template<typename integerType>
+typedef uint32 integerType;
+void
+test_decodeRange(const char *range=nullptr) {
+  char          str[1024];
   integerType   minv;
   integerType   maxv;
-  char          str[1024];
 
-  //sprintf(str, 
+  std::vector<integerType>  mins;
+  std::vector<integerType>  maxs;
+
+  if (range == nullptr) {
+    decodeRange("0-0",   minv, maxv);  assert(minv == 0);   assert(maxv == 0);
+    decodeRange("0-1",   minv, maxv);  assert(minv == 0);   assert(maxv == 1);
+    decodeRange("1-0",   minv, maxv);  assert(minv == 1);   assert(maxv == 0);
+    decodeRange("1-1",   minv, maxv);  assert(minv == 1);   assert(maxv == 1);
+
+    decodeRange("00-01", minv, maxv);  assert(minv == 0);   assert(maxv == 1);
+    decodeRange("01-00", minv, maxv);  assert(minv == 1);   assert(maxv == 0);
+    decodeRange("1-100", minv, maxv);  assert(minv == 1);   assert(maxv == 100);
+    decodeRange("100-1", minv, maxv);  assert(minv == 100); assert(maxv == 1);
+
+    decodeRange("0-0,1-1,22-10", mins, maxs);
+    assert(mins[0] == 0);    assert(maxs[0] == 0);
+    assert(mins[1] == 1);    assert(maxs[1] == 1);
+    assert(mins[2] == 22);   assert(maxs[2] == 10);
+  }
+  else {
+    decodeRange(range, mins, maxs);
+
+    for (uint64 ii=0; ii<mins.size(); ii++)
+      fprintf(stdout, "%u %u\n", mins[ii], maxs[ii]);
+  }
 }
-#endif
+
 
 
 int
@@ -283,22 +335,39 @@ main(int argc, char **argv) {
   test_asciiDecToInt(false);
   test_asciiHexToInt(false);
   test_strto(false);
+  test_isASCII();
 
   while (arg < argc) {
-    if      (strcmp(argv[arg], "-b") == 0)   test_asciiBinToInt(true);
-    else if (strcmp(argv[arg], "-o") == 0)   test_asciiOctToInt(true);
-    else if (strcmp(argv[arg], "-d") == 0)   test_asciiDecToInt(true);
-    else if (strcmp(argv[arg], "-h") == 0)   test_asciiHexToInt(true);
-    else if (strcmp(argv[arg], "-c") == 0)   test_strto(true);
-    //se if (strcmp(argv[arg], "-r") == 0)   test_decodeRange();
+    if      (strcmp(argv[arg], "-c")  == 0)   test_strto(true);
+    else if (strcmp(argv[arg], "-r")  == 0)   test_decodeRange();
+    else if (strcmp(argv[arg], "-R")  == 0)   test_decodeRange(argv[++arg]);
+
+    else if (strcmp(argv[arg], "-ab") == 0)   test_asciiBinToInt(true);
+    else if (strcmp(argv[arg], "-ao") == 0)   test_asciiOctToInt(true);
+    else if (strcmp(argv[arg], "-ad") == 0)   test_asciiDecToInt(true);
+    else if (strcmp(argv[arg], "-ah") == 0)   test_asciiHexToInt(true);
+
+    else if (strcmp(argv[arg], "-ieol")     == 0)   test_asciiXXXtoInt(isEndOfLine,  isEndOfLine,  "isEndOfLine()");
+    else if (strcmp(argv[arg], "-iwhite")   == 0)   test_asciiXXXtoInt(isWhiteSpace, isWhiteSpace, "isWhiteSpace()");
+    else if (strcmp(argv[arg], "-ivisible") == 0)   test_asciiXXXtoInt(isVisible,    isVisible,    "isVisible()");
+    else if (strcmp(argv[arg], "-iletter")  == 0)   test_asciiXXXtoInt(isLetter,     isLetter,     "isLetter()");
+
     else {
-      fprintf(stderr, "usage: %s [-h | -c | -r]\n", argv[0]);
-      fprintf(stderr, "  -b   show table of conversion of asciiBinToInteger.\n");
-      fprintf(stderr, "  -o   show table of conversion of asciiOctToInteger.\n");
-      fprintf(stderr, "  -d   show table of conversion of asciiDecToInteger.\n");
-      fprintf(stderr, "  -h   show table of conversion of asciiHexToInteger.\n");
-      fprintf(stderr, "  -c   run test converting strings to integers; takes 150 seconds.\n");
-      //rintf(stderr, "  -r   run test decoding ranges.\n");
+      fprintf(stderr, "usage: %s [test]\n", argv[0]);
+      fprintf(stderr, "  -c         run test converting strings to integers.\n");
+      fprintf(stderr, "  -r         run test decoding ranges.\n");
+      fprintf(stderr, "  -R R       decode range R and print values.\n");
+      fprintf(stderr, "\n");
+      fprintf(stderr, "  -ab        show table of conversion of asciiBinToInteger().\n");
+      fprintf(stderr, "  -ao        show table of conversion of asciiOctToInteger().\n");
+      fprintf(stderr, "  -ad        show table of conversion of asciiDecToInteger().\n");
+      fprintf(stderr, "  -ah        show table of conversion of asciiHexToInteger().\n");
+      fprintf(stderr, "\n");
+      fprintf(stderr, "  -ieol      show table of isEndOfLine().\n");
+      fprintf(stderr, "  -iwhite    show table of isEndOfLine().\n");
+      fprintf(stderr, "  -ivisible  show table of isEndOfLine().\n");
+      fprintf(stderr, "  -iletter   show table of isEndOfLine().\n");
+      fprintf(stderr, "\n");
       return 1;
     }
 

@@ -241,30 +241,41 @@ decodeInteger(char const *str, uint64 bgn, uint64 end,
 
 //  Test if a character or string is of the desired encoding.
 
-inline bool   isNUL(char c)        { return((c ==  0));   }
-inline bool   isSpace(char c)      { return((c == ' '));  }
-inline bool   isTab(char c)        { return((c == '\t')); }
-inline bool   isEndOfLine(char c)  { return((c == '\n') ||
-                                            (c == '\r')); }
+#define inRange(A,c,B) ( ((A) <= c) && (c <= (B)) )
 
-inline bool   isVisible(char c)    { return(('!' <= c) && (c <= '~')); }
+inline bool   isNUL(char c)        { return c == 0x00; }  //
+inline bool   isBEL(char c)        { return c == 0x07; }  //  '\a'
+inline bool   isBS(char c)         { return c == 0x08; }  //  '\b'
+inline bool   isTab(char c)        { return c == 0x09; }  //  '\t'
+inline bool   isLF(char c)         { return c == 0x0a; }  //  '\n'
+inline bool   isVT(char c)         { return c == 0x0b; }  //  '\v', maybe
+inline bool   isFF(char c)         { return c == 0x0c; }  //  '\f'
+inline bool   isCR(char c)         { return c == 0x0d; }  //  '\r'
+inline bool   isSpace(char c)      { return c == 0x20; }  //  ' '
 
-inline bool   isLetter(char c)     { return((('a' <= c) && (c <= 'z')) ||
-                                            (('A' <= c) && (c <= 'Z')));  }
+inline bool   isEndOfLine(char c)  { return isLF(c)       //  Most common.
+                                         || isCR(c); }
+inline bool   isWhiteSpace(char c) { return isSpace(c)    //  Most common.
+                                         || isTab(c)      //
+                                         || isLF(c)       //
+                                         || isCR(c)       //
+                                         || isFF(c)       //
+                                         || isVT(c); }    //  Least common.
+inline bool   isVisible(char c)    { return inRange('!', c, '~'); }
 
-inline bool   isWhiteSpace(char c) { return(isSpace(c) ||
-                                            isTab(c) ||
-                                            isEndOfLine(c)); }
+inline bool   isLetter(char c)     { return inRange('a', c, 'z')
+                                         || inRange('A', c, 'Z');  }
+inline bool   isBinDigit(char c)   { return inRange('0', c, '1');  }
+inline bool   isOctDigit(char c)   { return inRange('0', c, '7');  }
+inline bool   isDecDigit(char c)   { return inRange('0', c, '9');  }
+inline bool   isHexDigit(char c)   { return inRange('0', c, '9')
+                                         || inRange('a', c, 'f')
+                                         || inRange('A', c, 'F');  }
 
-inline bool   isComment(char c)    { return((c == '!') || (c == '#') || (c == 0)); }
-inline bool   isDelimiter(char c)  { return((c == ':') || (c == '='));             }
+inline bool   isComment(char c)    { return (c == '!') || (c == '#') || (c == 0); }
+inline bool   isDelimiter(char c)  { return (c == ':') || (c == '=');             }
 
-inline bool   isBinDigit(char c)   { return((('0' <= c) && (c <= '1')));  }
-inline bool   isOctDigit(char c)   { return((('0' <= c) && (c <= '7')));  }
-inline bool   isDecDigit(char c)   { return((('0' <= c) && (c <= '9')));  }
-inline bool   isHexDigit(char c)   { return((('0' <= c) && (c <= '9')) ||
-                                            (('a' <= c) && (c <= 'f')) ||
-                                            (('A' <= c) && (c <= 'F')));  }
+#undef inRange
 
 bool          isBinNumber (char const *s);
 bool          isOctNumber (char const *s);

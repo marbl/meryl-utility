@@ -435,7 +435,7 @@ decodeRange(char const *range, numberType &bgn, numberType &end) {
   if ((*ap == '-') ||              //  If this is a range, or a
       (*ap == '/')) {              //  one-of-many selection, grab
     if (*++ap != 0)                //  the second number or set to
-      ap = strtonumber(ap+1, end); //  max if there isn't one.
+      ap = strtonumber(ap, end);   //  max if there isn't one.
     else
       end = std::numeric_limits<numberType>::max();
   }

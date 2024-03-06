@@ -88,7 +88,7 @@ readBuffer::readBuffer(FILE *file, uint64 bMax) {
 void
 readBuffer::fillBufferImpl(void) {
 
-  assert(_bBgn + _bLen == _fPos); //  End of buffer should be exactly file position.
+  assert(_bBgn + _bPos == _fPos);
 
   if (_bPos < _bLen) {            //  If still have stuff, save it.
     uint64 bl = _bLen - _bPos;
@@ -100,13 +100,16 @@ readBuffer::fillBufferImpl(void) {
     _bLen  = bl;                  //    Length of the valid data is also zero.
   }
   else {                          //  Empty or exhausted buffer:
+    assert(_bPos == _bLen);       //    Must be exactly empty.
     _bBgn += _bLen;               //    Set begin of this buffer to the end of the last.
     _bPos  = 0;                   //    Position in the buffer is zero.
     _bLen  = 0;                   //    Length of the valid data is also zero.
   }
 
+  assert(_bBgn + _bPos == _fPos);
+
  again:  //  See read() below
-  ssize_t  r = ::read(_f, _b + _bPos, _bMax - _bLen);
+  ssize_t  r = ::read(_f, _b + _bLen, _bMax - _bLen);
 
   if (r < 0) {                    //  Fail if an error, unless that error
     if (errno == EAGAIN)          //  is because no data was ready to be
@@ -126,7 +129,7 @@ readBuffer::fillBufferImpl(void) {
     assert(_bLen > 0);
   }
 
-  assert(_bBgn + _bLen == _fPos); //  End of buffer should be exactly file position.
+  assert(_bBgn + _bPos == _fPos);
 }
 
 

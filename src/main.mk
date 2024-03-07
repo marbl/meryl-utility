@@ -98,6 +98,8 @@ SOURCES      += htslib/hts/bcf_sr_sort.c \
                 htslib/hts/faidx.c \
                 htslib/hts/header.c \
                 htslib/hts/hfile.c \
+                htslib/hts/hfile_libcurl.c \
+                htslib/hts/hfile_s3.c \
                 htslib/hts/hts.c \
                 htslib/hts/hts_expr.c \
                 htslib/hts/hts_os.c \

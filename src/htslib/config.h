@@ -11,7 +11,8 @@
 #endif
 
 #define HAVE_DRAND48
-#undef  HAVE_LIBCURL
+#define HAVE_HMAC
+#define HAVE_LIBCURL
 #define HAVE_POPCNT
 
 #undef  HAVE_SSE4_1

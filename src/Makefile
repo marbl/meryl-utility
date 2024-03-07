@@ -325,7 +325,11 @@ ifeq (${OSTYPE}, Darwin)
   $(eval $(call FIND_MACOS_COMPILER,9))
   $(eval $(call FIND_MACOS_COMPILER,8))
 
-  $(eval $(call SET_DEFAULT_FLAGS,,))
+  ifneq (${BREW}, )
+    $(eval $(call SET_DEFAULT_FLAGS,-I${BREW}/include,-L${BREW}/lib))
+  else
+    $(eval $(call SET_DEFAULT_FLAGS,-I${PORT}/include,-L${PORT}/lib))
+  endif
 endif
 
 

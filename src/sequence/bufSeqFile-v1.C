@@ -69,6 +69,10 @@ bufSeqFile::open(char const *fn, bool indexed) {
     return close(); 
 
   //  Decide FASTQ or SAM, heuristically.
+  //   - Detail on the seek(0) below: if the input is from a pipe and
+  //     the buffer needs to refresh itself, we cannot seek back to
+  //     the start.  To prevent this, make sure the buffer size above
+  //     is more than the 'first N letters' limnit below.
 
   if (_buffer->peek() == '@') {
     _buffer->skipLine();                   //  Skip rest of first line,
@@ -77,13 +81,15 @@ bufSeqFile::open(char const *fn, bool indexed) {
     if (_buffer->peek() == '@')            //  If second line is another '@',
       return close();                      //  we're definitely in a SAM header.
 
-    while (_buffer->peek() != '\n')        //  Check for tabs in second line; if
-      if (_buffer->next() == '\t')         //  found, we're _likely_ a SAM.
-        return close();
+    while ((_buffer->peek() != '\n') &&    //  Check for tabs in second line; if
+           (_buffer->tell() < 1024))       //  found, we're _likely_ a SAM.  But if
+      if (_buffer->next() == '\t')         //  not found in first 1000 letters, either
+        return close();                    //  fastq or a very long read name.
 
     _buffer->skipWhitespace();             //  Skip any stray whitespace.
 
-    if (_buffer->peek() == '+')            //  If third line is a '+', we're probably
+    if ((_buffer->tell() > 1024) ||        //  If no tabs in first 1024 letters or
+        (_buffer->peek() == '+'))          //  third line is a '+', we're probably
       _buffer->seek(0);                    //  FASTQ; go back to the start of the file.
     else                                   //
       return close();                      //  Otherwise, give up and declare it SAM.
@@ -91,7 +97,7 @@ bufSeqFile::open(char const *fn, bool indexed) {
 
   //fprintf(stderr, "Opened FAST%c file '%s'.\n",
   //        (_buffer->peek() == '>') ? 'A' : 'Q', filename());
-
+ isFASTQ:
   _indexable    = _file->isSeekable();
   _reopenable   = _file->isReopenable();
   _compressed   = _file->isCompressed();

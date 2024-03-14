@@ -61,8 +61,6 @@ bufSeqFile::open(char const *fn, bool indexed) {
   _compressed = false;
 
   _buffer->skipWhitespace();
-  //while (isWhiteSpace(_buffer->peek()))    //  Skip initial blank
-  //  _buffer->read();                       //  characters.
 
   if ((_buffer->peek() != '>') &&          //  Close file if
       (_buffer->peek() != '@'))            //  not FASTA/Q.
@@ -95,9 +93,6 @@ bufSeqFile::open(char const *fn, bool indexed) {
       return close();                      //  Otherwise, give up and declare it SAM.
   }
 
-  //fprintf(stderr, "Opened FAST%c file '%s'.\n",
-  //        (_buffer->peek() == '>') ? 'A' : 'Q', filename());
- isFASTQ:
   _indexable    = _file->isSeekable();
   _reopenable   = _file->isReopenable();
   _compressed   = _file->isCompressed();

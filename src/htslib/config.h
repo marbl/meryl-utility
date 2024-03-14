@@ -5,10 +5,7 @@
 
 #define HAVE_LIBBZ2
 #define HAVE_LIBLZMA
-
-#ifndef __APPLE__
 #define HAVE_LZMA_H
-#endif
 
 #define HAVE_DRAND48
 #define HAVE_HMAC

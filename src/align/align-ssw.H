@@ -36,13 +36,9 @@
 #include <cstdint>
 #include <cstring>
 
+#include "htslib/hts/sam.h"
+
 namespace merylutil::inline align::inline ssw::inline v1 {
-
-#define MAPSTR "MIDNSHP=X"
-#ifndef BAM_CIGAR_SHIFT
-#define BAM_CIGAR_SHIFT 4u
-#endif
-
 
 extern const uint8_t encoded_ops[];
 
@@ -189,7 +185,7 @@ static inline uint32_t to_cigar_int (uint32_t length, char op_letter) {
 */
 //char cigar_int_to_op (uint32_t cigar_int);
 static inline char cigar_int_to_op(uint32_t cigar_int) {
-  return (cigar_int & 0xfU) > 8 ? 'M': MAPSTR[cigar_int & 0xfU];
+  return (cigar_int & 0xfU) > 8 ? 'M': "MIDNSHP=X"[cigar_int & 0xfU];
 }
 
 /*!    @function        Extract length of a CIGAR operation from CIGAR 32-bit unsigned integer

@@ -60,13 +60,6 @@ namespace merylutil::inline align::inline ssw::inline v1 {
 /* Convert the coordinate in the direction matrix into the coordinate in one line of the band. */
 #define set_d(u, w, i, j, p) { int x=(i)-(w); x=x>0?x:0; x=(j)-x; (u)=x*3+p; }
 
-/*! @function
-  @abstract  Round an integer to the next closest power-2 integer.
-  @param  x  integer to be rounded (in place)
-  @discussion x will be modified.
-*/
-#define kroundup32(x) (--(x), (x)|=(x)>>1, (x)|=(x)>>2, (x)|=(x)>>4, (x)|=(x)>>8, (x)|=(x)>>16, ++(x))
-
 typedef struct {
   uint16_t score;
   int32_t ref;     //0-based position

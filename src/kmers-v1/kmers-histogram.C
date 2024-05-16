@@ -22,19 +22,11 @@
 namespace merylutil::inline kmers::v1 {
 
 merylHistogram::merylHistogram() {
-  _numUnique     = 0;
-  _numDistinct   = 0;
-  _numTotal      = 0;
-
   _histMax       = 32 * 1024 * 1024;      //  256 MB of histogram data.
   _hist          = new uint64 [_histMax];
 
   for (uint64 ii=0; ii<_histMax; ii++)
     _hist[ii] = 0;
-
-  _histLen       = 0;
-  _histVs        = NULL;
-  _histOs        = NULL;
 }
 
 
@@ -61,8 +53,8 @@ merylHistogram::clear(void) {
   delete [] _histOs;
 
   _histLen       = 0;
-  _histVs        = NULL;
-  _histOs        = NULL;
+  _histVs        = nullptr;
+  _histOs        = nullptr;
 }
 
 
@@ -119,61 +111,37 @@ merylHistogram::dump(FILE        *outFile) {
 
 void
 merylHistogram::load_v01(stuffedBits *bits) {
-  uint32  histLast;
-  uint32  hbigLen;
 
-  _numUnique   = bits->getBinary(64);
-  _numDistinct = bits->getBinary(64);
-  _numTotal    = bits->getBinary(64);
+  _numUnique      = bits->getBinary(64);
+  _numDistinct    = bits->getBinary(64);
+  _numTotal       = bits->getBinary(64);
 
-  histLast     = bits->getBinary(32);
-  hbigLen      = bits->getBinary(32);
+  uint32 histLast = bits->getBinary(32);
+  uint32 hbigLen  = bits->getBinary(32);
 
-  //fprintf(stderr, "merylHistogram::load_v01()-- %lu %lu %lu %u %u\n",
-  //        _numUnique, _numDistinct, _numTotal, histLast, hbigLen);
-
-  //  Load the histogram values.
-
-  uint64  *hist = new uint64 [histLast + 1];
-
-  hist         = bits->getBinary(64, histLast, hist);
-
-  //  (over) allocate space for the histogram list.
-
-  _histVs = new uint64 [histLast + hbigLen + 1];
-  _histOs = new uint64 [histLast + hbigLen + 1];
-
-  //  Convert the loaded hist[] into _histVs and _histOs.
+  //  (over) allocate space for the histogram list and delete the accumulator.
 
   _histLen = 0;
+  _histMax = histLast + hbigLen + 1;
+  _histVs  = new uint64 [_histMax];
+  _histOs  = new uint64 [_histMax];
+
+  delete [] _hist;
+  _hist    = NULL;
+
+  //  Load histogram values and convert into _histVs and _histOs.
+
+  uint64 *hh = bits->getBinary(64, histLast, new uint64 [histLast + 1]);
 
   for (uint32 ii=0; ii<histLast; ii++) {
     if (_hist[ii] > 0) {
-      _histVs[_histLen] = ii;
-      _histOs[_histLen] = hist[ii];
+      _histVs[_histLen] =    ii;
+      _histOs[_histLen] = hh[ii];
       _histLen++;
     }
   }
 
-  delete [] hist;
-
-#if 0
-  //  If hbigLen isn't zero, we have the intermediate format, that lived for
-  //  about a day, that stores large values too.
-
-  if (hbigLen > 0) {
-    for (uint64 ii=0; ii<hbigLen; ii++) {
-      _histVs[_histLen] = bits->getBinary(64);
-      _histOs[_histLen] = bits->getBinary(64);
-      _histLen++;
-    }
-  }
-#endif
-
-  //  Delete _hist to indicate we cannot accept new values.
-
-  delete [] _hist;
-  _hist = NULL;
+  delete [] hh;
 }
 
 
@@ -185,14 +153,15 @@ merylHistogram::load_v03(stuffedBits *bits) {
   _numDistinct = bits->getBinary(64);
   _numTotal    = bits->getBinary(64);
   _histLen     = bits->getBinary(64);
+  _histMax     = _histLen;
 
-  //fprintf(stderr, "merylHistogram::load_v03()-- %lu %lu %lu %lu\n",
-  //        _numUnique, _numDistinct, _numTotal, _histLen);
+  //  Allocate space and delete the accumulator.
 
-  //  Allocate space.
+  _histVs = new uint64 [_histMax];
+  _histOs = new uint64 [_histMax];
 
-  _histVs = new uint64 [_histLen];
-  _histOs = new uint64 [_histLen];
+  delete [] _hist;
+  _hist    = NULL;
 
   //  Load the values into our list.
 
@@ -200,11 +169,6 @@ merylHistogram::load_v03(stuffedBits *bits) {
     _histVs[ii] = bits->getBinary(64);
     _histOs[ii] = bits->getBinary(64);
   }
-
-  //  Delete _hist to indicate we cannot accept new values.
-
-  delete [] _hist;
-  _hist = NULL;
 }
 
 
@@ -240,5 +204,46 @@ merylHistogram::load(FILE        *inFile,
 
   delete bits;
 }
+
+
+
+void
+merylHistogram::load(char const *histoname) {
+  uint32                lLen = 0;
+  uint32                lMax = 0;
+  char                 *l    = nullptr;
+  compressedFileReader *c    = new compressedFileReader(histoname);
+
+  clear();
+
+  delete [] _hist;
+
+  _histLen = 0;
+  _histMax = 0;
+  _hist    = nullptr;
+
+  while (readLine(l, lLen, lMax, c->file()) == true) {
+    splitToWords  s(l);
+
+    int64 hv = s.toint64(0);   //  There are 'ho' kmers
+    int64 ho = s.toint64(1);   //  with value 'hv'.
+
+    if (hv == 1)
+      _numUnique  = ho;
+
+    _numDistinct += ho;
+    _numTotal    += ho * hv;
+
+    increaseArrayPair(_histVs, _histOs, _histLen, _histMax, 32768);
+    _histVs[_histLen] = hv;
+    _histOs[_histLen] = ho;
+
+    _histLen++;
+  }
+
+  delete    c;
+  delete [] l;
+}
+
 
 }  //  namespace merylutil::kmers::v1

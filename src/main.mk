@@ -57,6 +57,7 @@ SOURCES      := \
                 kmers-v1/kmers-exact.C \
                 kmers-v1/kmers-files.C \
                 kmers-v1/kmers-histogram.C \
+                kmers-v1/kmers-histogram-ploidy.C \
                 kmers-v1/kmers-reader.C \
                 kmers-v1/kmers-writer-block.C \
                 kmers-v1/kmers-writer-stream.C \

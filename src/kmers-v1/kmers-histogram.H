@@ -64,29 +64,39 @@ public:
   void      load_v03(stuffedBits *bits);
   void      load(stuffedBits *bits,    uint32 version);
   void      load(FILE        *inFile,  uint32 version);
+  void      load(const char  *filename);
 
-  uint64    numUnique(void)                       { return(_numUnique);   };
-  uint64    numDistinct(void)                     { return(_numDistinct); };
-  uint64    numTotal(void)                        { return(_numTotal);    };
+  uint64    numUnique(void)                       { return(_numUnique);   }
+  uint64    numDistinct(void)                     { return(_numDistinct); }
+  uint64    numTotal(void)                        { return(_numTotal);    }
 
-  uint32    histogramLength(void)                 { return(_histLen);     };
-  uint64    histogramValue(uint32 i)              { return(_histVs[i]);   };
-  uint64    histogramOccurrences(uint32 i)        { return(_histOs[i]);   };
+  uint32    histogramLength(void)                 { return(_histLen);     }
+  uint64    histogramValue(uint32 i)              { return(_histVs[i]);   }
+  uint64    histogramOccurrences(uint32 i)        { return(_histOs[i]);   }
 
-  uint64    maxValue(void)                        { return(_histVs[_histLen-1]); };
+  uint64    maxValue(void)                        { return(_histVs[_histLen-1]); }
+
+  void      computePloidyPeaks(void);
+
+  double    getNoiseTrough(void)  { return           _coveragePeaks[0];     }
+  double    getPloidy(uint32 x)   { return (x < 9) ? _coveragePeaks[x] : 0; }
+
 
 private:
-  uint64                   _numUnique;
-  uint64                   _numDistinct;
-  uint64                   _numTotal;
+  uint64                   _numUnique   = 0;
+  uint64                   _numDistinct = 0;
+  uint64                   _numTotal    = 0;
 
-  uint32                   _histMax;    //  Max value that can be stored in _hist.
-  uint64                  *_hist;
-  std::map<uint64, uint64> _histBig;    //  Values bigger than _histMax; <value,occurrances>
+  double                   _coveragePeaks[9] = { 0 };
 
-  uint64                   _histLen;    //  If loaded from disk, this is the unpacked histogram.
-  uint64                  *_histVs;     //  The value this histogram entry is counting.
-  uint64                  *_histOs;     //  The number of occurrences of that value.
+  uint32                   _histMax = 0;         //  Max value that can be stored in _hist.
+  uint64                  *_hist    = nullptr;   //
+  std::map<uint64, uint64> _histBig;             //  Values bigger than _histMax; <value,occurrances>
+
+  uint64                   _histLen = 0;         //  If loaded from disk, this is the unpacked histogram.
+  //nt64                   _histMax = 0;         //
+  uint64                  *_histVs  = nullptr;   //  The value this histogram entry is counting.
+  uint64                  *_histOs  = nullptr;   //  The number of occurrences of that value.
 };
 
 }  //  namespace merylutil::kmers::v1

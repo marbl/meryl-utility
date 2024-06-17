@@ -163,14 +163,14 @@ typedef struct {
   /**
    * -1 if k is non-negative and edit distance is larger than k.
    */
-  int editDistance;
+  int editDistance = 0;
   /**
    * Array of zero-based positions in target where optimal alignment paths end.
    * If gap after query is penalized, gap counts as part of query (NW), otherwise not.
    * Set to NULL if edit distance is larger than k.
    * If you do not free whole result object using edlibFreeAlignResult(), do not forget to use free().
    */
-  int* endLocations;
+  int* endLocations = nullptr;
   /**
    * Array of zero-based positions in target where optimal alignment paths start,
    * they correspond to endLocations.
@@ -178,11 +178,11 @@ typedef struct {
    * Set to NULL if not calculated or if edit distance is larger than k.
    * If you do not free whole result object using edlibFreeAlignResult(), do not forget to use free().
    */
-  int* startLocations;
+  int* startLocations = nullptr;
   /**
    * Number of end (and start) locations.
    */
-  int numLocations;
+  int numLocations = 0;
   /**
    * Alignment is found for first pair of start and end locations.
    * Set to NULL if not calculated.
@@ -195,15 +195,15 @@ typedef struct {
    * If gaps are not penalized, they are not in alignment.
    * If you do not free whole result object using edlibFreeAlignResult(), do not forget to use free().
    */
-  unsigned char* alignment;
+  unsigned char* alignment = nullptr;
   /**
    * Length of alignment.
    */
-  int alignmentLength;
+  int alignmentLength = 0;
   /**
    * Number of different characters in query and target together.
    */
-  int alphabetLength;
+  int alphabetLength = 0;
 } EdlibAlignResult;
 
 /**

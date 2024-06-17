@@ -280,6 +280,10 @@ namespace merylutil::inline files::inline v1 {
 bool
 mkdir(char const *dirname, bool fatal) {
 
+  if ((dirname == nullptr) ||             //  Be generous and not fail
+      (*dirname == 0))                    //  if nullptr or empty
+    return true;                          //  name supplied.
+
   if (directoryExists(dirname) == true)   //  If it already exists,
     return true;                          //  we're done!
 
@@ -289,6 +293,21 @@ mkdir(char const *dirname, bool fatal) {
                       dirname, strerror(errno));
 
   return true;
+}
+
+bool
+mkpath(char const *dirname, bool fatal) {
+  char *dircopy = duplicateString(dirname);
+
+  for (char *dir = strchr(dircopy, '/'); dir; dir = strchr(dir+1, '/')) {
+    *dir = 0;
+    mkdir(dircopy, false);
+    *dir = '/';
+  }
+
+  delete [] dircopy;
+
+  return mkdir(dirname, fatal);
 }
 
 bool

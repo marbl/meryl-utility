@@ -53,8 +53,10 @@ bool    directoryExists(char const *prefix, char separator='.', char const *suff
 
 //  OPERATIONS ON DIRECTORIES
 
-bool    mkdir(char const *dirname, bool fatal=true);
-bool    rmdir(char const *dirname, bool fatal=true);
+bool    mkdir (char const *dirname, bool fatal=true);
+bool    rmdir (char const *dirname, bool fatal=true);
+
+bool    mkpath(char const *dirname, bool fatal=true);
 
 //  OPERATIONS ON FILES
 

@@ -24,6 +24,7 @@
 #define COMMAND_LINE_H
 
 #include "types.H"
+#include "version.H"
 
 //  AS_configure() will set some run-time stuff like FPU modes and initialize
 //  accounting (like time since the start of execution).

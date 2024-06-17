@@ -21,8 +21,6 @@
 #include "files.H"
 #include "system.H"
 
-#include "version.H"
-
 #ifdef X86_GCC_LINUX
 #include <fpu_control.h>
 #endif

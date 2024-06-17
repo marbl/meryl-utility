@@ -196,13 +196,13 @@ print F "#define ${MODNAME}_VERSION_HASH      \"$hash1\"\n";
 print F "\n";
 
 if      (defined($commits)) {
-    print F "#define ${MODNAME}_VERSION           \"$modName $label $version +$commits changes (r$revCount $hash1)\\n\"\n";
+    print F "#define ${MODNAME}_VERSION           \"$modName $label $version +$commits changes (r$revCount $hash1)\"\n";
 } elsif (defined($hash1)) {
-    print F "#define ${MODNAME}_VERSION           \"$modName snapshot ($hash1)\\n\"\n";
+    print F "#define ${MODNAME}_VERSION           \"$modName snapshot ($hash1)\"\n";
 } elsif ($label  =~ m/release/) {
-    print F "#define ${MODNAME}_VERSION           \"$modName $major.$minor\\n\"\n";
+    print F "#define ${MODNAME}_VERSION           \"$modName $major.$minor\"\n";
 } else {
-    print F "#define ${MODNAME}_VERSION           \"$modName $label ($version)\\n\"\n";
+    print F "#define ${MODNAME}_VERSION           \"$modName $label ($version)\"\n";
 }
 
 if ($MODNAME ne "MERYL_UTILITY") {

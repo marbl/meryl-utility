@@ -110,7 +110,7 @@ AS_configure(int argc, char **argv, uint32 maxThreads) {
 
   for (int32 i=0; i<argc; i++) {
     if (strcmp(argv[i], "--version") == 0) {
-      fputs(MERYL_UTILITY_VERSION, stderr);
+      fprintf(stdout, "%s\n", MERYL_UTILITY_VERSION);
       exit(0);
     }
   }

@@ -241,9 +241,9 @@ sub updateVersionFile () {
   print F "#define ${MODNAME}_VERSION_MINOR     \"$minor\"\n";
   print F "#define ${MODNAME}_VERSION_COMMITS   \"$commits\"\n";
   print F "#define ${MODNAME}_VERSION_REVISION  \"$revCount\"\n";
-  print F "#define ${MODNAME}_VERSION_HASH      \"$hash\"\n";
-  print F "\n";
-  print F "#define ${MODNAME}_VERSION           \"$modName $cv\\n\"\n";
+  print F "#define ${MODNAME}_VERSION_HASH      \"$hash\"\n";          #  SAM/BAM support REQUIRES
+  print F "\n";                                                        #  that there is no newline
+  print F "#define ${MODNAME}_VERSION           \"$modName $cv\"\n";   #  on ${MODNAME}_VERSION.
   print F "\n"                                                   if ($MODNAME ne "MERYL_UTILITY");
   print F "#undef  MERYL_UTILITY_VERSION\n"                      if ($MODNAME ne "MERYL_UTILITY");
   print F "#define MERYL_UTILITY_VERSION ${MODNAME}_VERSION\n"   if ($MODNAME ne "MERYL_UTILITY");

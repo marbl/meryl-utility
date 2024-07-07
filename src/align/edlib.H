@@ -59,7 +59,7 @@ namespace merylutil::inline align::inline edlib::inline v1 {
 /**
  * Alignment methods - how should Edlib treat gaps before and after query?
  */
-typedef enum {
+enum EdlibAlignMode {
   /**
    * Global method. This is the standard method.
    * Useful when you want to find out how similar is first sequence to second sequence.
@@ -85,7 +85,7 @@ typedef enum {
    * that text. In bioinformatics, this method is appropriate for aligning read to a sequence.
    */
   EDLIB_MODE_HW
-} EdlibAlignMode;
+};
 
 /**
  * Alignment tasks - what do you want Edlib to do?
@@ -117,7 +117,7 @@ typedef enum {
 /**
  * @brief Configuration object for edlibAlign() function.
  */
-typedef struct {
+struct EdlibAlignConfig {
   /**
    * Set k to non-negative value to tell edlib that edit distance is not larger than k.
    * Smaller k can significantly improve speed of computation.
@@ -141,7 +141,7 @@ typedef struct {
    * EDLIB_TASK_PATH - find edit distance, alignment path (and start and end locations of it in target).
    */
   EdlibAlignTask task;
-} EdlibAlignConfig;
+};
 
 /**
  * Helper method for easy construction of configuration object.
@@ -159,7 +159,7 @@ EdlibAlignConfig edlibDefaultAlignConfig(void);
 /**
  * Container for results of alignment done by edlibAlign() function.
  */
-typedef struct {
+struct EdlibAlignResult {
   /**
    * -1 if k is non-negative and edit distance is larger than k.
    */
@@ -204,7 +204,7 @@ typedef struct {
    * Number of different characters in query and target together.
    */
   int alphabetLength = 0;
-} EdlibAlignResult;
+};
 
 /**
  * Frees memory in EdlibAlignResult that was allocated by edlib.

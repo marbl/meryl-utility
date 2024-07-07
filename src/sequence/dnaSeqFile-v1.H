@@ -268,7 +268,7 @@ openSequenceFile(char const *filename, bool index=false) {
   else
     delete hs;
 
-  //fprintf(stderr, "Don't know how to open sequence file '%s'.\n", filename);
+  fprintf(stderr, "Don't know how to open sequence file '%s'.\n", filename);
 
   return nullptr;
 }

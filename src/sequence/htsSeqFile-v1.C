@@ -42,8 +42,8 @@ htsSeqFile::open(char const *fn, bool indexed) {
     return false;
 
   else if (_hts->format.category != htsFormatCategory::sequence_data) {
-    //fprintf(stderr, "Unable to open '%s': HTS type '%s' contains no sequence data.\n",
-    //        filename(), hts_format_description(&_hts->format));
+    fprintf(stderr, "Unable to open '%s': HTS type '%s' contains no sequence data.\n",
+            filename(), hts_format_description(&_hts->format));
     return close();
   }
 
@@ -108,6 +108,7 @@ htsSeqFile::findSequence(uint64 i) {
 
 uint64
 htsSeqFile::sequenceLength(uint64 i) {
+  assert(0);
   return 0;
 }
 
@@ -129,7 +130,7 @@ htsSeqFile::loadSequence(char  *&name, uint32 &nameMax,
   //  Resize name, seq and qlt arrays for the new sequence.
 
   resizeArray    (name,      0, nameMax, (uint32)strlen(bam_get_qname(_htsbam)) + 1);
-  resizeArrayPair(seq,  qlt, 0, seqMax,  (uint64)_htsbam->core.l_qseq);
+  resizeArrayPair(seq,  qlt, 0, seqMax,  (uint64)_htsbam->core.l_qseq + 1);
 
   strcpy(name, bam_get_qname(_htsbam));          //  Copy name into output.
 
@@ -150,6 +151,9 @@ htsSeqFile::loadSequence(char  *&name, uint32 &nameMax,
       qlt[seqLen] =                             bamqlt[_htspos];
     }
   }
+
+  seq[seqLen] = 0;
+  qlt[seqLen] = 0;
 
   return true;
 }

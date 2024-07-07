@@ -80,13 +80,13 @@ bufSeqFile::open(char const *fn, bool indexed) {
       return close();                      //  we're definitely in a SAM header.
 
     while ((_buffer->peek() != '\n') &&    //  Check for tabs in second line; if
-           (_buffer->tell() < 1024))       //  found, we're _likely_ a SAM.  But if
+           (_buffer->tell() < 1000))       //  found, we're _likely_ a SAM.  But if
       if (_buffer->next() == '\t')         //  not found in first 1000 letters, either
         return close();                    //  fastq or a very long read name.
 
     _buffer->skipWhitespace();             //  Skip any stray whitespace.
 
-    if ((_buffer->tell() > 1024) ||        //  If no tabs in first 1024 letters or
+    if ((_buffer->tell() == 1000) ||       //  If no tabs in first 1000 letters or
         (_buffer->peek() == '+'))          //  third line is a '+', we're probably
       _buffer->seek(0);                    //  FASTQ; go back to the start of the file.
     else                                   //

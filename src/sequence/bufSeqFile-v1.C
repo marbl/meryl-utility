@@ -62,7 +62,8 @@ bufSeqFile::open(char const *fn, bool indexed) {
 
   _buffer->skipWhitespace();
 
-  if ((_buffer->peek() != '>') &&          //  Close file if
+  if ((_buffer->eof() == false) &&
+      (_buffer->peek() != '>') &&          //  Close file if
       (_buffer->peek() != '@'))            //  not FASTA/Q.
     return close(); 
 

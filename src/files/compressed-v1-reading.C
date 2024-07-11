@@ -81,12 +81,14 @@ compressedFileReader::reopen(int32 nThreads) {
   //  Open the file!
   errno = 0;
 
+  //  We used to allow pigz here, but some codes want to open many many input
+  //  files and read them in parallel.  This uses far too many threads, and
+  //  we've hit TOO MANY PROCESSES more than once.  So now we don't allow
+  //  pigz.
+
   switch (_type) {
-    case cftGZ:                          //  If 'pigz' looks like it works, use
-      if (commandAvailable("pigz -h"))   //  that with a few threads.
-        snprintf(cmd, FILENAME_MAX, "pigz -dc -p %d '%s'", _nThreads, _filename);
-      else
-        snprintf(cmd, FILENAME_MAX, "gzip -dc '%s'", _filename);
+    case cftGZ:
+      snprintf(cmd, FILENAME_MAX, "gzip -dc '%s'", _filename);
       _file = popen(cmd, "r");
       _pipe = true;
       break;

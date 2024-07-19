@@ -209,10 +209,8 @@ merylHistogram::load(FILE        *inFile,
 
 void
 merylHistogram::load(char const *histoname) {
-  uint32                lLen = 0;
-  uint32                lMax = 0;
-  char                 *l    = nullptr;
-  compressedFileReader *c    = new compressedFileReader(histoname);
+  uint64                malformed = 0;
+  compressedFileReader *c         = new compressedFileReader(histoname);
 
   clear();
 
@@ -222,8 +220,52 @@ merylHistogram::load(char const *histoname) {
   _histMax = 0;
   _hist    = nullptr;
 
-  while (readLine(l, lLen, lMax, c->file()) == true) {
-    splitToWords  s(l);
+  //  Test if the file is a meryl 'statistics' or 'histogram' file.
+  //  If a 'statistics' file, skip the header:
+  //      Number of 19-mers that are:
+  //        unique              121719673  (exactly one instance of the kmer is in the input)
+  //        distinct            257860977  (non-redundant kmer sequences in the input)
+  //        present            6990251351  (...)
+  //        missing          274620045967  (non-redundant kmer sequences not in the input)
+  //      
+  //                   number of   cumulative   cumulative     presence
+  //                    distinct     fraction     fraction   in dataset
+  //      frequency        kmers     distinct        total       (1e-6)
+  //      --------- ------------ ------------ ------------ ------------
+
+  if (c->readLine() == false)     //  Empty file?
+    return;
+
+  if (c->line()[0] == 'N') {             //  Skip stats header.
+    while ((c->readLine() == true) &&    //    Read the next line,
+           (c->line()[0] != '-'))        //    until the dashes line.
+      ;
+    c->readLine();                       //  Then read the first data line.
+  }
+
+  //  But both histogram and statistics output have the same data in the
+  //  first two columns, so the rest is the same for both.
+
+  do {
+    splitToWords  s(c->line());
+
+    if ((s.numWords() == 0) ||    //  Skip blank lines.
+        (c->line()[0] == '#') ||  //  Skip header/comment lines.
+        (c->line()[0] == ';'))
+      continue;
+
+    if ((s.numWords() != 2) &&    //  Complain about unexpected lines.
+        (s.numWords() != 5)) {
+      if (malformed == 0)
+        fprintf(stderr, "WARNING: merylHistogram::load() expects 2 (histo format) or 5 (stats format) words per line.\n");
+      if (malformed < 10)
+        fprintf(stderr, "WARNING: line %u has %u words: '%s'\n",
+                c->lineNum(), s.numWords(), c->line());
+      malformed++;
+    }
+
+    if (s.numWords() < 2)
+      continue;
 
     int64 hv = s.toint64(0);   //  There are 'ho' kmers
     int64 ho = s.toint64(1);   //  with value 'hv'.
@@ -239,10 +281,14 @@ merylHistogram::load(char const *histoname) {
     _histOs[_histLen] = ho;
 
     _histLen++;
+  } while (c->readLine() == true);
+
+  if (malformed > 0) {
+    fprintf(stderr, "WARNING: merylHistogram::load() found %u malformed lines in '%s'.\n",
+            malformed, histoname);
   }
 
-  delete    c;
-  delete [] l;
+  delete c;
 }
 
 

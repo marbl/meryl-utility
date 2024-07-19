@@ -33,14 +33,15 @@ namespace merylutil::inline files::v0 {
 bool
 readLine(char *&L, uint32 &Llen, uint32 &Lmax, FILE *F) {
 
-  if (F == nullptr)
-    return(false);
-
   if ((L == nullptr) || (Lmax == 0))
     allocateArray(L, Lmax, 4, _raAct::clearNew);
 
+  L[0]      = 0;
   L[Lmax-2] = 0;
   L[Lmax-1] = 0;
+
+  if (F == nullptr)
+    return(false);
 
   fgets(L, Lmax, F);
 

@@ -33,13 +33,14 @@ namespace merylutil::inline files::inline v1 {
 bool
 readLine(char *&L, uint32 &Llen, uint32 &Lmax, FILE *F) {
 
-  if (F == nullptr)
-    return(false);
-
   if ((L == nullptr) || (Lmax == 0))
     allocateArray(L, Lmax, 1024);
 
   Llen = 0;
+  L[0] = 0;
+
+  if (F == nullptr)
+    return(false);
 
   int32   ch     = getc(F);
   uint32  growth = 1024;

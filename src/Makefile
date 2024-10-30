@@ -235,7 +235,7 @@ else
 
   BUILDSTACKTRACE ?= 1
 
-  $(eval $(call SET_DEFAULT_FLAGS,-I/usr/local/include,-L/usr/local/lib -lexecinfo))
+  $(eval $(call SET_DEFAULT_FLAGS,,))
 endif
 endif
 
@@ -325,11 +325,7 @@ ifeq (${OSTYPE}, Darwin)
   $(eval $(call FIND_MACOS_COMPILER,9))
   $(eval $(call FIND_MACOS_COMPILER,8))
 
-  ifneq (${BREW}, )
-    $(eval $(call SET_DEFAULT_FLAGS,-I${BREW}/include,-L${BREW}/lib))
-  else
-    $(eval $(call SET_DEFAULT_FLAGS,-I${PORT}/include,-L${PORT}/lib))
-  endif
+  $(eval $(call SET_DEFAULT_FLAGS,,))
 endif
 
 

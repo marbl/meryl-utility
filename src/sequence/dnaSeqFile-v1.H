@@ -134,9 +134,9 @@ public:
                                uint8  *&qlt,  uint64 &seqMax, uint64 &seqLen, uint32 &errorCode) = 0;
 
   bool            loadSequence(dnaSeq &seq) {
-    if (loadSequence(seq._name, seq._nameMax,
+    if (loadSequence(seq._headr, seq._headrMax,
                      seq._seq,
-                     seq._qlt,  seq._seqMax, seq._seqLen, seq._error)) {
+                     seq._qlt, seq._seqMax, seq._seqLen, seq._error)) {
       seq.findNameAndFlags();
       return true;
     }

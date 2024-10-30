@@ -315,13 +315,6 @@ bufSeqFile::loadFASTA(char  *&name, uint32 &nameMax,
       resizeArray(name, nameLen, nameMax, 3 * nameMax / 2);
     name[nameLen++] = ch;
   }
-
-  //  Trim back the header line to remove white space at the end.  The
-  //  terminating NUL is tacked on at the end.
-
-  while ((nameLen > 0) && (isWhiteSpace(name[nameLen-1])))
-    nameLen--;
-
   name[nameLen] = 0;
 
   //  Read sequence, skipping whitespace, until we hit a new sequence or eof.

@@ -18,39 +18,32 @@
  */
 
 #include "dnaSeq-v1.H"
+#include "arrays.H"
 
 namespace merylutil::inline sequence::inline v1 {
 
 dnaSeq::dnaSeq() {
-};
+}
 
 
 dnaSeq::~dnaSeq() {
-  delete [] _name;
-  delete [] _seq;
-  delete [] _qlt;
-};
+  releaseIdent();
+  releaseBases();
+}
 
 
 void
-dnaSeq::releaseAll(void) {
-  delete [] _name;    _name = _ident = _flags = nullptr;
-  delete [] _seq;     _seq                    = nullptr;
-  delete [] _qlt;     _qlt                    = nullptr;
-
-  _nameMax = 0;
-  _seqMax  = 0;
-  _seqLen  = 0;
+dnaSeq::releaseIdent(void) {
+  delete [] _headr;   _headr = nullptr;  _headrMax = 0;
+  delete [] _ident;   _ident = nullptr;  _identMax = 0;
+  delete [] _flags;   _flags = nullptr;  _flagsMax = 0;
 }
 
 
 void
 dnaSeq::releaseBases(void) {
-  delete [] _seq;     _seq                    = nullptr;
-  delete [] _qlt;     _qlt                    = nullptr;
-
-  _seqMax  = 0;
-  _seqLen  = 0;
+  delete [] _seq;     _seq   = nullptr;  _seqMax   = 0;
+  delete [] _qlt;     _qlt   = nullptr;  _seqLen   = 0;
 }
 
 
@@ -95,27 +88,32 @@ dnaSeq::copy(char  *bout,
 
 void
 dnaSeq::findNameAndFlags(void) {
-  uint32 ii=0;
+  uint32 hh=0, ii=0, ff=0, td=0;
 
-  while (isWhiteSpace(_name[ii]) == true)   //  Skip white space before the name.
-    ii++;                                   //  Why do you torture us?
+  if (_identMax < _headrMax)   allocateArray(_ident, _identMax, _headrMax);
+  if (_flagsMax < _headrMax)   allocateArray(_flags, _flagsMax, _headrMax);
 
-  _ident = _name + ii;                      //  At the start of the name.
+  while (isWhiteSpace(_headr[hh]) == true)       //  Skip white space before the name.
+    hh++;                                        //  Why do you torture us?
 
-  while (isVisible(_name[ii]) == true)      //  Skip over the name.
-    ii++;
+  while (isVisible(_headr[hh]) == true)          //  At the start of a name;
+    _ident[ii++] = _headr[hh++];                 //  copy it to the ident.
+  _ident[ii] = 0;                                //
 
-  if (isNUL(_name[ii]) == true) {           //  If at the end of the string,
-    _flags = _name + ii;                    //  there are no flags,
-    return;                                 //  so just return.
-  }
+  if (isTab(_headr[hh]) == true)                 //  If a tab after the ident, assume
+    td = hh++;                                   //  flags are tab-delimited,
+  else                                           //  else skip whitespace until the
+    while (isWhiteSpace(_headr[hh]) == true)     //  first flag.
+      hh++;                                      //
 
-  _name[ii++] = 0;                          //  Terminate the name, move ahead.
+  while (isNUL(_headr[hh]) == false)             //  Copy flags until
+    _flags[ff++] = _headr[hh++];                 //  the end of string.
+  _flags[ff] = 0;
 
-  while (isWhiteSpace(_name[ii]) == true)   //  Otherwise, skip whitespace
-    ii++;                                   //  to get to the flags.
-
-  _flags = _name + ii;                      //  Flags are here or NUL.
+  if (td == 0)                                   //  If no tabs found, trim back
+    while ((ff > 0) &&                           //  any whitespace at the end.
+           (isWhiteSpace(_flags[ff-1])))
+      _flags[--ff] = 0;
 }
 
 }  //  namespace merylutil::sequence::v1

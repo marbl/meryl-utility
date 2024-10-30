@@ -25,11 +25,22 @@
 //
 //  A sequence loaded from disk.  It should be treated as a read-only object.
 //
-//  ident() returns the first word of the sequence header line, while flags()
-//  returns the rest of the line, or an empty line if there is no more line.
+//  header() returns the entire unmodified sequence header line,
+//  in particular, no spaces are removed (see ident() and flags()).
 //
-//  It isn't possible to modify ident() and flags().  They're pointers
-//  into the same memory, and that isn't exposed.
+//  ident() returns the first word of the sequence header line.
+//   - Spaces before the first word are always stripped.
+//
+//  flags() returns the rest of the line, or an empty line if there are no flags.
+//   - If the first whitespace after the ident word is a TAB,
+//     then the rest of the header line is returned as the flags:
+//       header() == \s* + ident() + '\t' + flags()
+//   - Otherwise, whitespace between the ident and the first flag
+//     word and all spaces at the end of the line are removed.
+//       header() == \s* + ident() + \s* + flags() + \s*
+//
+//  ident() and flags() could support modification (they're independent stings)
+//  but it would be tedious to support length changes and nobody does it anyway.
 //
 //  bases() and quals() could support modifications, as long as the length of
 //  the string doesn't change.  Only canu needed to do that and it was worked
@@ -51,42 +62,44 @@ public:
   dnaSeq();
   ~dnaSeq();
 
-  char  const      *ident(void)        { return(_ident);  };
-  char  const      *flags(void)        { return(_flags);  };
-  char  const      *bases(void)        { return(_seq);    };
-  uint8 const      *quals(void)        { return(_qlt);    };
+  char  const  *header(void)       { return _headr;  };
+  char  const  *ident(void)        { return _ident;  };
+  char  const  *flags(void)        { return _flags;  };
 
-  uint64            length(void)       { return(_seqLen); };
+  char  const  *bases(void)        { return _seq;    };
+  uint8 const  *quals(void)        { return _qlt;    };
 
-  void              releaseAll(void);      //  Release all memory.
-  void              releaseBases(void);    //  Release seq memory; keep the name.
-
-  bool              copy(char  *bout,
-                         uint32 bgn, uint32 end, bool terminate = true);
-
-  bool              copy(char  *bout,
-                         uint8 *qout,
-                         uint32 bgn, uint32 end, bool terminate = true);
-
-  bool              wasError(void)     { return((_error & 0x01) == 0x01); };
-  bool              wasReSync(void)    { return((_error & 0x02) == 0x02); };
+  uint64        length(void)       { return _seqLen; };
 
 private:
-  void              findNameAndFlags(void);
+  void          releaseIdent(void);    //  Release ident memory.
+  void          releaseBases(void);    //  Release seq/qlt memory.
+
+public:
+  bool          copy(char  *bout,
+                     uint32 bgn, uint32 end, bool terminate = true);
+
+  bool          copy(char  *bout,
+                     uint8 *qout,
+                     uint32 bgn, uint32 end, bool terminate = true);
+
+  bool          wasError(void)     { return (_error & 0x01) == 0x01; };
+  bool          wasReSync(void)    { return (_error & 0x02) == 0x02; };
 
 private:
-  char             *_name    = nullptr;
-  uint32            _nameMax = 0;
+  void          findNameAndFlags(void);
 
-  char             *_ident   = nullptr;
-  char             *_flags   = nullptr;
+private:
+  char         *_headr  = nullptr;   uint32  _headrMax = 0;
+  char         *_ident  = nullptr;   uint32  _identMax = 0;
+  char         *_flags  = nullptr;   uint32  _flagsMax = 0;
 
-  char             *_seq     = nullptr;
-  uint8            *_qlt     = nullptr;
-  uint64            _seqMax  = 0;         //  Space allocated.
-  uint64            _seqLen  = 0;         //  Actual length.
+  char         *_seq    = nullptr;
+  uint8        *_qlt    = nullptr;
+  uint64        _seqMax = 0;         //  Space allocated.
+  uint64        _seqLen = 0;         //  Actual length.
 
-  uint32            _error   = 0;
+  uint32        _error  = 0;
 
   friend class dnaSeqFile;
 };

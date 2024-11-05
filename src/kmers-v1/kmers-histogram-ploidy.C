@@ -25,8 +25,8 @@ namespace merylutil::inline kmers::v1 {
 double
 interpolate(double *h,     //  Array of values
             int32   pp,    //  Base interpolation on h[pp-bo] to h[pp+eo]
-            int32   bo,    //   - low  range of interpolation
-            int32   eo,    //   - high range of interpolation
+            int32   bo,    //   - low  range of interpolation = pp - bo
+            int32   eo,    //   - high range of interpolation = pp + eo
             double  x) {   //  Coordinate we're interpolating for
   double y = 0;
 
@@ -105,6 +105,15 @@ findInterpolatedMinMax(double *h, int32 pp, double range, double step, bool want
 //  Then based on the sign of slopes d0 and d1
 //  infer if we're at a min or max or in between.
 //
+//  Function returns the location of the idx'th peak:
+//   - The first maximum is ignored; it is assumed to occur at x=0 and
+//     represents noise.
+//   - idx=0 is the first minimum, a distinguishing point between noise
+//     and real data.
+//   - idx=1 is the first maximum.
+//   - idx=2 is the second minimum.
+//   - idx=3 is the second maximum.
+//
 double
 findExtrema(double *h, uint32 idx, uint32 range) {
 
@@ -149,7 +158,65 @@ findExtrema(double *h, uint32 idx, uint32 range) {
 
 
 void
-merylHistogram::computePloidyPeaks(void) {
+merylHistogram::dumpSmoothed(uint32 n, double *h, double *s) {
+  FILE *sm = fopen("orig-vs-smooth.dat", "w");
+  for (int32 ii=0; ii<n; ii++)
+    fprintf(sm, "%d original %f smooth %f\n", ii, h[ii], s[ii]);
+  fclose(sm);
+}
+
+
+void
+merylHistogram::dumpDerivs(uint32 n, double *h) {
+  int32  ii=0;                       //  Find the first non-zero data, then
+
+  while ((ii < n) && (h[ii] == 0))   //  then advance two more so that d2,
+    ii++;                            //  d1, d0 (as above) are for valid
+  ii += 2;                           //  data points.
+
+  FILE *sm = fopen("derivitives.dat", "w");
+  for (int32 ii=3; ii<n; ii++) {
+    double d0 = h[ii+1] - h[ii+0];    bool d0n = (d0 < 0);
+    double d1 = h[ii+0] - h[ii-1];    bool d1n = (d1 < 0);
+    double d2 = h[ii-1] - h[ii-2];    bool d2n = (d2 < 0);
+
+    fprintf(sm, "%d  %f %f %f  %f %f\n", ii, d2, d1, d0, d1-d2, d0-d1);
+  }
+  fclose(sm);
+}
+
+
+void
+merylHistogram::dumpMirror(uint32 n, double *h) {   //  This is, I think, attempting
+  double *mirror = new double [n];                  //  to show the asymmetry around
+  double  mp = _coveragePeaks[1];                   //  the first peak.
+
+  for (int32 xx=0; xx<n; xx++)
+    mirror[xx] = 3.33;
+
+  for (int32 xx=(int32)floor(_coveragePeaks[0]*10); xx<(int32)floor(10*mp); xx++)
+    mirror[xx] = (interpolate(h, (int32)round(       xx/10.0), 2, 2,        xx/10.0) -
+                  interpolate(h, (int32)round(2*mp - xx/10.0), 2, 2, 2*mp - xx/10.0));
+
+  FILE *sm = fopen("mirror.dat", "w");
+  for (int32 xx=0; xx<n; xx++)
+    fprintf(sm, "%.1f %f %f %f\n",
+            xx/10.0,
+            mirror[xx],
+            interpolate(h, (int32)round(       xx/10.0), 2, 2,        xx/10.0),
+            interpolate(h, (int32)round(2*mp - xx/10.0), 2, 2, 2*mp - xx/10.0));
+  fclose(sm);
+
+  delete [] mirror;
+
+  double halfPeak = findExtrema(mirror, 1, 4);
+  fprintf(stderr, "halfPeak %f\n", halfPeak);
+}
+
+
+
+void
+merylHistogram::computePloidyPeaks(bool debugPloidy) {
 
   //
   //  Compute a Weierstrass transform -- convolve with a Gaussian kernel with
@@ -211,12 +278,8 @@ merylHistogram::computePloidyPeaks(void) {
     }
   }
 
-#if 0
-  FILE *sm = fopen("orig-vs-smooth.dat", "w");
-  for (int32 ii=0; ii<1024; ii++)
-    fprintf(sm, "%d original %f smooth %f\n", ii, h[ii], s[ii]);
-  fclose(sm);
-#endif
+  if (debugPloidy)
+    dumpSmoothed(1024, h, s);
 
   //
   //  Compute the noise/genomic threshold, and 1x, 2x, 3x and 4x peaks.
@@ -226,11 +289,48 @@ merylHistogram::computePloidyPeaks(void) {
   //  noise peak is so large - but use the smoothed data to find the ploidy
   //  peaks - unsmoothed data occasionally has local maxima that mess it up.
   //
+  _coveragePloidy[0] = 0.0;
+  _coveragePeaks[0]  = findExtrema(h, 0, 3);
 
-  _coveragePeaks[0] = findExtrema(h, 0, 3);
+  for (uint32 ii=1; ii<9; ii++) {
+    _coveragePloidy[ii] = ii;
+    _coveragePeaks[ii]  = findExtrema(s, 2 * ii - 1, 4);
+  }
 
-  for (uint32 ii=1; ii<9; ii++)
-    _coveragePeaks[ii] = findExtrema(s, 2 * ii - 1, 4);
+  //
+  //  Some histograms confuse 1/2x and 1x.  Here we try to decide if peak ii=1
+  //  represents 1/2x or 1x.
+  //   - first find the max peak.
+  //   - then, if that max peak is not at ploidy=1, divide all
+  //     ploidies by 2 to make the mak peak be at ploidy 1.
+  //
+
+  uint32  maxPeak  = 1;
+  double  maxPeakX = _coveragePeaks[1];
+  double  maxPeakY = interpolate(h, (int32)round(maxPeakX), 3, 3, maxPeakX);
+
+  for (uint32 ii=1; ii<9; ii++) {
+    double mx = _coveragePeaks[ii];
+    double my = interpolate(h, (int32)round(mx), 3, 3, mx);
+
+    if (maxPeakY < my) {
+      maxPeak  = ii;
+      maxPeakX = mx;
+      maxPeakY = my;
+    }
+  }
+
+  if (debugPloidy)
+    fprintf(stderr, "maxPeak #%d of %f at X=%f\n", maxPeak, maxPeakY, maxPeakX);
+
+  while (--maxPeak > 0)             //  Divide poidy by 2 to normalize
+    for (uint32 ii=0; ii<9; ii++)   //  it so that 1x coverage is max.
+      _coveragePloidy[ii] /= 2.0;   //
+
+  if (debugPloidy)
+    dumpMirror(1024, h);
+  if (debugPloidy)
+    dumpDerivs(1024, h);
 
   //  Cleanup and quit.
 

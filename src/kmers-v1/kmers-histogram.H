@@ -76,10 +76,17 @@ public:
 
   uint64    maxValue(void)                        { return(_histVs[_histLen-1]); }
 
-  void      computePloidyPeaks(void);
+private:
+  void      dumpSmoothed(uint32 n, double *h, double *s);
+  void      dumpDerivs  (uint32 n, double *h);
+  void      dumpMirror  (uint32 n, double *h);
 
-  double    getNoiseTrough(void)  { return           _coveragePeaks[0];     }
-  double    getPloidy(uint32 x)   { return (x < 9) ? _coveragePeaks[x] : 0; }
+public:
+  void      computePloidyPeaks(bool debugPloidy=false);
+
+  double    getNoiseTrough(void)    { return           _coveragePeaks[0];      }
+  double    getCoverage(uint32 x)   { return (x < 9) ? _coveragePloidy[x] : 0; }
+  double    getDepth   (uint32 x)   { return (x < 9) ? _coveragePeaks[x]  : 0; }
 
 
 private:
@@ -87,7 +94,8 @@ private:
   uint64                   _numDistinct = 0;
   uint64                   _numTotal    = 0;
 
-  double                   _coveragePeaks[9] = { 0 };
+  double                   _coveragePloidy[9] = { 0 };   //  0.5x, 1x, 2x, etc.
+  double                   _coveragePeaks[9]  = { 0 };   //  depth for the above.
 
   uint32                   _histMax = 0;         //  Max value that can be stored in _hist.
   uint64                  *_hist    = nullptr;   //

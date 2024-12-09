@@ -348,7 +348,7 @@ static time_t parse_rfc3339_date(kstring_t *datetime)
         return 0;
     if (should_be_t != 'T' && should_be_t != 't' && should_be_t != ' ')
         return 0;
-    struct tm parsed = { sec, min, hour, day, mon - 1, year - 1900, 0, 0, 0 };
+    struct tm parsed = { sec, min, hour, day, mon - 1, year - 1900, 0, 0, 0, 0, NULL };
 
     switch (timezone[0]) {
       case 'Z':

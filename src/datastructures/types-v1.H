@@ -191,18 +191,18 @@ inline  int8   strtoint8   (char const *str)  {  return( (int8)  strtol    (str,
 inline  float  strtofloat  (char const *str)  {  return( (float) strtof    (str, nullptr));      }
 inline double  strtodouble (char const *str)  {  return((double) strtod    (str, nullptr));      }
 
-inline char const *strtonumber(char const *str, uint128 &num)  {  char *rem;  num = (uint128)strtoullll(str, &rem);      return(rem);  }
-inline char const *strtonumber(char const *str,  int128 &num)  {  char *rem;  num =  (int128)strtollll (str, &rem);      return(rem);  }
-inline char const *strtonumber(char const *str, uint64  &num)  {  char *rem;  num = (uint64) strtoull  (str, &rem, 10);  return(rem);  }
-inline char const *strtonumber(char const *str,  int64  &num)  {  char *rem;  num =  (int64) strtoll   (str, &rem, 10);  return(rem);  }
-inline char const *strtonumber(char const *str, uint32  &num)  {  char *rem;  num = (uint32) strtoul   (str, &rem, 10);  return(rem);  }
-inline char const *strtonumber(char const *str,  int32  &num)  {  char *rem;  num =  (int32) strtol    (str, &rem, 10);  return(rem);  }
-inline char const *strtonumber(char const *str, uint16  &num)  {  char *rem;  num = (uint16) strtoul   (str, &rem, 10);  return(rem);  }
-inline char const *strtonumber(char const *str,  int16  &num)  {  char *rem;  num =  (int16) strtol    (str, &rem, 10);  return(rem);  }
-inline char const *strtonumber(char const *str, uint8   &num)  {  char *rem;  num = (uint8)  strtoul   (str, &rem, 10);  return(rem);  }
-inline char const *strtonumber(char const *str,  int8   &num)  {  char *rem;  num =  (int8)  strtol    (str, &rem, 10);  return(rem);  }
-inline char const *strtonumber(char const *str,  float  &num)  {  char *rem;  num = (double) strtof    (str, &rem);      return(rem);  }
-inline char const *strtonumber(char const *str, double  &num)  {  char *rem;  num = (double) strtod    (str, &rem);      return(rem);  }
+inline char const *strtonumber(char const *str, uint128 &num)  {  char *rem=nullptr;  num = (uint128)strtoullll(str, &rem);      return(rem);  }
+inline char const *strtonumber(char const *str,  int128 &num)  {  char *rem=nullptr;  num =  (int128)strtollll (str, &rem);      return(rem);  }
+inline char const *strtonumber(char const *str, uint64  &num)  {  char *rem=nullptr;  num = (uint64) strtoull  (str, &rem, 10);  return(rem);  }
+inline char const *strtonumber(char const *str,  int64  &num)  {  char *rem=nullptr;  num =  (int64) strtoll   (str, &rem, 10);  return(rem);  }
+inline char const *strtonumber(char const *str, uint32  &num)  {  char *rem=nullptr;  num = (uint32) strtoul   (str, &rem, 10);  return(rem);  }
+inline char const *strtonumber(char const *str,  int32  &num)  {  char *rem=nullptr;  num =  (int32) strtol    (str, &rem, 10);  return(rem);  }
+inline char const *strtonumber(char const *str, uint16  &num)  {  char *rem=nullptr;  num = (uint16) strtoul   (str, &rem, 10);  return(rem);  }
+inline char const *strtonumber(char const *str,  int16  &num)  {  char *rem=nullptr;  num =  (int16) strtol    (str, &rem, 10);  return(rem);  }
+inline char const *strtonumber(char const *str, uint8   &num)  {  char *rem=nullptr;  num = (uint8)  strtoul   (str, &rem, 10);  return(rem);  }
+inline char const *strtonumber(char const *str,  int8   &num)  {  char *rem=nullptr;  num =  (int8)  strtol    (str, &rem, 10);  return(rem);  }
+inline char const *strtonumber(char const *str,  float  &num)  {  char *rem=nullptr;  num = (double) strtof    (str, &rem);      return(rem);  }
+inline char const *strtonumber(char const *str, double  &num)  {  char *rem=nullptr;  num = (double) strtod    (str, &rem);      return(rem);  }
 
 inline bool    strtobool(char const *str)  {
   if ((str == nullptr) ||

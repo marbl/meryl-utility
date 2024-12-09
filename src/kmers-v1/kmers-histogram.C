@@ -283,10 +283,9 @@ merylHistogram::load(char const *histoname) {
     _histLen++;
   } while (c->readLine() == true);
 
-  if (malformed > 0) {
-    fprintf(stderr, "WARNING: merylHistogram::load() found %u malformed lines in '%s'.\n",
+  if (malformed > 0)
+    fprintf(stderr, "WARNING: merylHistogram::load() found %lu malformed lines in '%s'.\n",
             malformed, histoname);
-  }
 
   delete c;
 }

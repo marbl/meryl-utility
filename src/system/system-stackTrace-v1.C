@@ -37,7 +37,14 @@
 
 
 
-#define WRITE_STRING(S) write(2, S, strlen(S))
+//  Because GCC insists that we check the return value of a write even if
+//  there is nothing that we can do about a failure, this bizarre
+//  construction (and comment) were added to squash the warning message.
+//
+//  Alternatively, we could turn off the warning message for the whole file:
+//    #pragma GCC diagnostic push
+//    #pragma GCC diagnostic ignored "-Wunused-result"
+#define WRITE_STRING(S) (void)!write(2, (S), strlen((S)))
 
 
 //  If set, a signal handler will be installed to call AS_UTL_catchCrash().

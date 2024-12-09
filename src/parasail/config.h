@@ -1,4 +1,6 @@
 
+#define _POSIX_C_SOURCE 200112L
+
 #define HAVE_ALIGNED_ALLOC 1
 #define HAVE_POSIX_MEMALIGN 1
 

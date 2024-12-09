@@ -33,21 +33,20 @@ memoryMappedFile::memoryMappedFile(const char *name,
 
   errno = 0;
   _fd = (_type == mftReadOnly) ? open(_name, O_RDONLY | O_LARGEFILE)
-                                : open(_name, O_RDWR   | O_LARGEFILE);
-  if (errno)
-    fprintf(stderr, "memoryMappedFile()-- Couldn't open '%s' for mmap: %s\n", _name, strerror(errno)), exit(1);
+                               : open(_name, O_RDWR   | O_LARGEFILE);
+  if (_fd < 0)
+    fprintf(stderr, "memoryMappedFile()-- Couldn't open '%s' for mapping: %s\n", _name, strerror(errno)), exit(1);
 
   struct stat  sb;
 
-  fstat(_fd, &sb);
-  if (errno)
-    fprintf(stderr, "memoryMappedFile()-- Couldn't stat '%s' for mmap: %s\n", _name, strerror(errno)), exit(1);
+  if (fstat(_fd, &sb) < 0)
+    fprintf(stderr, "memoryMappedFile()-- Couldn't stat '%s' for mapping: %s\n", _name, strerror(errno)), exit(1);
 
   _length = sb.st_size;
   _offset = 0;
 
   if (_length == 0)
-    fprintf(stderr, "memoryMappedFile()-- File '%s' is empty, can't mmap.\n", _name), exit(1);
+    fprintf(stderr, "memoryMappedFile()-- File '%s' is empty, can't map.\n", _name), exit(1);
 
   //  Map the file to memory, or grab some anonymous space for the file to be copied to.
 
@@ -63,24 +62,29 @@ memoryMappedFile::memoryMappedFile(const char *name,
   if (_type == mftReadWriteInCore)
     _data = mmap(0L, _length, PROT_READ | PROT_WRITE, MAP_ANON | MAP_SHARED, -1, 0);
 
+  if (_data == MAP_FAILED)
+    fprintf(stderr, "memoryMappedFile()-- Failed to map file '%s': %s\n", _name, strerror(errno)), exit(1);
+
   //  If loading into core, read the file into core.
 
   if ((_type == mftReadOnlyInCore) ||
-      (_type == mftReadWriteInCore))
-    read(_fd, _data, _length);
+      (_type == mftReadWriteInCore)) {
+    ssize_t ar = read(_fd, _data, _length);
+
+    if (ar < 0)
+      fprintf(stderr, "memoryMappedFile()-- Failed to read %lu bytes from mapped file '%s': %s\n", _length, _name, strerror(errno)), exit(1);
+    if (ar != _length)
+      fprintf(stderr, "memoryMappedFile()-- Read only %lu bytes out of expected %lu bytes from mapped file '%s': %s\n", ar, _length, _name, strerror(errno)), exit(1);
+  }
 
   //  Close the file if we're done with it.
 
-  if (_type != mftReadWriteInCore)
-    close(_fd), _fd = -1;
+  if (_type != mftReadWriteInCore) {
+    if (close(_fd) < 0)
+      fprintf(stderr, "memoryMappedFile()-- Failed to close file '%s' after mapping: %s\n", _name, strerror(errno)), exit(1);
 
-  //  Catch any and all errors.
-
-  if (errno)
-    fprintf(stderr, "memoryMappedFile()-- Couldn't mmap '%s' of length " F_SIZE_T ": %s\n", _name, _length, strerror(errno)), exit(1);
-
-
-  //fprintf(stderr, "memoryMappedFile()-- File '%s' of length %lu is mapped.\n", _name, _length);
+    _fd = -1;
+  }
 }
 
 
@@ -89,17 +93,23 @@ memoryMappedFile::~memoryMappedFile() {
   errno = 0;
 
   if (_type == mftReadWrite)
-    msync(_data, _length, MS_SYNC);
+    if (msync(_data, _length, MS_SYNC) < 0)
+      fprintf(stderr, "memoryMappedFile()-- Failed to sync mapped file '%s' of length " F_SIZE_T ": %s\n", _name, _length, strerror(errno)), exit(1);
 
-  if (_type == mftReadWriteInCore)
-    write(_fd, _data, _length), close(_fd);
+  if (_type == mftReadWriteInCore) {
+    ssize_t aw = write(_fd, _data, _length);
 
-  if (errno)
-    fprintf(stderr, "memoryMappedFile()-- Failed to close mmap '%s' of length " F_SIZE_T ": %s\n", _name, _length, strerror(errno)), exit(1);
+    if (aw < 0)
+      fprintf(stderr, "memoryMappedFile()-- Failed to write %lu bytes to file '%s': %s\n", _length, _name, strerror(errno)), exit(1);
+    if (aw != _length)
+      fprintf(stderr, "memoryMappedFile()-- Wrote only %lu bytes out of expected %lu bytes to file '%s': %s\n", aw, _length, _name, strerror(errno)), exit(1);
 
-  //  Destroy the mapping.
+    if (close(_fd) < 0)
+      fprintf(stderr, "memoryMappedFile()-- Failed to close file mapped file '%s': %s\n", _name, strerror(errno)), exit(1);
+  }
 
-  munmap(_data, _length);
+  if (munmap(_data, _length) < 0)
+    fprintf(stderr, "memoryMappedFile()-- Failed to unmap file '%s': %s\n", _name, strerror(errno)), exit(1);
 }
 
 }  //  merylutil::files::v1

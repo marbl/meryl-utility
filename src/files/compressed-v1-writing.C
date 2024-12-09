@@ -49,6 +49,15 @@ compressedFileWriter::compressedFileWriter(const char *filename, uint32 cLevel, 
       _pipe = true;
       break;
 
+    case cftLZIP:
+      if (commandAvailable("plzip -h"))
+        snprintf(cmd, FILENAME_MAX, "plzip -%dc -n %d > '%s'", cLevel, nThreads, _filename);
+      else
+        snprintf(cmd, FILENAME_MAX, "lzip -%dc > '%s'", cLevel, _filename);
+      _file = popen(cmd, "w");
+      _pipe = true;
+      break;
+
     case cftBZ2:
       snprintf(cmd, FILENAME_MAX, "bzip2 -%dc > '%s'", cLevel, _filename);
       _file = popen(cmd, "w");

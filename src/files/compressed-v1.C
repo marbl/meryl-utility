@@ -34,6 +34,9 @@ compressedFileType(char const *filename) {
   if      ((len > 3) && (strcasecmp(filename + len - 3, ".gz") == 0))
     return(cftGZ);
 
+  else if ((len > 3) && (strcasecmp(filename + len - 3, ".lz") == 0))
+    return(cftLZIP);
+
   else if ((len > 4) && (strcasecmp(filename + len - 4, ".bz2") == 0))
     return(cftBZ2);
 

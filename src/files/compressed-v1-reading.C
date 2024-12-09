@@ -93,6 +93,12 @@ compressedFileReader::reopen(int32 nThreads) {
       _pipe = true;
       break;
 
+    case cftLZIP:
+      snprintf(cmd, FILENAME_MAX, "lzip -dc '%s'", _filename);
+      _file = popen(cmd, "r");
+      _pipe = true;
+      break;
+
     case cftBZ2:
       snprintf(cmd, FILENAME_MAX, "bzip2 -dc '%s'", _filename);
       _file = popen(cmd, "r");

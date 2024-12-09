@@ -27,10 +27,11 @@ namespace merylutil::inline files::inline v1 {
 enum cftType {
   cftNONE  = 0,
   cftGZ    = 1,
-  cftBZ2   = 2,
-  cftXZ    = 3,
-  cftZSTD  = 4,
-  cftSTDIN = 5
+  cftLZIP  = 2,
+  cftBZ2   = 3,
+  cftXZ    = 4,
+  cftZSTD  = 5,
+  cftSTDIN = 6
 };
 
 cftType  compressedFileType(char const *filename);

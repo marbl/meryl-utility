@@ -82,7 +82,7 @@ bool
 testFileIO(uint16 *array, uint64 nObj) {
 
   fprintf(stderr, "\n");
-  fprintf(stderr, "Testing compressedFileWriter/compressedFileReader.\n");
+  fprintf(stderr, "Testing compressedFileWriter/compressedFileReader using '%s'.\n", tempnagz);
 
   {
     compressedFileWriter *out = new compressedFileWriter(tempnagz);
@@ -247,7 +247,7 @@ main(int32 argc, char **argv) {
     fprintf(stderr, "  -unlink       run just unlink tests,\n");
     fprintf(stderr, "  \n");
     fprintf(stderr, "  -suffix suf   use suffix 'suf' for compressed files\n");
-    fprintf(stderr, "                ('gz', 'bz2', 'xz', 'zstd')\n");
+    fprintf(stderr, "                ('gz', 'lz', 'bz2', 'xz', 'zstd')\n");
     fprintf(stderr, "  \n");
     fprintf(stderr, "  by default, all tests are run.\n");
     fprintf(stderr, "  \n");

@@ -24,14 +24,27 @@
 
 namespace merylutil::inline math::inline v1 {
 
+
+//  md5sum  md5;
+//  while (data)
+//    md5.addBlock(data, dataLen);
+//  md5.finalize()
+//
 class md5sum {
 public:
   md5sum();
   md5sum(uint8 const *b, uint32 bLen);
   ~md5sum();
 
-  char const *toString(void);
+  char const *toString(void)        { return dascii; }
   void        toString(char *str);
+
+  void        toWords(uint64 &hi, uint64 &lo) {
+    hi = upper;
+    lo = lower;
+  }
+  uint64      hiWord(void)          { return upper; }
+  uint64      loWord(void)          { return lower; }
 
   void        addBlock(uint8 *b, uint64 bLen);
 
@@ -40,6 +53,9 @@ public:
 private:
   uint8       digest[33] = {0};
   char        dascii[33] = {0};
+
+  uint64      upper = uint64zero;  //0xd41d8cd98f00b204;
+  uint64      lower = uint64zero;  //0xe9800998ecf8427e;
 
   void       *context;
 };

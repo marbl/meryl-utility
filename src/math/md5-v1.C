@@ -330,11 +330,6 @@ md5sum::~md5sum() {
   delete (MD5_CTX *)context;
 }
 
-char const *
-md5sum::toString(void) {
-  return(dascii);
-}
-
 void
 md5sum::toString(char *str) {
   memcpy(str, dascii, 32);
@@ -352,6 +347,11 @@ md5sum::finalize(void) {
   for (uint32 ii=0; ii<16; ii++) {
     dascii[2*ii+0] = (digest[ii] >> 4) & 0x0f;
     dascii[2*ii+1] = (digest[ii]     ) & 0x0f;
+  }
+
+  for (uint32 ii=0; ii<16; ii++) {
+    upper <<= 4;             lower <<= 4;
+    upper  |= dascii[ii];    lower  |= dascii[ii+16];
   }
 
   for (uint32 ii=0; ii<32; ii++)

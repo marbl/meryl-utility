@@ -29,7 +29,11 @@ public:
     snprintf(inPath, FILENAME_MAX, "%s", inname);
     snprintf(otPath, FILENAME_MAX, "%s/%s", otpath, basename(inname));
 
-    fileSize = merylutil::sizeOfFile(inname);
+    fileSize = merylutil::sizeOfFile(inPath);
+
+    if ((merylutil::fileExists(otPath) == true) &&
+        (merylutil::sizeOfFile(otPath) != fileSize))
+      merylutil::unlink(otPath);
 
     if (merylutil::fileExists(otPath) == false) {
       inFile = merylutil::openInputFile(inPath);
@@ -156,12 +160,21 @@ main(int argc, char **argv) {
   std::vector<char const *>   infiles;
   char const                 *otpath  = nullptr;
 
+  uint32  lqSize = 128;    //  Loader Queue size
+  uint32  wqSize = 16384;  //  Writer Queue size
+
   for (int arg=1; arg<argc; arg++) {
-    if      (merylutil::fileExists(argv[arg]))
+    if      (strcmp(argv[arg], "-b") == 0)
+      wqSize = strtouint32(argv[++arg]);
+
+    else if (merylutil::fileExists(argv[arg]))
       infiles.push_back(argv[arg]);
 
     else if (merylutil::directoryExists(argv[arg]) && (arg == argc-1))
       otpath = argv[arg];
+
+    else if (merylutil::directoryExists(argv[arg]))
+      ;
 
     else
       sprintf(errors, "ERROR: '%s' is neither an input file nor an output directory.\n", argv[arg]);
@@ -173,8 +186,8 @@ main(int argc, char **argv) {
     sprintf(errors, "ERROR: no output-directory supplied.\n");
 
   if (errors.size() > 0) {
-    fprintf(stderr, "usage: %s <input-files ...> <output-directory>\n", argv[0]);
-    fprintf(stderr, "\n");
+    fprintf(stderr, "usage: %s [-b s] <input-files ...> <output-directory>\n", argv[0]);
+    fprintf(stderr, "  -b s     limit to 's' 1-MB buffers\n");
     for (char const *e : errors)
       fputs(e, stderr);
 
@@ -185,9 +198,9 @@ main(int argc, char **argv) {
     cpBufState *g  = new cpBufState(infile, otpath);
     sweatShop  *ss = new sweatShop(bufReader, bufWorker, bufWriter, bufStatus);
 
-    ss->setLoaderQueueSize(128);    //  Just comuting the md5, so we don't need lots of input buffering.
-    ss->setNumberOfWorkers(1);      //
-    ss->setWriterQueueSize(16384);  //  But if we wait for writing, keep filling the queue.
+    ss->setLoaderQueueSize(lqSize);   //  Just comuting the md5, so we don't need lots of input buffering.
+    ss->setNumberOfWorkers(1);        //
+    ss->setWriterQueueSize(wqSize);   //  But if we wait for writing, keep filling the queue.
     ss->setInOrderOutput(true);
 
     fprintf(stderr, "%s -> %s\n", infile, otpath);

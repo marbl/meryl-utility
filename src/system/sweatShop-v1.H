@@ -35,36 +35,36 @@ public:
             void (*statusfcn)(void *G, uint64 numberLoaded, uint64 numberComputed, uint64 numberOutput) = nullptr);
   ~sweatShop();
 
-  void        setNumberOfWorkers(uint32 x) {
-    _numberOfWorkers = x;
-    _loaderQueueMin  = x * 2;
-  };
-
   void        setThreadData(uint32 t, void *x);
 
-  void        setLoaderBatchSize(uint32 batchSize) { _loaderBatchSize = batchSize; };
-  void        setLoaderQueueSize(uint32 queueSize) { _loaderQueueSize = queueSize;  _loaderQueueMax = queueSize; };
+  void        setNumberOfWorkers(uint32 x)         { _numberOfWorkers = x; }
 
-  void        setWorkerBatchSize(uint32 batchSize) { _workerBatchSize = batchSize; };
+  void        setLoaderBatchSize(uint32 batchSize) { _loaderBatchSize = batchSize; }
+  void        setLoaderQueueSize(uint32 queueSize) { _loaderQueueSize = queueSize;  _loaderQueueMax = queueSize; }
 
-  void        setWriterQueueSize(uint32 queueSize) { _writerQueueSize = queueSize;  _writerQueueMax = queueSize; };
+  void        setWorkerBatchSize(uint32 batchSize) { _workerBatchSize = batchSize; }
 
-  void        setInOrderOutput(bool o)             { _writeInOrder = o; };
+  void        setWriterQueueSize(uint32 queueSize) { _writerQueueSize = queueSize;  _writerQueueMax = queueSize; }
+
+  void        setInOrderOutput(bool o)             { _writeInOrder = o; }
 
   void        run(void *user=0L, bool beVerbose=false);
 private:
 
-  //  Stubs that forward control from the c-based pthread to this class
-  friend void  *_sweatshop_loaderThread(void *ss);
-  friend void  *_sweatshop_workerThread(void *ss);
-  friend void  *_sweatshop_writerThread(void *ss);
-  friend void  *_sweatshop_statusThread(void *ss);
+  //  Stubs that forward control from the c-based pthread to the
+  //  corresponding methods in this class, then those methods forward the
+  //  call to the user supplied functions that do the actual work.
 
-  //  The threaded routines
-  void   *loader(void);
-  void   *worker(sweatShopWorker *workerData);
-  void   *writer(void);
-  void   *status(void);
+  friend void *_sload(void *ss);   void *loader(void);
+  friend void *_swork(void *ss);   void *worker(sweatShopWorker *workerData);
+  friend void *_swrit(void *ss);   void *writer(void);
+  friend void *_sstat(void *ss);   void *status(void);
+
+  void *(*_userLoader)(void *global);
+  void  (*_userWorker)(void *global, void *thread, void *thing);
+  void  (*_userWriter)(void *global, void *thing);
+  void  (*_userStatus)(void *global, uint64 numberLoaded, uint64 numberComputed, uint64 numberOutput);
+
 
   //  Utilities for the loader thread
   void    loaderAddToLocal(sweatShopState *&tail, sweatShopState *&head, sweatShopState *thisState);
@@ -75,10 +75,6 @@ private:
 
   pthread_mutex_t        _stateMutex;
 
-  void                *(*_userLoader)(void *global);
-  void                 (*_userWorker)(void *global, void *thread, void *thing);
-  void                 (*_userWriter)(void *global, void *thing);
-  void                 (*_userStatus)(void *global, uint64 numberLoaded, uint64 numberComputed, uint64 numberOutput);
 
   void                  *_globalUserData;
 
@@ -89,7 +85,7 @@ private:
   bool                   _showStatus;
   bool                   _writeInOrder;
 
-  uint32                 _loaderQueueSize, _loaderQueueMin, _loaderQueueMax;
+  uint32                 _loaderQueueSize, _loaderQueueMax;
   uint32                 _loaderBatchSize;
   uint32                 _workerBatchSize;
   uint32                 _writerQueueSize, _writerQueueMax;

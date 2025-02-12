@@ -194,7 +194,8 @@ SYS_INCDIRS  += $(shell pkg-config --cflags-only-I openssl libcurl liblzma | sed
 LDFLAGS      += $(shell pkg-config --libs-only-L   openssl libcurl liblzma)
 LDLIBS       += $(shell pkg-config --libs-only-l   openssl libcurl liblzma) -lz -lbz2
 
-SUBMAKEFILES := pccp/pccp.mk
+SUBMAKEFILES := pccp/pccp.mk \
+                pccp/pcat.mk
 
 ifeq ($(BUILDTESTS), 1)
 SUBMAKEFILES += tests/alignTest-ssw.mk \

@@ -23,10 +23,6 @@
 #include <fcntl.h>
 #include <sys/stat.h>
 
-//  Report ALL file open/close events.
-#undef SHOW_FILE_OPEN_CLOSE
-
-
 namespace merylutil::inline files::inline v1 {
 
 char const *
@@ -52,7 +48,7 @@ constructPathName(char const *prefix, char separator, char const *suffix) {
 
   assert(p <= tlen);
 
-  return(path);
+  return path;
 }
 
 }  //  namespace merylutil::files::v1
@@ -206,34 +202,25 @@ namespace merylutil::inline files::inline v1 {
 
 bool
 pathExists(char const *prefix, char separator, char const *suffix) {
+  char const  *pathname = constructPathName(prefix, separator, suffix);
+  bool         isp      = false;
   struct stat  s;
-
-  //if (prefix == nullptr)
-  //  return false;
-
-  char const *pathname = constructPathName(prefix, separator, suffix);
-  bool        isp      = false;
 
   if (stat(pathname, &s) == 0)
     isp = true;
 
   delete [] pathname;
-
   return (isp == true);
 }
 
 bool
 fileExists(char const *prefix, char separator, char const *suffix,
            bool        writable) {
+  char const  *pathname = constructPathName(prefix, separator, suffix);
+  bool         isd      = true;
+  bool         isw      = false;
+  mode_t       w        = (S_IWUSR | S_IWGRP | S_IWOTH);
   struct stat  s;
-  mode_t       w = (S_IWUSR | S_IWGRP | S_IWOTH);
-
-  //if (prefix == nullptr)
-  //  return false;
-
-  char const *pathname = constructPathName(prefix, separator, suffix);
-  bool        isd      = true;
-  bool        isw      = false;
 
   if (stat(pathname, &s) == 0) {                   //  If path exists...
     isd = (s.st_mode & S_IFDIR);                   //    Is a directory?
@@ -241,27 +228,21 @@ fileExists(char const *prefix, char separator, char const *suffix,
   }
 
   delete [] pathname;
-
   return (isd == false) && (isw == true);
 }
 
 
 bool
 directoryExists(char const *prefix, char separator, char const *suffix) {
+  char const  *pathname = constructPathName(prefix, separator, suffix);
+  bool         isd      = false;
   struct stat  s;
-
-  //if (prefix == nullptr)
-  //  return false;
-
-  char const *pathname = constructPathName(prefix, separator, suffix);
-  bool        isd      = false;
 
   if (stat(pathname, &s) == 0) {                   //  If path exists...
     isd = (s.st_mode & S_IFDIR);                   //    Is a directory?
   }
 
   delete [] pathname;
-
   return (isd == true);
 }
 
@@ -353,7 +334,6 @@ unlink(char const *prefix, char separator, char const *suffix, bool fatal) {
   }
 
   delete [] pathname;
-
   return success;
 }
 
@@ -372,13 +352,9 @@ namespace merylutil::inline files::inline v1 {
 
 bool
 makeReadOnly(char const *prefix, char separator, char const *suffix) {
-  char         path[FILENAME_MAX+1];
+  char const  *pathname = constructPathName(prefix, separator, suffix);
+  bool         success  = false;
   struct stat  s;
-
-  //if (prefix == nullptr)   return false;
-
-  char const *pathname = constructPathName(prefix, separator, suffix);
-  bool        success  = false;
 
   if (stat(pathname, &s) == 0) {              //  If file exists...
     mode_t w = S_IWUSR | S_IWGRP | S_IWOTH;   //    Create write-enable mask.
@@ -392,18 +368,14 @@ makeReadOnly(char const *prefix, char separator, char const *suffix) {
   }
 
   delete [] pathname;
-
   return success;
 }
 
 bool
 makeWritable(char const *prefix, char separator, char const *suffix) {
+  char const  *pathname = constructPathName(prefix, separator, suffix);
+  bool         success  = false;
   struct stat  s;
-
-  //if (prefix == nullptr)   return false;
-
-  char const *pathname = constructPathName(prefix, separator, suffix);
-  bool        success  = false;
 
   if (stat(pathname, &s) == 0) {              //  If file exists...
     mode_t u = umask(0);                      //    Destructively read the current umask.
@@ -420,7 +392,6 @@ makeWritable(char const *prefix, char separator, char const *suffix) {
   }
 
   delete [] pathname;
-
   return success;
 }
 
@@ -437,29 +408,26 @@ namespace merylutil::inline files::inline v1 {
 
 off_t
 sizeOfFile(char const *prefix, char separator, char const *suffix) {
+  char const  *pathname = constructPathName(prefix, separator, suffix);
   struct stat  s;
-
-  char const *pathname = constructPathName(prefix, separator, suffix);
 
   errno = 0;
   if (::stat(pathname, &s) == -1)
     fprintf(stderr, "Failed to stat() file '%s': %s\n", pathname, strerror(errno)), exit(1);
 
   delete [] pathname;
-
-  return(s.st_size);
+  return s.st_size;
 }
 
 off_t
 sizeOfFile(FILE *file) {
   struct stat  s;
-  off_t        size = 0;
 
   errno = 0;
   if (::fstat(fileno(file), &s) == -1)
     fprintf(stderr, "Failed to stat() FILE*: %s\n", strerror(errno)), exit(1);
 
-  return(s.st_size);
+  return s.st_size;
 }
 
 uint64
@@ -513,12 +481,12 @@ ftell(FILE *stream) {
   off_t pos = ::ftello(stream);
 
   if ((errno == ESPIPE) || (errno == EBADF))   //  Not a seekable stream.
-    return(((off_t)1) < 42);                   //  Return some goofy big number.
+    return ((off_t)1) << 42;                   //  Return some goofy big number.
 
   if (errno)
     fprintf(stderr, "ftell()--  Failed with %s.\n", strerror(errno)), exit(1);
 
-  return(pos);
+  return pos;
 }
 
 void
@@ -530,6 +498,7 @@ fseek(FILE *stream, off_t offset, int whence) {
     return;
 #endif  //  __FreeBSD__
 
+  errno = 0;
   if (::fseeko(stream, offset, whence) == -1)
     fprintf(stderr, "fseek()--  Failed with %s.\n", strerror(errno)), exit(1);
 
@@ -552,27 +521,26 @@ namespace merylutil::inline files::inline v1 {
 
 FILE *
 openInputFile(char const *prefix,
-                     char        separator,
-                     char const *suffix,
-                     bool        doOpen) {
-  //if (prefix == nullptr)  return(nullptr);
-  if (doOpen == false)    return(nullptr);
+              char        separator,
+              char const *suffix,
+              bool        doOpen) {
+  if (doOpen == false)
+    return nullptr;
 
   char const *pathname = constructPathName(prefix, separator, suffix);
 
-#ifdef SHOW_FILE_OPEN_CLOSE
-  fprintf(stderr, "openInputFile()-- Opening '%s'.\n", pathname);
-#endif
+  if (strcmp(pathname, "-") == 0) {
+    delete [] pathname;
+    return stdin;
+  }
 
   errno = 0;
-
   FILE *F = fopen(pathname, "r");
-  if (errno)
+  if (F == nullptr)
     fprintf(stderr, "Failed to open '%s' for reading: %s\n", pathname, strerror(errno)), exit(1);
 
   delete [] pathname;
-
-  return(F);
+  return F;
 }
 
 }  //  namespace merylutil::files::v1
@@ -582,40 +550,27 @@ openInputFile(char const *prefix,
 namespace merylutil::inline files::inline v1 {
 
 FILE *
-openOutputFile(char const *prefix,
-               char        separator,
-               char const *suffix,
-               bool        doOpen) {
-  //if (prefix == nullptr) return(nullptr);
-  if (doOpen == false)   return(nullptr);
+openOutputFile(char const *prefix,      //  The unlink() below is to prevent race conditions
+               char        separator,   //  when two processes open the same file; we've seen
+               char const *suffix,      //  instances where the outputs are intermingled.  This
+               bool        doOpen) {    //  isn't perfect; they could still race, but the window
+  if (doOpen == false)                  //  is much smaller now.
+    return nullptr;
 
   char const *pathname = constructPathName(prefix, separator, suffix);
+  FILE       *F        = stdout;
 
-#ifdef SHOW_FILE_OPEN_CLOSE
-  fprintf(stderr, "openOutputFile()-- Creating '%s'.\n", pathname);
-#endif
+  if (strcmp(pathname, "-") != 0) {
+    unlink(pathname);
 
-  //  Unlink the file before opening for writes.  This prevents race
-  //  conditions when two processes open the same file: the first process
-  //  will create a new file, but the second process will simply reset the
-  //  file to the start.  Both processes seem to keep their own file pointer,
-  //  and eof seems to be (incorrectly) the larger of the two.  In effect,
-  //  the second process is simply overwriting the first process (unless the
-  //  second process writes data first, then the first process overwrites).
-  //
-  //  Very confusing.
-  //
-  unlink(pathname);
-
-  errno = 0;
-
-  FILE *F = fopen(pathname, "w");
-  if (errno)
-    fprintf(stderr, "Failed to open '%s' for writing: %s\n", pathname, strerror(errno)), exit(1);
+    errno = 0;
+    F = fopen(pathname, "w");
+    if (F == nullptr)
+      fprintf(stderr, "Failed to open '%s' for writing: %s\n", pathname, strerror(errno)), exit(1);
+  }
 
   delete [] pathname;
-
-  return(F);
+  return F;
 }
 
 void
@@ -624,20 +579,8 @@ closeFile(FILE *&F, char const *prefix, char separator, char const *suffix, bool
   if ((F == nullptr) || (F == stdout) || (F == stderr))
     return;
 
-#ifdef SHOW_FILE_OPEN_CLOSE
-  if ((prefix) && (suffix))
-    fprintf(stderr, "closeFile()-- Closing '%s%c%s'.\n", prefix, separator, suffix);
-  else if (prefix)
-    fprintf(stderr, "closeFile()-- Closing '%s'.\n", prefix);
-  else
-    fprintf(stderr, "closeFile()-- Closing (anonymous file).\n");
-#endif
-
   errno = 0;
-
-  fclose(F);
-
-  F = nullptr;
+  fclose(F);   F = nullptr;
 
   if ((critical == false) || (errno == 0))
     return;

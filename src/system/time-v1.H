@@ -24,6 +24,8 @@
 
 #include <sys/stat.h>  //  for UTIME_OMIT
 
+#include <time.h>      //  localtime_r
+
 namespace merylutil::inline system::inline v1 {
 
 //
@@ -53,10 +55,29 @@ public:
 
   muTime &setTime(void);
 
-  double  getTime_double(void)  { return (double)_s + (double)_n / 1000000000.0;  }
-  int64   getTime_int64 (void)  { return         _s;                              }
+  double  getTime_double(void)     { return (double)_s + (double)_n / 1000000000.0;  }
+  int64   getTime_int64 (void)     { return         _s;                              }
+
+  uint64  getTime_seconds(void)    { return         _s;                              }
+  uint64  getTime_nanosec(void)    { return         _n;                              }
+
+  uint64  getTime_billionths(void) { return         _s << 32 | _n;                   } 
 
   //char const *getTimeString(void);
+
+  void    getTime(uint32 &yr, uint32 &mo, uint32 &da, uint32 &hh, uint32 &mm, uint32 &ss) {
+    time_t     tt = _s + ((_n < 500000000) ? 0 : 1);
+    struct tm  tm;
+
+    localtime_r(&tt, &tm);
+
+    yr = tm.tm_year + 1900;
+    mo = tm.tm_mon  + 1;
+    da = tm.tm_mday;
+    hh = tm.tm_hour;
+    mm = tm.tm_min;
+    ss = tm.tm_sec;
+  }
 
 public:
   bool    operator< (muTime &that) { return (_s <  that._s) || (_s == that._s && _n <  that._n); }

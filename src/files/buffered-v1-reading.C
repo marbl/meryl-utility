@@ -127,6 +127,8 @@ readBuffer::fillBufferImpl(void) {
     _bLen += (uint64)r;
     assert(_bPos < _bLen);
     assert(_bLen > 0);
+    if (_bLen < _bMax)            // when we don't get what we requested for the buffer, try again until we do
+       goto again;
   }
 
   assert(_bBgn + _bPos == _fPos);

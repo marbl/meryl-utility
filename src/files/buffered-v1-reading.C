@@ -119,8 +119,10 @@ readBuffer::fillBufferImpl(void) {
               _bMax, _fn, strerror(errno)), exit(1);
   }
   else if (r == 0) {              //  EOF if no data returned.
-    _eof = true;
-    assert(_bPos == _bLen);
+    _eof = (_bPos == _bLen);      //  If we were continuing a read from before
+                                  //  then we have unprocessed data in the buffer so we're not at the end
+                                  //  the next call to this function to re-fill the buffer will mark it as EOF
+    assert((!_eof && _bPos < _bLen) || (_eof && _bPos == _bLen));
   }
   else {                          //  Otherwise, we got data.
     _eof = false;                 //  (and therefore, not eof)

@@ -223,7 +223,7 @@ increaseArray(TT*& array, uint64 idx, LL &arrayMax, uint64 moreSpace, _raAct op=
   if (idx < arrayMax)
     return;
 
-  setArraySize(array, arrayMax, arrayMax, newMax, op);
+  setArraySize(array, idx, arrayMax, newMax, op);
 }
 
 
@@ -235,8 +235,8 @@ increaseArrayPair(T1*& array1, T2*& array2, uint64 idx, LL &arrayMax, uint64 mor
   if (idx < arrayMax)
     return;
 
-  setArraySize(array1, arrayMax, arrayMax, newMax, op);
-  setArraySize(array2, arrayMax, arrayMax, newMax, op);
+  setArraySize(array1, idx, arrayMax, newMax, op);
+  setArraySize(array2, idx, arrayMax, newMax, op);
 }
 
 
@@ -248,8 +248,8 @@ increaseArray(T1*& array1, T2*& array2, uint64 idx, LL &arrayMax, uint64 moreSpa
   if (idx < arrayMax)
     return;
 
-  setArraySize(array1, arrayMax, arrayMax, newMax, op);
-  setArraySize(array2, arrayMax, arrayMax, newMax, op);
+  setArraySize(array1, idx, arrayMax, newMax, op);
+  setArraySize(array2, idx, arrayMax, newMax, op);
 }
 
 
@@ -261,9 +261,9 @@ increaseArray(T1*& array1, T2*& array2, T3*& array3, uint64 idx, LL &arrayMax, u
   if (idx < arrayMax)
     return;
 
-  setArraySize(array1, arrayMax, arrayMax, newMax, op);
-  setArraySize(array2, arrayMax, arrayMax, newMax, op);
-  setArraySize(array3, arrayMax, arrayMax, newMax, op);
+  setArraySize(array1, idx, arrayMax, newMax, op);
+  setArraySize(array2, idx, arrayMax, newMax, op);
+  setArraySize(array3, idx, arrayMax, newMax, op);
 }
 
 
@@ -275,10 +275,10 @@ increaseArray(T1*& array1, T2*& array2, T3*& array3, T3*& array4, uint64 idx, LL
   if (idx < arrayMax)
     return;
 
-  setArraySize(array1, arrayMax, arrayMax, newMax, op);
-  setArraySize(array2, arrayMax, arrayMax, newMax, op);
-  setArraySize(array3, arrayMax, arrayMax, newMax, op);
-  setArraySize(array4, arrayMax, arrayMax, newMax, op);
+  setArraySize(array1, idx, arrayMax, newMax, op);
+  setArraySize(array2, idx, arrayMax, newMax, op);
+  setArraySize(array3, idx, arrayMax, newMax, op);
+  setArraySize(array4, idx, arrayMax, newMax, op);
 }
 
 

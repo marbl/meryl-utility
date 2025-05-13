@@ -200,6 +200,7 @@ SUBMAKEFILES := pccp/pccp.mk \
 ifeq ($(BUILDTESTS), 1)
 SUBMAKEFILES += tests/alignTest-ssw.mk \
                 tests/alignTest-ksw2.mk \
+                tests/arraysTest.mk \
                 tests/bitsTest.mk \
                 tests/commandAvailableTest.mk \
                 tests/decodeIntegerTest.mk \

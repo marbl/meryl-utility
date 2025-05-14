@@ -187,32 +187,33 @@ main(int32 argc, char **argv) {
 
   for (Clen=10000; Clen < 110000; Clen += 10000) {
     fprintf(stderr, "  step from %lu to %lu\n", Clen-10000, Clen);
+
     increaseArrayPair(C, D, Clen, Cmax, 3333, _raAct::copyDataClearNew);
+
     fprintf(stderr, "  step from %lu to %lu cmax now %u\n", Clen-10000, Clen, Cmax);
-  }
-  Clen -= 10000;  //  Last valid allocation!
 
-  assert(Clen <= Cmax);
+    assert(Clen <= Cmax);
 
-  fprintf(stderr, "  setting (Clen = %u)\n", Clen);
+    fprintf(stderr, "  setting (%u .. %u)\n", Clen-10000, Clen);
 
-  for (uint64 ii=0; ii<Clen; ii++) {
-    C[ii] = ii << 8;
-    D[ii] = ii << 16;
-  }
+    for (uint64 ii=Clen-10000; ii<Clen; ii++) {
+      C[ii] = ii << 8;
+      D[ii] = ii << 16;
+    }
 
-  fprintf(stderr, "  testing\n");
+    fprintf(stderr, "  testing\n");
 
-  for (uint64 ii=0; ii<Clen; ii++) {
-    assert(C[ii] == ii << 8);
-    assert(D[ii] == ii << 16);
-  }
+    for (uint64 ii=0; ii<Clen; ii++) {
+      assert(C[ii] == ii << 8);
+      assert(D[ii] == ii << 16);
+    }
 
-  fprintf(stderr, "  testing zero\n");
+    fprintf(stderr, "  testing zero\n");
 
-  for (uint64 ii=Clen; ii<Cmax; ii++) {
-    assert(C[ii] == 0);
-    assert(D[ii] == 0);
+    for (uint64 ii=Clen; ii<Cmax; ii++) {
+      assert(C[ii] == 0);
+      assert(D[ii] == 0);
+    }
   }
 
   delete [] A;  Amax = Alen = 0;  A = nullptr;

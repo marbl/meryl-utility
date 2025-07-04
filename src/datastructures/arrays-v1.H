@@ -165,17 +165,27 @@ duplicateArray(TT*& to, LL &toLen, LL &toMax, TT const *fr, LL frLen, LL frMax=0
 }
 
 
-//  Set the array size to 'newMax'.
-//  No guards, the array will ALWAYS be reallocated.
+
+//
+//  Change the size of an array.  The array is ALWAYS reallocated.
+//
+//  Elements        0 .. arrayLen are copied from the old to the new array.
+//  Elements arrayLen .. newMax   can be (optionally) set to zero.
+//
+//  WARNING: If arrayLen is larger than newMax, only the first newMax
+//           elements are copied.  arrayLen IS NOT modified to reflect this.
+//
+//  Output parameter arrayMax is set to newMax; arrayMax is not otherwise used.
+//
+//  WARNING: Use increaseArray() or resizeArray() instead of this function.
 //
 template<typename TT, typename LL>
 void
-setArraySize(TT*& array, uint64 arrayLen, LL &arrayMax, uint64 newMax, _raAct op=_raAct::copyData) {
+setArraySize(TT*& array, uint64 arrayLen, LL &arrayMax, uint64 newMax, _raAct op=_raAct::copyData, bool update=true) {
 
-  arrayMax =          newMax;
   arrayLen = std::min(newMax, arrayLen);
 
-  TT *copy = new TT [arrayMax];
+  TT *copy = new TT [newMax];
 
   if ((array != nullptr) &&
       (arrayLen > 0) &&
@@ -189,102 +199,122 @@ setArraySize(TT*& array, uint64 arrayLen, LL &arrayMax, uint64 newMax, _raAct op
 
   if ((op == _raAct::clearNew) ||
       (op == _raAct::copyDataClearNew))
-    for (uint32 ii=arrayLen; ii<arrayMax; ii++)
+    for (uint32 ii=arrayLen; ii<newMax; ii++)
       copy[ii] = TT();
+
+  if (update)
+    arrayMax = newMax;
 }
 
 
 
+//
 //  Ensure that there is enough space to hold one more element in the array.
-//  Increase the array by 'moreSpace' if needed.
+//  Increase the array by 'moreSpace' elements if needed.
 //
-//  With the array used as a stack, a call of
-//    increaseArray(arr, arrLen, arrMax, 32)
-//  will allocate 32 more elements if arrLen == arrMax, and do nothing
-//  otherwise.  After the call, array element arr[arrLen] is guaranteed to
-//  exist.  If arrLen > arrMax, see below.
+//  With the array used as a stack, where elements are added to the tail:
 //
-//  With the array used for random access, a call of
+//    while (...) {
+//      increaseArray(arr, arrLen, arrMax, 32)
+//      arr[arrLen++] = ...
+//    }
+//
+//  will allocate 32 more elements to the array when arrLen == arrMax, and do
+//  nothing otherwise.  After the call, array element arr[arrLen] is
+//  guaranteed to exist.
+//
+//  Likewise, for random-access, element arr[idx] is guaranteed to exist
+//  after the call:
+//
+//    idx = arrMax + ...
 //    increaseArray(arr, idx, arrMax, 32)
-//  will do nothing if idx < arrMax, and resize the array to have idx+32
-//  elements otherwise.
+//    arr[idx] = ...
+//
+//  will do nothing if idx < arrMax, but will resize the array to have idx+32
+//  elements otherwise.  In this case, the 'length' of the array is not
+//  tracked, we only know that the array has arrMax allocated elements (and
+//  you probably want to set op=_raAct::copyDataClearNew to initialize any
+//  newly allocated elements to zero).
 //  
-//  In both cases, if 'moreSpace' is 0, it is reset to 1.
+//  If the array is reallocated, the contents of the entire array (0
+//  .. arrayMax) are copied to the new space.  By default, new elements are
+//  NOT cleared to zero; set 'op' to '_raAct::copyDataClearNew' to enable.
 //
-//  If the array is reallocated, the contents of the entire array are copied
-//  to the new space.  New elements are NOT cleared to zero; override op as
-//  desired.
+//  'moreSpace' must be at least 1.
 //
+
+static   //  Helper for increaseArray() -- return the first muliple of 'moreSpace'
+inline   //  that is strictly larger than 'idx'.
+uint64
+nmc(uint64 idx, uint64 moreSpace) {
+  uint64 ns = (moreSpace <= 1) ? (            (idx            ) + 1)
+                               : (moreSpace * (idx / moreSpace) + moreSpace);
+  assert(idx < ns);
+
+  return ns;
+}
+
 template<typename TT, typename LL>
 void
 increaseArray(TT*& array, uint64 idx, LL &arrayMax, uint64 moreSpace, _raAct op=_raAct::copyData) {
-  uint64  newMax = idx + ((moreSpace == 0) ? 1 : moreSpace);
-
   if (idx < arrayMax)
     return;
-
-  setArraySize(array, arrayMax, arrayMax, newMax, op);
+  setArraySize(array, arrayMax, arrayMax, nmc(idx, moreSpace), op);
 }
 
 
 template<typename T1, typename T2, typename LL>
 void
 increaseArrayPair(T1*& array1, T2*& array2, uint64 idx, LL &arrayMax, uint64 moreSpace, _raAct op=_raAct::copyData) {
-  uint64  newMax = idx + ((moreSpace == 0) ? 1 : moreSpace);
-
   if (idx < arrayMax)
     return;
-
-  setArraySize(array1, arrayMax, arrayMax, newMax, op);
-  setArraySize(array2, arrayMax, arrayMax, newMax, op);
+  setArraySize(array1, arrayMax, arrayMax, nmc(idx, moreSpace), op, false);
+  setArraySize(array2, arrayMax, arrayMax, nmc(idx, moreSpace), op);
 }
 
 
 template<typename T1, typename T2, typename LL>
 void
 increaseArray(T1*& array1, T2*& array2, uint64 idx, LL &arrayMax, uint64 moreSpace, _raAct op=_raAct::copyData) {
-  uint64  newMax = idx + ((moreSpace == 0) ? 1 : moreSpace);
-
   if (idx < arrayMax)
     return;
-
-  setArraySize(array1, arrayMax, arrayMax, newMax, op);
-  setArraySize(array2, arrayMax, arrayMax, newMax, op);
+  setArraySize(array1, arrayMax, arrayMax, nmc(idx, moreSpace), op, false);
+  setArraySize(array2, arrayMax, arrayMax, nmc(idx, moreSpace), op);
 }
 
 
 template<typename T1, typename T2, typename T3, typename LL>
 void
 increaseArray(T1*& array1, T2*& array2, T3*& array3, uint64 idx, LL &arrayMax, uint64 moreSpace, _raAct op=_raAct::copyData) {
-  uint64  newMax = idx + ((moreSpace == 0) ? 1 : moreSpace);
-
   if (idx < arrayMax)
     return;
-
-  setArraySize(array1, arrayMax, arrayMax, newMax, op);
-  setArraySize(array2, arrayMax, arrayMax, newMax, op);
-  setArraySize(array3, arrayMax, arrayMax, newMax, op);
+  setArraySize(array1, arrayMax, arrayMax, nmc(idx, moreSpace), op, false);
+  setArraySize(array2, arrayMax, arrayMax, nmc(idx, moreSpace), op, false);
+  setArraySize(array3, arrayMax, arrayMax, nmc(idx, moreSpace), op);
 }
 
 
 template<typename T1, typename T2, typename T3, typename T4, typename LL>
 void
 increaseArray(T1*& array1, T2*& array2, T3*& array3, T3*& array4, uint64 idx, LL &arrayMax, uint64 moreSpace, _raAct op=_raAct::copyData) {
-  uint64  newMax = idx + ((moreSpace == 0) ? 1 : moreSpace);
-
   if (idx < arrayMax)
     return;
-
-  setArraySize(array1, arrayMax, arrayMax, newMax, op);
-  setArraySize(array2, arrayMax, arrayMax, newMax, op);
-  setArraySize(array3, arrayMax, arrayMax, newMax, op);
-  setArraySize(array4, arrayMax, arrayMax, newMax, op);
+  setArraySize(array1, arrayMax, arrayMax, nmc(idx, moreSpace), op, false);
+  setArraySize(array2, arrayMax, arrayMax, nmc(idx, moreSpace), op, false);
+  setArraySize(array3, arrayMax, arrayMax, nmc(idx, moreSpace), op, false);
+  setArraySize(array4, arrayMax, arrayMax, nmc(idx, moreSpace), op);
 }
 
 
-//  Resize the array so that it is at least as big as new max.  Do nothing
-//  if the array is big enough already.
 
+//
+//  Ensure the array has at least 'newMax' elements:
+//    if arrayMax < newMax  ->  resize to newMax exactly.
+//    else                  ->  do nothing.
+//
+//  By default, new elements are not initialized, use
+//  _raAct::copyDataClearNew if desired.
+//
 template<typename TT, typename LL>
 void
 resizeArray(TT*& array, uint64 arrayLen, LL &arrayMax, uint64 newMax, _raAct op=_raAct::copyData) {

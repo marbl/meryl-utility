@@ -191,7 +191,7 @@ setArraySize(TT*& array, uint64 arrayLen, LL &arrayMax, uint64 newMax, _raAct op
       (arrayLen > 0) &&
       ((op == _raAct::copyData) ||
        (op == _raAct::copyDataClearNew)))
-    for (uint32 ii=0; ii<arrayLen; ii++)
+    for (uint64 ii=0; ii<arrayLen; ii++)
       copy[ii] = array[ii];
 
   delete [] array;
@@ -199,7 +199,7 @@ setArraySize(TT*& array, uint64 arrayLen, LL &arrayMax, uint64 newMax, _raAct op
 
   if ((op == _raAct::clearNew) ||
       (op == _raAct::copyDataClearNew))
-    for (uint32 ii=arrayLen; ii<newMax; ii++)
+    for (uint64 ii=arrayLen; ii<newMax; ii++)
       copy[ii] = TT();
 
   if (update)

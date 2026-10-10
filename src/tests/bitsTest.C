@@ -246,11 +246,20 @@ testExpandCompress(bool verbose, uint32 limit) {
 
 
 
+static
+uint64
+tbaC(bitArray *ba, uint64 length) {     //  Count the number of bits
+  uint64 nf = 0;                        //  set in the whole array.
+  for (uint64 ll=0; ll<length; ll++)
+    if (1 == ba->getBit(ll))
+      nf++;
+  return nf;
+}
+
 struct tbaDat {
   uint64  key;
   uint64  pos;
 };
-
 
 void
 testBitArray(bool verbose, uint64 nbits, uint64 length) {
@@ -268,8 +277,9 @@ testBitArray(bool verbose, uint64 nbits, uint64 length) {
     list[xx].pos = mt.mtRandom64() % (length-2) + 1;
   }
 
-  //  Sort by position, remove duplicates by setting the key to an invalid
-  //  value; pos must remain valid so we can find multiple duplicates.
+  //  Sort by position, remove duplicate positions by setting the key to an
+  //  invalid value; pos must remain valid so we can find multiple
+  //  duplicates.
 
   auto byPos = [](tbaDat const &a, tbaDat const &b) { return(a.pos < b.pos); };
   auto byKey = [](tbaDat const &a, tbaDat const &b) { return(a.key < b.key); };
@@ -284,148 +294,163 @@ testBitArray(bool verbose, uint64 nbits, uint64 length) {
 
   std::sort(list, list+nbits, byKey);
 
-  //  Set all those bits, checking that the bits before/after do not change.
+  //  Set words, checking that the bits before/after the set word do not
+  //  change.
 
   uint64  numset   = 0;
   uint64  numfound = 0;
 
   for (uint64 xx=0; xx<nbits; xx++) {
-    if (list[xx].key == uint64max)
+    if (list[xx].key == uint64max)               //  Skip duplicate positions.
       continue;
 
     numset++;
 
-    bool  a = ba->getBit(list[xx].pos-1);
-    bool  c = ba->getBit(list[xx].pos+1);
+    bool  a = ba->getBit(list[xx].pos-1);        //  Get bit before and after the
+    bool  c = ba->getBit(list[xx].pos+1);        //  one we're setting.
 
-    assert(0 == ba->getBit(list[xx].pos));
-    ba->setBit(list[xx].pos, 1);
-    assert(1 == ba->getBit(list[xx].pos));
+    assert(0 == ba->getBit(list[xx].pos));       //  Bit to set must be unset initially.
+    ba->setBit(list[xx].pos, 1);                 //  Set it.
+    assert(1 == ba->getBit(list[xx].pos));       //  Verify.
 
-    {
-      uint64 nf = 0;
+    assert(tbaC(ba, length) == xx+1);            //  Verify exactly xx+1 bits are set.
 
-      for (uint64 ll=0; ll<length; ll++)
-        if (1 == ba->getBit(ll))
-          nf++;
-
-      assert(nf == xx+1);
-    }
-
-    assert(a == ba->getBit(list[xx].pos-1));
+    assert(a == ba->getBit(list[xx].pos-1));     //  Verify before/after are unchanged.
     assert(c == ba->getBit(list[xx].pos+1));
 
-    ba->flipBit(list[xx].pos-1);
+    ba->flipBit(list[xx].pos-1);                 //  Flip the before bit.
     assert(a != ba->getBit(list[xx].pos-1));
     assert(1 == ba->getBit(list[xx].pos));
     assert(c == ba->getBit(list[xx].pos+1));
 
-    ba->flipBit(list[xx].pos+1);
+    ba->flipBit(list[xx].pos+1);                 //  Flip the after bit.
     assert(a != ba->getBit(list[xx].pos-1));
     assert(1 == ba->getBit(list[xx].pos));
     assert(c != ba->getBit(list[xx].pos+1));
 
-    ba->flipBit(list[xx].pos-1);
+    ba->flipBit(list[xx].pos-1);                 //  Flip before bit back to original state.
     assert(a == ba->getBit(list[xx].pos-1));
     assert(1 == ba->getBit(list[xx].pos));
     assert(c != ba->getBit(list[xx].pos+1));
 
-    ba->flipBit(list[xx].pos+1);
+    ba->flipBit(list[xx].pos+1);                 //  Flip after bit back to original state.
     assert(a == ba->getBit(list[xx].pos-1));
     assert(1 == ba->getBit(list[xx].pos));
     assert(c == ba->getBit(list[xx].pos+1));
 
-    {
-      uint64 nf = 0;
+    assert(tbaC(ba, length) == xx+1);            //  Still exactly xx+1 bits set?
+  }
 
-      for (uint64 ll=0; ll<length; ll++)
-        if (1 == ba->getBit(ll))
-          nf++;
+  assert(tbaC(ba, length) == numset);            //  Exactly the correct number set?
 
-      assert(nf == xx+1);
+  for (uint64 xx=0; xx<nbits; xx++) {            //  Toggle all the set bits.
+    if (list[xx].key != uint64max) {
+      assert(1 == ba->getBit(list[xx].pos));
+      assert(1 == ba->flipBit(list[xx].pos));
+      assert(0 == ba->getBit(list[xx].pos));
     }
   }
+  assert(tbaC(ba, length) == 0);                //  No bits set!
 
-  //  Count the number of bits that are set.
-
-  for (uint64 xx=0; xx<length; xx++) {
-    if (1 == ba->getBit(xx))
-      numfound++;
-  }
-
-  assert(numset == numfound);
-
-  //  Toggle all those bits.
-
-  for (uint64 xx=0; xx<nbits; xx++) {
-    if (list[xx].key == uint64max)
-      continue;
-
-    assert(1 == ba->getBit(list[xx].pos));
-    assert(1 == ba->flipBit(list[xx].pos));
-    assert(0 == ba->getBit(list[xx].pos));
-  }
-
-  //  Check all bits are zero...and set them to one.
-
-  for (uint64 xx=0; xx<length; xx++) {
-    assert(0 == ba->getBit(xx));
+  for (uint64 xx=0; xx<length; xx++)            //  Set all bits.
     ba->setBit(xx, 1);
-  }
+  assert(tbaC(ba, length) == length);
 
-  //  Clear the array.
+  ba->clear();                                  //  Clear all bits, the easy way.
+  assert(tbaC(ba, length) == 0);                //  No bits set!
 
-  ba->clear();
-
-  //  And check they're all zero again.
-
-  for (uint64 xx=0; xx<length; xx++)
-    assert(0 == ba->getBit(xx));
-
-  //  Done.
-
-  delete [] list;
-  delete    ba;
+  delete [] list;                               //  Done!
+  delete    ba;                                 //  Success!
 }
 
 
 
 void
-testWordArray(bool verbose, uint64 length, uint32 wordSize, uint32 arraySize) {
-  wordArray  *wa      = new wordArray(wordSize, arraySize, false);
-  uint64      mask    = buildLowBitMask<uint64>(wordSize);
-  uint64      testLen = 111;
-  bool        dodump  = false;
+testWordArray(bool verbose, uint64 length, uint32 wordSize, uint32 segSize) {
+  wordArray  *wa      = nullptr;
+  uint128     mask    = buildLowBitMask<uint128>(wordSize);
 
   if (verbose)
-    fprintf(stderr, "Testing wordArray with %lu words of %u bits, blocks of %u bits.\n", length, wordSize, arraySize);
+    fprintf(stderr, "Testing wordArray with %lu words of %u bits, blocks of %u bits.\n", length, wordSize, segSize);
 
-  //  Set words to something we can check later.
+  wa = new wordArray(wordSize, segSize, false);
+  delete wa;
+
+  //  Erase.
+  wa = new wordArray(wordSize, segSize, false);
+  if (verbose)
+    fprintf(stderr, " - erase.\n");
+
+  wa->erase(0xff, length);
+  for (uint32 ii=0; ii<length; ii++)
+    assert(wa->get(ii) == (uint128max & mask));
+
+  wa->erase(0x00, length);
+  for (uint32 ii=0; ii<length; ii++)
+    assert(wa->get(ii) == (uint128zero & mask));
+
+  delete wa;
+
+  //  Basic forward test.
+  wa = new wordArray(wordSize, segSize, false);
+  if (verbose)
+    fprintf(stderr, " - forward set.\n");
 
   for (uint32 ii=0; ii<length; ii++)
     wa->set(ii, ii);
-
-  //  And check.
 
   for (uint32 ii=0; ii<length; ii++)
     assert(wa->get(ii) == (ii & mask));
 
   delete wa;
+  
+  //  Basic reverse test.
+  wa = new wordArray(wordSize, segSize, false);
+  if (verbose)
+    fprintf(stderr, " - reverse set.\n");
+
+  for (uint32 ii=length; ii-- > 0; )
+    wa->set(ii, ii);
+
+  for (uint32 ii=0; ii<length; ii++)
+    assert(wa->get(ii) == (ii & mask));
+
+  delete wa;
+
+  //  Set words out of order, by setting every Nth word, then iterating to
+  //  fill in holes.  Easier and just as sophisticated as setting in random
+  //  orer.
+
+  uint32  maxstep = 4 * 128 / wordSize;             //  To cover four physical words in the WA.
+
+  for (uint32 step=1; step<maxstep; step++) {
+    wa = new wordArray(wordSize, segSize, false);
+    if (verbose)
+      fprintf(stderr, " - step of %u words / %u maximum.\n", step, maxstep);
+
+    for (uint32 jj=0; jj<step; jj++)                //  Set words, stepping over some words in
+      for (uint32 ii=jj; ii<length; ii += step)     //  between, then iterating and filling in
+        wa->set(ii, ii);                            //  the holes.
+
+    for (uint32 ii=0; ii<length; ii++)              //  Check all words are correct.
+      assert(wa->get(ii) == (ii & mask));
+
+    delete wa;
+  }
 }
 
 
 
 void
 testWordArraySpeed(bool verbose, uint64 length, uint32 wordSize) {
-  wordArray  *wa = new wordArray(wordSize * 2, 1024 * 1024 * 1024, false);
+  wordArray  *wa = new wordArray(wordSize, 1024 * 1024, false);
   uint64     *a1 = new uint64 [length];
   uint64     *a2 = new uint64 [length];
   uint64     *a3 = new uint64 [length];
 
-  uint64     dat;
   uint64    mask = buildLowBitMask<uint64>(wordSize);
 
-  fprintf(stderr, "Testing wordArray speed vs 2x arrays of length %lu and width %u.\n",
+  fprintf(stderr, "Testing wordArray speed vs three arrays of length %lu and width %u.\n",
           length, wordSize);
 
   double  space = (length * wordSize / 64 + length + length) * 8 / 1024 / 1024 / 1024.0;
@@ -442,11 +467,9 @@ testWordArraySpeed(bool verbose, uint64 length, uint32 wordSize) {
   start = getTime();
 
   for (uint64 ii=0; ii<length; ii++) {
-    dat   = (ii & mask);
-    dat <<=  wordSize;
-    dat  |= (ii & mask);
+    uint64 mm = ii & mask;
 
-    wa->set(ii, dat);
+    wa->set(ii, mm);
   }
   fprintf(stderr, "  %.3f seconds\n", getTime() - start);
 
@@ -457,11 +480,11 @@ testWordArraySpeed(bool verbose, uint64 length, uint32 wordSize) {
   start = getTime();
 
   for (uint64 ii=0; ii<length; ii++) {
-    dat  = (ii & mask);
+    uint64 mm = ii & mask;
 
-    a1[ii] = dat;
-    a2[ii] = dat;
-    a3[ii] = dat;
+    a1[ii] = mm;
+    a2[ii] = mm;
+    a3[ii] = mm;
   }
   fprintf(stderr, "  %.3f seconds\n", getTime() - start);
 
@@ -472,11 +495,9 @@ testWordArraySpeed(bool verbose, uint64 length, uint32 wordSize) {
   start = getTime();
 
   for (uint64 ii=0; ii<length; ii++) {
-    dat   = (ii & mask);
-    dat <<=  wordSize;
-    dat  |= (ii & mask);
+    uint64 mm = ii & mask;
 
-    assert(dat == wa->get(ii));
+    assert(wa->get(ii) == mm);
   }
   fprintf(stderr, "  %.3f seconds\n", getTime() - start);
 
@@ -486,12 +507,9 @@ testWordArraySpeed(bool verbose, uint64 length, uint32 wordSize) {
 
   for (uint64 jj=0; jj<length; jj++) {
     uint64 ii = mt.mtRandom64() % length;
+    uint64 mm = ii & mask;
 
-    dat   = (ii & mask);
-    dat <<=  wordSize;
-    dat  |= (ii & mask);
-
-    assert(dat == wa->get(ii));
+    assert(wa->get(ii) == mm);
   }
   fprintf(stderr, "  %.3f seconds\n", getTime() - start);
 
@@ -502,11 +520,11 @@ testWordArraySpeed(bool verbose, uint64 length, uint32 wordSize) {
   start = getTime();
 
   for (uint64 ii=0; ii<length; ii++) {
-    dat  = (ii & mask);
+    uint64 mm = ii & mask;
 
-    assert(dat == a1[ii]);
-    assert(dat == a2[ii]);
-    assert(dat == a3[ii]);
+    assert(a1[ii] == mm);
+    assert(a2[ii] == mm);
+    assert(a3[ii] == mm);
   }
   fprintf(stderr, "  %.3f seconds\n", getTime() - start);
 
@@ -516,12 +534,11 @@ testWordArraySpeed(bool verbose, uint64 length, uint32 wordSize) {
 
   for (uint64 jj=0; jj<length; jj++) {
     uint64 ii = mt.mtRandom64() % length;
+    uint64 mm = ii & mask;
 
-    dat  = (ii & mask);
-
-    assert(dat == a1[ii]);
-    assert(dat == a2[ii]);
-    assert(dat == a3[ii]);
+    assert(a1[ii] == mm);
+    assert(a2[ii] == mm);
+    assert(a3[ii] == mm);
   }
   fprintf(stderr, "  %.3f seconds\n", getTime() - start);
 
@@ -800,7 +817,7 @@ testIO(bool verbose, uint64 length) {
 int
 main(int argc, char **argv) {
   bool   verbose = false;
-  uint64 length  = 10 * 1000000;
+  uint64 length  = 1 * 1000000;
   uint32 width   = 21;
   int32  arg     = 1;
   int32  err     = 0;
@@ -928,7 +945,7 @@ main(int argc, char **argv) {
     fprintf(stderr, "\n");
     fprintf(stderr, "  -wordarray         wordArray::set() and wordArray::get()\n");
     fprintf(stderr, "  -wordarrayspeed    wordArray speed against plain arrays\n");
-    fprintf(stderr, "    -bits N          set size of word in speed test\n");
+    fprintf(stderr, "    -width N         set size of word in speed test (see also -length)\n");
     fprintf(stderr, "\n");
     fprintf(stderr, "  -unary             stuffedBits::setUnary() for values up to 8193\n");
     fprintf(stderr, "  -binary            stuffedBits::setBinary() for all widths up to 64\n");

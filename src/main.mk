@@ -198,6 +198,7 @@ SUBMAKEFILES := pccp/pccp.mk \
                 pccp/pcat.mk
 
 ifeq ($(BUILDTESTS), 1)
+CXXFLAGS     += -DSANITYCHECKS
 SUBMAKEFILES += tests/alignTest-ssw.mk \
                 tests/alignTest-ksw2.mk \
                 tests/arraysTest.mk \

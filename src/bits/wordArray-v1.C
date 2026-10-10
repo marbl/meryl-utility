@@ -218,6 +218,8 @@ wordArray::set(uint64 eIdx, uint128 value) {
   //
   //  Or split the value across two words.
   //
+  //                    bit
+  //            0        v     128             256
   //            --lSave--               --rSave--
   //  [--word--][--first-word--][--second-word--][--word--]
   //                     [----value---=]
@@ -227,7 +229,14 @@ wordArray::set(uint64 eIdx, uint128 value) {
 
   if (bit + _valueWidth <= 128) {
     uint32   lSave = bit;
-    uint32   rSave = 128 - _valueWidth - bit;
+    uint32   rSave = 128 - _valueWidth - lSave;
+
+#ifdef SANITYCHECKS
+    if (lSave >= 128)   fprintf(stderr, "ERROR: lSave %u at bit %u\n", lSave, bit);
+    if (rSave >= 128)   fprintf(stderr, "ERROR: rSave %u at bit %u\n", rSave, bit);
+    assert(lSave < 128);
+    assert(rSave < 128);
+#endif
 
     _segments[seg][wrd] = (saveLeftBits(_segments[seg][wrd], lSave) |
                            (value << rSave)                         |
@@ -235,10 +244,21 @@ wordArray::set(uint64 eIdx, uint128 value) {
   }
 
   else {
-    uint32   lSave =       bit,   rSave = 128 - _valueWidth - bit;
-    uint32   lSize = 128 - bit,   rSize = _valueWidth - (128 - bit);
+    uint32   lSave = bit,                         lSize = 128 - bit;
+    uint32   rSave = 256 - _valueWidth - lSave,   rSize = _valueWidth - lSize;
 
-    _segments[seg][wrd+0] = saveLeftBits(_segments[seg][wrd+0], lSave) | (value >> rSize);
+#ifdef SANITYCHECKS
+    if (lSave >= 128)   fprintf(stderr, "ERROR: lSave %u at bit %u\n", lSave, bit);
+    if (rSave >= 128)   fprintf(stderr, "ERROR: rSave %u at bit %u\n", rSave, bit);
+    if (lSize >= 128)   fprintf(stderr, "ERROR: lSize %u at bit %u\n", lSize, bit);
+    if (rSize >= 128)   fprintf(stderr, "ERROR: rSize %u at bit %u\n", rSize, bit);
+    assert(lSave < 128);
+    assert(rSave < 128);
+    assert(lSize < 128);
+    assert(rSize < 128);
+#endif
+
+     _segments[seg][wrd+0] = saveLeftBits(_segments[seg][wrd+0], lSave) | (value >> rSize);
     _segments[seg][wrd+1] = (value << rSave) | saveRightBits(_segments[seg][wrd+1], rSave);
   }
 
